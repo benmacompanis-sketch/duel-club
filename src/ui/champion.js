@@ -1,6 +1,7 @@
 // Pantalla de campeón: celebración, marcador final, estadísticas destacadas y revancha.
 import { h, icon } from './dom.js';
-import { drawCharacter } from '../core/characters.js';
+import { drawCharacter, normLook } from '../core/characters.js';
+import { drawVictory } from '../core/cosmetics.js';
 import { GAME_BY_ID } from '../games/index.js';
 import { TAU, rgba, fmtDuration, roundRect } from '../core/utils.js';
 
@@ -52,6 +53,8 @@ export function championScreen(ui, { session, done }) {
       g.fillStyle = glow;
       g.fillRect(0, 0, W, H);
       drawCharacter(g, { id: P[l].char, x: W / 2 + 190, y: base - 40, s: 1.5, color: P[l].color, anim: 'lose', t, facing: -1, acc: P[l].acc });
+      const vic = normLook(champ.acc).victory;
+      if (vic) { g.save(); g.translate(W / 2, base - 110); g.scale(1.5, 1.5); drawVictory(g, vic, 0, 0, t, champ.color); g.restore(); }
       drawCharacter(g, { id: champ.char, x: W / 2, y: base - 110, s: 2.4, color: champ.color, anim: Math.floor(t / 2.5) % 2 ? 'celebrate' : 'win', t, acc: champ.acc });
       // trofeo
       const ty = 200 + Math.sin(t * 2) * 6;

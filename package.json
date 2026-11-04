@@ -1,8 +1,8 @@
 {
   "name": "duel-club",
   "private": true,
-  "version": "1.0.0",
-  "description": "DUEL CLUB — arcade local 1v1 con 12 minijuegos. TWO PLAYERS. ONE CHAMPION.",
+  "version": "3.0.0",
+  "description": "DUEL CLUB — arcade 1v1 con 16 minijuegos, cuentas online y ranking mundial. ONE CLUB. INFINITE DUELS.",
   "type": "module",
   "scripts": {
     "dev": "vite",

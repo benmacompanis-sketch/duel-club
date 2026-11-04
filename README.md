@@ -1,18 +1,86 @@
 # DUEL CLUB
 
-**TWO PLAYERS. ONE CHAMPION.**
+**ONE CLUB. INFINITE DUELS. QUESTIONABLE AURA.**
 
-Videojuego arcade de competición local para **dos jugadores en el mismo teclado**. Doce minijuegos 1v1 originales, modos de competición, torneos, supervivencia, personajes desbloqueables, logros, récords y una banda sonora generada en tiempo real. Funciona en el navegador, sin cuentas, sin servidores y sin conexión una vez cargado.
+Arcade competitivo 1v1 para **dos jugadores en el mismo teclado**, en el navegador. 16 minijuegos, cuentas
+online, nivel con **KEKE**, rating competitivo **SUSI**, moneda **PIES** y la **PIE STORE**, 148 logros,
+dominio por minijuego, amigos, cara a cara, rankings mundiales y una banda sonora generada en tiempo real.
 
 ---
 
-## Cómo jugar
+## Jugar
 
-### Requisitos
-- [Node.js](https://nodejs.org) 18 o superior (solo para desarrollar o compilar).
-- Chrome, Edge o Firefox actualizados.
+- Versión publicada: ver la URL del proyecto en Vercel (no hace falta cuenta de nada para entrar).
+- Se puede jugar como **invitado** sin registrarse. Para guardar progreso permanente (KEKE, PIES, SUSI,
+  logros, inventario, historial) cada jugador crea una cuenta con **usuario + contraseña** (sin email).
+- J1 y J2 pueden tener cada uno su cuenta en la misma computadora. La misma cuenta no puede ser J1 y J2.
+- Cuentas de la versión anterior (nombre + PIN): en *Cuenta → CUENTA ANTERIOR* se recuperan con el PIN y
+  se elige una contraseña nueva. Su progreso ya está migrado.
 
-### Modo desarrollo
+### Controles por defecto
+
+| Acción | Jugador 1 | Jugador 2 |
+|---|---|---|
+| Movimiento | `W` `A` `S` `D` | Flechas |
+| Acción 1 | `F` | `ENTER` |
+| Acción 2 | `G` | `SHIFT` derecho |
+| Pausa | `ESC` o `P` | `ESC` o `P` |
+
+Se pueden reasignar en **Configuración → Controles**. Menús: flechas/WASD, `F`/`ENTER` elige, `ESC` vuelve.
+
+## Contenido
+
+- **Modos**: Duel, Quick Play, Tournament, Survival. Dificultades Fácil/Normal/Difícil y **CAOS**
+  (turbo, cámara lenta, controles invertidos, espejo, apagón, terremoto: siempre anunciados e iguales para los dos).
+- **16 minijuegos**: Reaction Rush, Micro Race, Pong Chaos, Last Platform, Hoop Master, Memory War,
+  Color Control, Duel Arena, Target Panic, Beat Battle, Fish Frenzy, Block Battle y los nuevos
+  **Shadow Sneak** (laberinto a oscuras), **Turbo Tennis**, **Tower Climb** (pantalla dividida) y **Blast Zone** (supervivencia).
+- **KEKE y niveles**: hace falta `25 × (L − 1) × (L + 2)` KEKE para el nivel L. Títulos 1/5/10/15/20/30/50/75/100
+  y niveles especiales 6, 21, 42, **67 (EL ELEGIDO)**, 69, 100 y 150 con recompensas propias.
+- **SUSI**: rating tipo ELO (empieza en 1000, K 36→24→16 según experiencia), solo entre dos cuentas,
+  con anti-abuso (entre la misma pareja, rinde la mitad desde la 6.ª partida en 24 h y nada desde la 12.ª).
+- **PIES y PIE STORE**: 80 objetos a la venta (20 comunes, 18 poco comunes, 16 raros, 12 épicos, 9 legendarios,
+  5 míticos; 100/250/500/1000/2200/5000 PIES) + exclusivos por logros, niveles, dominio y secretos.
+  Solo cosméticos: no dan ventajas. Sin dinero real, sin cajas aleatorias.
+- **MEME COLLECTION**: personajes originales (Gerardo NPC, Sr. Formalidad, Frigo-Bot, Tostadín, La Silla,
+  Tun-Tun Tronco), sombreros, emotes, títulos absurdos y frases contextuales que no se repiten.
+- **Logros**: 148 (16 minijuegos × 5 desafíos + generales, competitivos, sociales, colección, meme y secretos).
+- **CLUB**: amigos (en línea/última actividad), búsqueda, solicitudes (aceptar/rechazar/cancelar), cara a cara con VS.
+- **Ranking mundial**: SUSI, nivel, KEKE, victorias, por minijuego y récords; General/Amigos, Top 10/100 y mi posición.
+
+## Arquitectura
+
+```
+src/
+  config.js            URL y clave publicable de Supabase (segura para el navegador)
+  net/api.js           cliente RPC (fetch) + mensajes de error
+  data/catalog.js      FUENTE ÚNICA: objetos, rarezas, títulos, tarjetas, niveles, rangos SUSI, dominio
+  data/achievements.js FUENTE ÚNICA: 148 logros con condiciones evaluadas por el servidor
+  core/                motor: bucle, input, audio, renderer, personajes, cosméticos, cuentas (accountService)
+  games/               un archivo por minijuego (todos extienden BaseGame) + index.js (registro)
+  ui/                  hub (menú y barra superior), store, inventory, achievementsView, profile, club,
+                       ranking, statsView, gamesView, notifications, accountModal, kit (componentes)
+supabase/migrations/   esquema y lógica del servidor (001_core.sql, 002_rpc.sql)
+supabase/seed/         catalog.sql generado desde src/data con scripts/gen-seed.mjs
+scripts/               gen-seed.mjs (catálogo → SQL), gen-legacy-migration.py (migración de la versión anterior)
+```
+
+### Backend y guardado
+
+- **Supabase (PostgreSQL)**. El navegador solo puede llamar funciones `public.dc_*`. Todas las tablas tienen
+  RLS activado sin políticas y sin permisos para `anon`/`authenticated`: no se pueden leer ni escribir directo.
+- Autenticación propia: contraseñas con bcrypt, sesiones con token aleatorio (se guarda solo su hash),
+  límite de intentos fallidos y de registros.
+- El servidor calcula **todo** lo que importa: KEKE, niveles, PIES, SUSI, logros, dominio, récords e inventario.
+  El navegador envía el resultado de la partida; el servidor valida sesiones de ambos jugadores, duración mínima,
+  ritmo, valores plausibles, idempotencia (`client_id` único: una partida nunca paga dos veces) y aplica
+  recompensas decrecientes por día contra el farmeo. Las competiciones solo cuentan si tienen minijuegos registrados.
+- Sin conexión, los resultados quedan en una cola local y se envían al volver la conexión.
+- Este navegador guarda solo: ajustes, controles, sesiones iniciadas y estadísticas locales de la compu.
+- Limitación honesta: los minijuegos corren en el navegador, así que el servidor no puede verificar la física
+  de cada jugada. Por eso se limitan valores, ritmo y recompensas diarias, y el SUSI exige dos cuentas con sesión.
+
+## Desarrollo
 
 ```bash
 npm install
@@ -22,110 +90,19 @@ npm install
 npm run dev
 ```
 
-Abrí la URL que muestra la terminal (por defecto `http://localhost:5173`).
-
-### Versión final (para publicar)
-
 ```bash
 npm run build
 ```
 
-Genera la carpeta `dist/`, lista para subir a cualquier hosting estático (GitHub Pages, Netlify, Vercel, itch.io, un servidor propio…). Usa rutas relativas, así que funciona también dentro de una subcarpeta. Para probar el build localmente:
+### Agregar contenido sin rehacer nada
 
-```bash
-npm run preview
-```
-
-> Abrir `dist/index.html` con doble clic (`file://`) no funciona en todos los navegadores porque los módulos JavaScript requieren un servidor. Usá `npm run preview` o cualquier servidor estático.
-
----
-
-## Controles por defecto
-
-| Acción | Jugador 1 | Jugador 2 |
-|---|---|---|
-| Movimiento | `W` `A` `S` `D` | Flechas |
-| Acción 1 | `F` | `ENTER` |
-| Acción 2 | `G` | `SHIFT` derecho |
-| Pausa | `ESC` o `P` | `ESC` o `P` |
-
-Todos los controles se pueden reasignar en **SETTINGS → Controles**. El sistema de entrada registra todas las teclas pulsadas a la vez, así que el movimiento de un jugador nunca bloquea al otro.
-
-> Nota: algunos teclados de membrana no pueden registrar ciertas combinaciones de muchas teclas simultáneas (*ghosting*). Es una limitación del hardware; si pasa, reasigná las teclas en SETTINGS.
-
-En los menús: `W/S` o flechas para navegar, `F` o `ENTER` para elegir, `ESC` o `G` para volver. También funciona con mouse.
-
----
-
-## Modos
-
-- **DUEL MODE** — la competición principal. 3, 5, 7, 10 o 12 minijuegos, selección aleatoria o manual, repeticiones opcionales, eventos especiales y dificultad. Pantalla VS, marcador general entre juegos y muerte súbita si hay empate.
-- **QUICK PLAY** — elegí un minijuego, sus opciones (pista, rondas, tablero, canción…), la dificultad y un evento.
-- **TOURNAMENT** — copa por rondas (2 minijuegos cada una) con clasificación, +1 punto al ganador de cada ronda y una GRAN FINAL que vale doble. Pantalla de campeón y revancha.
-- **SURVIVAL** — desafíos consecutivos con vidas; cada etapa es más difícil y los eventos aparecen más seguido. Registra la mejor etapa y la mejor racha.
-- **RECORDS** — victorias, derrotas y empates por jugador, minijuegos más jugados, récord individual de cada juego, mejor racha, logros e historial.
-- **SETTINGS** — volumen general / música / efectos, pantalla completa, animaciones, calidad visual, calibración de ritmo, controles y reinicio de datos.
-
-Puntuación global: **victoria 3 puntos, empate 1 punto para cada uno, derrota 0**.
-
-## Los 12 minijuegos
-
-| # | Juego | Categoría | Idea |
-|---|---|---|---|
-| 01 | REACTION RUSH | Reflejos | Esperá la señal verde (panel, semáforo, palabras o campana) y reaccioná primero. Anticiparse o caer en señales falsas regala la ronda. Mide los milisegundos reales. |
-| 02 | MICRO RACE | Carreras | Autos vistos desde arriba en 3 pistas: aceleración automática, giro, freno/derrape, turbos, barro, conos y barriles. |
-| 03 | PONG CHAOS | Precisión | Paletas con efecto y SMASH; bumpers, muro móvil, multibola, paletas mini y turbo. |
-| 04 | LAST PLATFORM | Habilidad | Plataformas que se desmoronan, plataformas móviles, láseres, dash para empujar. Al mejor de 3. |
-| 05 | HOOP MASTER | Puntería | Ángulo + potencia oscilante, trayectoria, rebotes en aro y tablero doble, distancias de 2 y 3 puntos, aro dorado y aro móvil. |
-| 06 | MEMORY WAR | Memoria | Por turnos, con cursor propio, rachas con bonus, errores de memoria penalizados y 3 tamaños de tablero. |
-| 07 | COLOR CONTROL | Estrategia | Pintá el tablero, robá casillas, casillas doradas dobles y potenciadores (bomba, turbo, escudo, congelar). |
-| 08 | DUEL ARENA | Combate | Combos de 3 golpes, patada aérea, bloqueo con parry, energía, especial con enfriamiento y 3 escenarios. Caricaturesco. |
-| 09 | TARGET PANIC | Precisión | Blancos de tu color, dorados en disputa, minas que restan, robos de blancos rivales, combos y multiplicador. |
-| 10 | BEAT BATTLE | Ritmo | 3 canciones originales; notas generadas desde la propia música, juicio PERFECT/GREAT/GOOD/MISS con reloj de alta precisión. |
-| 11 | FISH FRENZY | Coordinación | Zonas independientes con la misma secuencia de peces, enganche, recogida con tensión, basura, medusas y un pez dorado legendario. |
-| 12 | BLOCK BATTLE | Lógica | Puzzle de piezas que caen con identidad propia: misma secuencia para ambos, combos, filas de ataque y cancelación. |
-
-Eventos especiales (opcionales y justos para ambos): velocidad aumentada, tiempo reducido, gravedad baja, controles invertidos temporales, puntuación doble en el tramo final, obstáculos extra y modo espejo.
-
-## Cuentas, ranking mundial y amigos
-
-- **Cuentas con PIN**: cada jugador crea una cuenta (nombre único + PIN de 4 números) desde *JUGADORES Y CUENTAS*. J1 y J2 pueden tener cada uno su cuenta en la misma computadora; también se puede jugar como invitado.
-- **Desde cualquier computadora**: en la versión publicada, las cuentas se guardan en la base de datos compartida de la página, así que la misma cuenta funciona en otra compu que abra el link. En `npm run dev` (sin nube) todo funciona igual pero guardado en ese navegador.
-- **Ranking mundial (ELO)**: arranca en 1000 y cambia en cada minijuego entre dos cuentas (las partidas contra invitados no cuentan). También hay récords mundiales por minijuego e historial del club.
-- **Perfil y niveles**: cada cuenta gana XP (jugar, ganar, competiciones y logros), sube de nivel con títulos (Novato → Leyenda del club) y desbloquea estilos de tarjeta de perfil.
-- **CLUB**: tarjeta de perfil, amigos, buscador de jugadores, historial personal, rivales (cara a cara) y juegos favoritos.
-- El PIN es un candado casual entre amigos, no seguridad real: no uses un PIN que uses en otro lado.
-
-## Personajes, logros y desbloqueables
-
-8 personajes originales dibujados con Canvas (Volt, Mochi, Pico, Brik, Nimbus, Fang, Ozzy y Rex), cada uno con animaciones de reposo, movimiento, salto, victoria, derrota, celebración, ataque, bloqueo y daño. 4 se desbloquean con logros, igual que 7 accesorios. Hay 24 logros, todos verificados con condiciones reales de juego.
-
-## Arquitectura
-
-```
-src/
-  main.js                 punto de entrada (fuentes + arranque)
-  style.css               identidad visual de la interfaz
-  core/
-    gameManager.js        App (bucle rAF con delta time) + MinigameRunner (máquina de estados común)
-    inputManager.js       teclas simultáneas, flancos, marcas de tiempo, reasignación
-    audioManager.js       sintetizador de efectos + secuenciador musical (Web Audio API)
-    storageManager.js     LocalStorage seguro con validación y valores por defecto
-    statsManager.js       estadísticas, récords, historial y cara a cara
-    tournamentManager.js  sesiones y flujos de Duel / Torneo / Survival / Quick Play
-    accountService.js     cuentas, PIN, ELO, XP/niveles, amigos, récords mundiales (nube o local)
-    achievementManager.js logros y recompensas
-    characters.js         8 personajes y accesorios dibujados por código
-    renderer.js           escalado del escenario, fondo animado, partículas y efectos
-    events.js             eventos especiales
-    utils.js              matemáticas, color y dibujo
-  games/                  un archivo independiente por minijuego (todos extienden BaseGame)
-  ui/                     pantallas DOM: menú, selección de jugadores, configuración, intro,
-                          pausa, resultados, VS, campeón, torneo, récords, ajustes, cuenta y CLUB
-```
-
-Todo el arte (personajes, objetos, escenarios, íconos) está hecho con Canvas 2D, CSS y SVG en línea; toda la música y los efectos se generan con Web Audio API. Las tipografías se empaquetan con el build, así que no hay dependencias externas en tiempo de ejecución.
+- **Objeto/skin/título/tarjeta**: agregarlo en `src/data/catalog.js` (y su dibujo en `src/core/cosmetics.js`
+  o su estilo `.pc-<id>` en `style.css`), correr `node scripts/gen-seed.mjs` y aplicar `supabase/seed/catalog.sql`.
+- **Logro**: agregarlo en `src/data/achievements.js` (condición `cond`), regenerar y aplicar el seed.
+- **Minijuego**: crear la clase en `src/games/`, registrarla en `src/games/index.js`, agregar el id en
+  `GAME_IDS`/`GAME_NAMES`/`GAME_RECORDS` de `catalog.js` y regenerar el seed (crea sus 5 desafíos y su dominio).
+- **Cambios del servidor**: nueva migración en `supabase/migrations/` aplicada al proyecto de Supabase.
 
 ### Modo de prueba
 
-Agregando `?test` a la URL se expone `window.DC` (la instancia del juego) para pruebas automatizadas.
+Con `?test` en la URL se expone `window.DC` para pruebas automatizadas.

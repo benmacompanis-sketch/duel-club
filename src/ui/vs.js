@@ -1,6 +1,7 @@
 // Pantalla VS: presentación dramática de ambos jugadores antes de una competición.
 import { h } from './dom.js';
-import { drawCharacter } from '../core/characters.js';
+import { drawCharacter, normLook } from '../core/characters.js';
+import { drawEntrance } from '../core/cosmetics.js';
 
 export function vsScreen(ui, { session, title, sub, done }) {
   const app = ui.app;
@@ -21,9 +22,15 @@ export function vsScreen(ui, { session, title, sub, done }) {
       ui.preview(scr, 640, 720, (g, w, hh, t) => {
         const x = cls === 'left' ? 300 : 340;
         const k = Math.min(1, t * 1.6);
-        drawCharacter(g, { id: prof.char, x, y: 610, s: 4.2 * (0.85 + 0.15 * k), color: prof.color, anim: t > 1.2 ? 'win' : 'idle', t, facing: cls === 'left' ? 1 : -1, acc: prof.acc });
+        const ent = normLook(prof.acc).entrance;
+        if (ent && t < 2.2) {
+          g.save(); g.translate(x, 610); g.scale(2.4, 2.4);
+          drawEntrance(g, ent, 0, 0, Math.min(1, t / 1.3), t, prof.color);
+          g.restore();
+        }
+        drawCharacter(g, { id: prof.char, x, y: 610, s: 4.2 * (0.85 + 0.15 * k), color: prof.color, anim: t > 1.2 ? 'win' : 'idle', t, facing: cls === 'left' ? 1 : -1, acc: prof.acc, alpha: ent ? Math.min(1, t * 1.5) : 1 });
       }),
-      h('div.vs-name', h('small', `JUGADOR ${p + 1}`), prof.name));
+      h('div.vs-name', h('small', `JUGADOR ${p + 1}${prof.accountId ? ` · NIVEL ${prof.level || ''}` : ' · INVITADO'}`), prof.name));
   };
   scr.el = h('div.vs-screen', { onclick: finish },
     side(0, 'left'), side(1, 'right'),
