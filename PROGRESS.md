@@ -5,7 +5,8 @@ Archivo de seguimiento para continuar el trabajo entre sesiones.
 ## Infraestructura real
 - Backend: Supabase, proyecto `duel-club` (ref `fhfafgsmizuvjvqlcjor`, región sa-east-1, plan gratuito).
   URL: https://fhfafgsmizuvjvqlcjor.supabase.co · clave publicable (segura para el navegador): `sb_publishable_IVUm-v872fJpZotySj_m5A_Dyw65gc9`
-- Hosting: Vercel, equipo "IDEA CODE's projects".
+- Repositorio: https://github.com/benmacompanis-sketch/duel-club (rama main).
+- Hosting: GitHub Pages con publicación automática (`.github/workflows/deploy.yml`). Vercel rechazó crear el proyecto (403).
 - Respaldo previo a la migración: `/home/user/duel-club-backup-v2-20261104` + commit git `2ee8c8d`.
 - Datos del Artifact de Claude respaldados en `backups/artifact-db/` (no se versiona: contiene hashes de PIN).
 - El contenedor de desarrollo NO puede conectarse a *.supabase.co (política de red): el SQL se aplica con el conector de Supabase.
@@ -22,5 +23,5 @@ Archivo de seguimiento para continuar el trabajo entre sesiones.
 - [x] 4 minijuegos nuevos (Shadow Sneak, Turbo Tennis, Tower Climb, Blast Zone) + dificultad CAOS.
 - [x] RESISTENCIA renombrada a **SUSI** (pedido del usuario).
 - [x] Migración de las 4 cuentas antiguas (benuchinb2, gustabochasusana, matetas67, pepe7545) re-leídas del Artifact el 2026-11-04; verificada.
-- [ ] Publicación: falta un repositorio de GitHub (el contenedor no puede llegar a Vercel ni a Supabase). Hay workflow de GitHub Pages (`.github/workflows/deploy.yml`) y `vercel.json` listos.
+- [x] Código en GitHub; GitHub Pages activado por el usuario (Source: GitHub Actions).
 - [ ] Pruebas desde el sitio publicado contra la base real (pendiente de la publicación).
