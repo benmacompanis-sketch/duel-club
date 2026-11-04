@@ -6,6 +6,9 @@ import { drawCharacter } from '../core/characters.js';
 import { GAME_BY_ID } from '../games/index.js';
 import { EVENTS } from '../core/events.js';
 import { TAU, rgba } from '../core/utils.js';
+import { drawVictory } from '../core/cosmetics.js';
+import { normLook } from '../core/characters.js';
+import { emoteBubble, phrase, fmtN } from './kit.js';
 
 export function resultsScreen(ui, { session, res, rec, info, done }) {
   const app = ui.app;
@@ -22,10 +25,14 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
     done(v);
   };
 
+  const rewardBox = [h('div.res-rewards'), h('div.res-rewards')];
   const col = (p) => {
     const prof = players[p];
+    const look = normLook(prof.acc);
     const anim = w === -1 ? 'idle' : w === p ? 'win' : 'lose';
     const pts = info?.gained?.[p];
+    // emote equipado: lo usa el ganador (o los dos si hay empate)
+    const emote = look.emote && (w === p || w === -1) ? h('div.res-emote', emoteBubble(look.emote)) : null;
     return h('div.res-col' + (p === 1 ? '.right' : '') + (w === p ? '.win' : ''), { style: { '--c': prof.color } },
       ui.preview(scr, 150, 170, (g, W, H, t) => {
         const grd = g.createRadialGradient(W / 2, H - 20, 5, W / 2, H - 20, 90);
@@ -33,17 +40,21 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
         grd.addColorStop(1, rgba(prof.color, 0));
         g.fillStyle = grd;
         g.fillRect(0, 0, W, H);
+        if (w === p && look.victory) {
+          g.save(); g.translate(W / 2, H - 14); g.scale(0.42, 0.42); drawVictory(g, look.victory, 0, 0, t, prof.color); g.restore();
+        }
         drawCharacter(g, { id: prof.char, x: W / 2, y: H - 14, s: 1.25, color: prof.color, anim, t: t + p, facing: p ? -1 : 1, acc: prof.acc });
       }),
+      emote,
       h('div.res-meta',
         h('div.res-name', prof.name),
         h('div.res-score', res.display[p], h('small', res.scoreLabel)),
         h('div.res-tags',
         pts != null ? h('span.chip.res-tag', { style: { borderColor: prof.color, color: '#fff', background: rgba(prof.color, 0.3) } }, `+${pts} PTS`) : null,
         session?.mode === 'survival' && w >= 0 && w !== p ? h('span.chip.res-tag', { style: { borderColor: '#FF654F', color: '#FFB3A7', background: 'rgba(255,101,79,.15)' } }, '−1 VIDA') : null,
-        rec?.xpGain?.[p] ? h('span.chip.res-tag.xp-chip', `+${rec.xpGain[p]} XP${rec.levelUp?.[p] ? ' · ¡NIVEL!' : ''}`) : null,
-        rec?.ratingDelta?.[p] ? h('span.chip.res-tag.elo-chip' + (rec.ratingDelta[p] > 0 ? '.up' : '.down'), `${rec.ratingDelta[p] > 0 ? '+' : ''}${rec.ratingDelta[p]} ELO`) : null),
-        rec?.worldNew?.[p] ? h('div.res-record', '★ ¡NUEVO RÉCORD MUNDIAL!') : rec?.newRecords?.[p] ? h('div.res-record', '★ ¡NUEVO RÉCORD!') : null));
+        ),
+        rewardBox[p],
+        rec?.newRecords?.[p] ? h('div.res-record', '★ ¡NUEVO RÉCORD EN ESTA COMPU!') : null));
   };
 
   const statRows = (res.stats || []).map((s) => {
@@ -103,9 +114,36 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
       h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => choose('continue') }, icon('play'), 'CONTINUAR'));
 
   const banner = w === -1 ? '¡EMPATE!' : `¡GANA ${players[w].name.toUpperCase()}!`;
+  // frase contextual (no siempre: el humor es una sorpresa)
+  let phraseKind = null;
+  const sc = res.scores || [];
+  if (w === -1) phraseKind = Math.random() < 0.6 ? 'draw' : null;
+  else if (typeof sc[1 - w] === 'number' && sc[1 - w] === 0 && sc[w] > 0) phraseKind = Math.random() < 0.5 ? 'zero' : 'blowout';
+  else if (res.margin === 1 || (res.gameId === 'reaction' && Math.random() < 0.3)) phraseKind = Math.random() < 0.55 ? 'close' : null;
+  else if (session && info?.before && session.maxDeficit?.[w] >= 6) phraseKind = 'comeback';
+  else if (Math.random() < 0.12) phraseKind = 'blowout';
+  const phraseText = phraseKind ? phrase(phraseKind) : null;
+  // recompensas reales del servidor (KEKE, PIES, SUSI)
+  const fillRewards = (out) => {
+    for (const p of [0, 1]) {
+      const box = rewardBox[p];
+      const s = out?.slots?.[p];
+      if (!players[p].accountId) { box.replaceChildren(h('span.res-reward.wait', 'Invitado: sin progreso')); continue; }
+      if (!s) { box.replaceChildren(h('span.res-reward.wait', out === undefined ? 'Guardando…' : out?.duplicate ? 'Ya guardada' : 'Pendiente de envío')); continue; }
+      box.replaceChildren(
+        h('span.res-reward.keke', `+${fmtN(s.keke)} KEKE`),
+        s.pies ? h('span.res-reward.pies', `+${fmtN(s.pies)} PIES`) : null,
+        s.delta ? h('span.res-reward' + (s.delta > 0 ? '.up' : '.down'), `${s.delta > 0 ? '+' : ''}${s.delta} SUSI`) : null,
+        s.record ? h('span.res-reward.pies', '★ RÉCORD MUNDIAL') : null,
+        s.factor < 1 ? h('span.res-reward.wait', s.factor === 0 ? 'Límite diario alcanzado' : 'Recompensa reducida (muchas partidas hoy)') : null);
+    }
+  };
+  fillRewards(undefined);
+  rec?.server?.then((out) => { if (!scr.disposed) fillRewards(out); });
   scr.el = h('div.results', { style: { '--c': w >= 0 ? players[w].color : '#9B6CFF' } },
     h('div.res-kicker', `${quick ? 'QUICK PLAY' : info.label || ''} · ${meta.name}${event ? ' · ' + event.short.toUpperCase() : ''}`),
     h('div.res-banner', banner),
+    phraseText ? h('div.res-phrase', phraseText) : null,
     h('div.res-cols', col(0), h('div.res-stats', h('h4', 'ESTADÍSTICAS'), ...statRows), col(1)),
     board,
     h('div.res-footer', next || h('div'), actions));

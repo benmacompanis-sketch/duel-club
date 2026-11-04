@@ -51,7 +51,7 @@ export function quickPlayScreen(ui, params = {}) {
         h('div.qp-best', played ? `Jugado ${played} ${played === 1 ? 'vez' : 'veces'}` : 'Todavía no jugado', best ? h('span', ' · Récord ', h('b', `${best.display}`), ` (${best.name})`) : null)),
       h('div.card.qp-opts',
         ...optRows,
-        segGroup('Dificultad', null, [['easy', 'Fácil'], ['normal', 'Normal'], ['hard', 'Difícil']], () => qcfg.difficulty, (v) => { qcfg.difficulty = v; app.persist(); }, ui),
+        segGroup('Dificultad', null, [['easy', 'Fácil'], ['normal', 'Normal'], ['hard', 'Difícil'], ['caos', 'CAOS']], () => qcfg.difficulty, (v) => { qcfg.difficulty = v; app.persist(); }, ui),
         segGroup('Evento', null, evChoices, () => qcfg.event, (v) => { qcfg.event = v; app.persist(); }, ui)),
       h('button.btn.green.big.wide.play-btn', { nav: true, onclick: play }, icon('play'), 'JUGAR'));
   }

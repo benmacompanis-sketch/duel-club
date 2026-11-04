@@ -3,8 +3,9 @@
 // Cada jugador puede iniciar sesión con su cuenta (nombre + PIN) o jugar como invitado.
 import { h, icon, keycap } from './dom.js';
 import { header } from './widgets.js';
-import { CHARACTERS, ACCESSORIES, PLAYER_COLORS, drawCharacter } from '../core/characters.js';
-import { ACH_BY_ID } from '../core/achievementManager.js';
+import { CHARACTERS, PLAYER_COLORS, drawCharacter, normLook } from '../core/characters.js';
+import { ITEM_BY_ID, ALL_ITEMS } from '../data/catalog.js';
+import { errorText } from '../net/api.js';
 import { accountModal } from './accountModal.js';
 import { TAU, rgba } from '../core/utils.js';
 
@@ -23,7 +24,8 @@ export function playerSelectScreen(ui, params) {
     for (const p of [0, 1]) {
       const prof = profiles[p];
       if (!ach.isCharUnlocked(prof.char, p)) prof.char = p ? 'mochi' : 'volt';
-      if (!ach.isAccUnlocked(prof.acc, p)) prof.acc = 'none';
+      const hat = normLook(prof.acc).hat;
+      if (hat && !ach.owns(hat, p)) prof.acc = svc.slotAccount(p) ? { ...(svc.slotAccount(p).equipped || {}) } : 'none';
       state[p].cursor = Math.max(0, CHARACTERS.findIndex((c) => c.id === prof.char));
     }
     if (profiles[1].color === profiles[0].color) {
@@ -33,8 +35,28 @@ export function playerSelectScreen(ui, params) {
   }
   normalize();
 
-  const lockText = (achId) => (achId ? `Bloqueado · Logro: ${ACH_BY_ID[achId]?.name || achId}` : '');
-  const saveLook = (p) => svc.setLook(p, { char: profiles[p].char, color: profiles[p].color, acc: profiles[p].acc });
+  const lockText = (charId) => {
+    const it = ITEM_BY_ID['char_' + charId];
+    if (!it) return '';
+    if (!svc.slotAccount(0) && !svc.slotAccount(1)) return 'Bloqueado · Iniciá sesión para desbloquear personajes';
+    return it.price != null ? `En la PIE STORE · ${it.price} PIES` : `Bloqueado · ${it.unlock || 'Se desbloquea jugando'}`;
+  };
+  // sombreros disponibles: los del inventario de la cuenta o los básicos para invitados
+  const hatsFor = (p) => [null, ...ALL_ITEMS.filter((it) => it.category === 'hat' && ach.owns(it.id, p)).map((it) => it.id)];
+  const saveLook = (p) => {
+    if (!svc.slotAccount(p)) return;
+    svc.setLook(p, { char: profiles[p].char, color: profiles[p].color }).catch((e) => ui.toast({ kind: 'warn', title: 'No se guardó el aspecto', text: errorText(e) }));
+  };
+  const setHat = (p, id) => {
+    const prof = profiles[p];
+    if (svc.slotAccount(p)) {
+      prof.acc = { ...normLook(prof.acc), hat: id || undefined };
+      svc.equip(p, 'hat', id).catch((e) => ui.toast({ kind: 'warn', title: 'No se pudo equipar', text: errorText(e) }));
+    } else {
+      prof.acc = id ? { hat: id } : 'none';
+    }
+    app.persist();
+  };
 
   function openAccount(p) {
     if (state[p].ready) return;
@@ -91,7 +113,7 @@ export function playerSelectScreen(ui, params) {
     const rows = [
       h('div.ps-row', h('div.ps-row-label', h('span', 'PERSONAJE'), charCount), charGrid),
       h('div.ps-row', h('div.ps-row-label', h('span', 'COLOR')), sw),
-      h('div.ps-row', h('div.ps-row-label', h('span', 'ACCESORIO')), accs),
+      h('div.ps-row', h('div.ps-row-label', h('span', 'SOMBRERO')), accs),
     ];
     const badge = h('div.ps-ready-badge', 'ELIGIENDO');
     const readyBtn = h('button.btn.small', { nav: true, onclick: () => toggleReady(p) }, 'LISTO');
@@ -111,7 +133,7 @@ export function playerSelectScreen(ui, params) {
       const P = panels[p], st = state[p], prof = profiles[p];
       P.charGrid.replaceChildren(...CHARACTERS.map((ch, i) => {
         const locked = !ach.isCharUnlocked(ch.id, p);
-        const btn = h('button.ps-char' + (locked ? '.locked' : ''), { nav: true, title: locked ? lockText(ch.unlock) : ch.name, onclick: () => { st.row = 0; st.cursor = i; applyCursor(p); refreshAll(); } },
+        const btn = h('button.ps-char' + (locked ? '.locked' : ''), { nav: true, title: locked ? lockText(ch.id) : ch.name, onclick: () => { st.row = 0; st.cursor = i; applyCursor(p); refreshAll(); } },
           ui.preview(scr, 62, 54, (g, w, hh, t) => {
             if (locked) {
               g.save(); g.filter = 'brightness(0.25)';
@@ -125,17 +147,10 @@ export function playerSelectScreen(ui, params) {
         return btn;
       }));
       P.charCount.textContent = `${CHARACTERS.filter((c) => ach.isCharUnlocked(c.id, p)).length}/${CHARACTERS.length}`;
-      P.accs.replaceChildren(...ACCESSORIES.map((a) => {
-        const locked = !ach.isAccUnlocked(a.id, p);
-        return h('button.ps-acc' + (locked ? '.locked' : ''), {
-          nav: true, dataset: { id: a.id }, title: locked ? lockText(a.unlock) : a.name,
-          onclick: () => {
-            st.row = 2;
-            if (locked) { app.audio.play('error'); P.lockInfo.textContent = lockText(a.unlock); return; }
-            prof.acc = a.id; saveLook(p); app.persist(); app.audio.play('click'); refreshAll();
-          },
-        }, locked ? icon('lock') : null, a.name);
-      }));
+      P.accs.replaceChildren(...hatsFor(p).map((id) => h('button.ps-acc', {
+        nav: true, dataset: { id: id || 'none' }, title: id ? ITEM_BY_ID[id].name : 'Ninguno',
+        onclick: () => { st.row = 2; setHat(p, id); app.audio.play('click'); refreshAll(); },
+      }, id ? ITEM_BY_ID[id].name : 'Ninguno')));
     }
   }
 
@@ -146,8 +161,8 @@ export function playerSelectScreen(ui, params) {
       P.nameIn = null;
       P.account.className = 'ps-account on';
       P.account.replaceChildren(
-        h('div.ps-acc-main', h('b', acc.name), h('span', `${acc.rating} ELO · ${acc.stats.played} partidas`)),
-        h('button.btn.small.ghost', { nav: true, title: 'Cerrar sesión', onclick: () => { if (state[p].ready) return; svc.logout(p); app.audio.play('back'); normalize(); rebuildLocks(); refreshAll(); } }, 'SALIR'));
+        h('div.ps-acc-main', h('b', acc.name), h('span', `Nivel ${acc.level} · ${acc.rating} SUSI · ${acc.played} partidas`)),
+        h('button.btn.small.ghost', { nav: true, title: 'Dejar el puesto (la sesión queda guardada en esta compu)', onclick: () => { if (state[p].ready) return; svc.detach(p); app.audio.play('back'); normalize(); rebuildLocks(); refreshAll(); } }, 'SALIR'));
     } else {
       const nameIn = h('input.ps-name', { type: 'text', maxlength: 12, value: prof.name, nav: true, spellcheck: 'false', 'aria-label': `Nombre del jugador ${p + 1}` });
       nameIn.addEventListener('input', () => { prof.name = nameIn.value.slice(0, 12); app.persist(); });
@@ -156,7 +171,7 @@ export function playerSelectScreen(ui, params) {
       P.account.className = 'ps-account';
       P.account.replaceChildren(
         nameIn,
-        h('button.btn.small.acc-btn', { nav: true, onclick: () => openAccount(p) }, icon('user'), svc.mode === 'readonly' ? 'INICIAR SESIÓN' : 'ENTRAR / CREAR CUENTA'));
+        h('button.btn.small.acc-btn', { nav: true, onclick: () => openAccount(p) }, icon('user'), 'ENTRAR / CREAR CUENTA'));
     }
   }
 
@@ -193,13 +208,10 @@ export function playerSelectScreen(ui, params) {
       saveLook(p);
       app.audio.play('click');
     } else {
-      let i = ACCESSORIES.findIndex((a) => a.id === prof.acc);
-      for (let k = 0; k < ACCESSORIES.length; k++) {
-        i = (i + dir + ACCESSORIES.length) % ACCESSORIES.length;
-        if (ach.isAccUnlocked(ACCESSORIES[i].id, p)) break;
-      }
-      prof.acc = ACCESSORIES[i].id;
-      saveLook(p);
+      const hats = hatsFor(p);
+      const cur = normLook(prof.acc).hat || null;
+      const i = (hats.indexOf(cur) + dir + hats.length) % hats.length;
+      setHat(p, hats[i]);
       app.audio.play('click');
     }
     app.persist();
@@ -210,7 +222,7 @@ export function playerSelectScreen(ui, params) {
     const ch = CHARACTERS[st.cursor];
     if (!st.ready && !ach.isCharUnlocked(ch.id, p)) {
       app.audio.play('error');
-      panels[p].lockInfo.textContent = lockText(ch.unlock);
+      panels[p].lockInfo.textContent = lockText(ch.id);
       return;
     }
     st.ready = !st.ready;
@@ -241,14 +253,15 @@ export function playerSelectScreen(ui, params) {
         b.classList.toggle('active', b.dataset.hex === prof.color);
         b.disabled = b.dataset.hex === profiles[1 - p].color;
       });
-      [...P.accs.children].forEach((b) => b.classList.toggle('active', b.dataset.id === prof.acc));
+      const curHat = normLook(prof.acc).hat || 'none';
+      [...P.accs.children].forEach((b) => b.classList.toggle('active', b.dataset.id === curHat));
       const ch = CHARACTERS[st.cursor];
       const locked = !ach.isCharUnlocked(ch.id, p);
       P.charInfo.replaceChildren(h('b', locked ? '???' : ch.name), h('span', locked ? 'Personaje bloqueado' : ch.title));
-      P.lockInfo.textContent = locked ? lockText(ch.unlock) : '';
+      P.lockInfo.textContent = locked ? lockText(ch.id) : '';
       P.badge.textContent = st.ready ? '¡LISTO!' : 'ELIGIENDO';
       P.readyBtn.textContent = st.ready ? 'CAMBIAR' : 'LISTO';
-      const accId = svc.slotAccount(p)?.id || null;
+      const accId = svc.slotAccount(p)?.username || null;
       if (P.renderedFor !== accId || (accId && P.renderedRating !== svc.slotAccount(p).rating)) {
         P.renderedFor = accId;
         P.renderedRating = svc.slotAccount(p)?.rating;
@@ -260,7 +273,7 @@ export function playerSelectScreen(ui, params) {
 
   scr.el = h('div.page',
     header(ui, params.title || 'JUGADORES', params.subtitle || '', () => params.onBack?.(),
-      h('div.acc-status' + (svc.mode === 'cloud' ? '.on' : ''), icon(svc.mode === 'cloud' ? 'records' : 'user'), h('span', svc.modeLabel))),
+      h('div.acc-status' + (svc.status === 'online' ? '.on' : ''), icon(svc.status === 'online' ? 'records' : 'user'), h('span', svc.modeLabel))),
     h('div.ps-body', buildPanel(0), buildPanel(1)));
   scr.nav = true;
   scr.onKey = (e) => {

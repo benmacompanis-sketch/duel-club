@@ -54,7 +54,7 @@ export const ITEMS = [
   it('skin_lunares', 'skin', 'common', 'Lunares', 'Puntos blancos con autoestima alta.', { theme: 'Retro' }),
   it('skin_cuadros', 'skin', 'common', 'Cuadros', 'Patrón de mantel de picnic.', { theme: 'Retro' }),
   it('skin_camuflaje', 'skin', 'common', 'Camuflaje', 'Te esconde perfectamente en un bosque de píxeles.', { theme: 'Retro' }),
-  it('skin_retro', 'skin', 'uncommon', 'Píxel retro', 'Directo desde una máquina de fichas de 1987.', { theme: 'Retro' }),
+  it('skin_retro', 'skin', 'uncommon', 'Píxel retro', 'Directo desde una máquina recreativa de 1987.', { theme: 'Retro' }),
   it('skin_neon', 'skin', 'uncommon', 'Contorno neón', 'Brilla en la oscuridad del club.', { theme: 'Neón' }),
   it('skin_hielo', 'skin', 'uncommon', 'Escarcha', 'Frío por fuera, más frío por dentro.', { theme: 'Hielo' }),
   it('skin_selva', 'skin', 'uncommon', 'Selva', 'Hojas tropicales. Huele a protector solar.', { theme: 'Bosque' }),
@@ -289,7 +289,7 @@ export const SPECIAL_LEVELS = {
   6: 'Sos sospechoso', 21: 'Modo serio', 42: 'La respuesta', 67: 'EL ELEGIDO', 69: 'No preguntes', 100: 'Leyenda absoluta', 150: '¿Tenés vida?',
 };
 
-// Rangos de RESISTENCIA (rating competitivo)
+// Rangos de SUSI (rating competitivo)
 export const RESIST_TIERS = [
   { min: -Infinity, name: 'Principiante', color: '#8C96B8' },
   { min: 800, name: 'Aspirante', color: '#A7B0C8' },

@@ -1,8 +1,10 @@
 // UI: gestor de pantallas DOM, modales, notificaciones, previsualizaciones animadas en canvas
 // y navegación completa por teclado (flechas/WASD + ENTER/F, ESC/G para volver).
 import { h, icon } from './dom.js';
-import { titleScreen, menuScreen } from './menu.js';
+import { titleScreen } from './menu.js';
+import { hubScreen } from './hub.js';
 import { quality } from '../core/utils.js';
+import { levelInfo, SPECIAL_LEVELS, LEVEL_REWARDS, ITEM_BY_ID } from '../data/catalog.js';
 
 const DIRS = {
   ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
@@ -87,7 +89,7 @@ export class UI {
   goMenu() {
     this.app.runner.close();
     this.app.audio.playMusic('menu');
-    this.show(menuScreen);
+    this.show(hubScreen);
   }
 
   // ------------------------------------------------------------ modales
@@ -155,7 +157,7 @@ export class UI {
     while (this.toastQueue.length && this.toastRoot.querySelectorAll('.toast:not(.out)').length < 2) this.showToast(this.toastQueue.shift());
   }
   showToast(o) {
-    const el = h('div.toast' + (o.kind ? '.' + o.kind : ''),
+    const el = h('div.toast' + (o.kind ? '.' + o.kind : '') + (o.tier ? '.t-' + o.tier : ''),
       o.icon ? h('div.toast-badge', icon(o.icon)) : null,
       h('div.toast-body',
         h('div.toast-title', o.title || ''),
@@ -165,6 +167,29 @@ export class UI {
     this.toastRoot.append(el);
     const time = o.time || 3800;
     setTimeout(() => { el.classList.add('out'); this.pumpToasts(); }, time);
+    setTimeout(() => el.remove(), time + 500);
+  }
+
+  /** Animación de subida de nivel (el 67 tiene su propia ceremonia). */
+  levelUp(level, who = '', levels = []) {
+    if (this.app.save.settings.notify?.level === false) return;
+    const special = SPECIAL_LEVELS[level];
+    const title = levelInfo(25 * (level - 1) * (level + 2)).title;
+    const items = levels.flatMap((l) => l.items || []).map((id) => ITEM_BY_ID[id]?.name).filter(Boolean);
+    const piesTotal = levels.reduce((n, l) => n + (l.pies || 0), 0);
+    const el = h('div.levelup' + (level === 67 ? '.l67' : ''),
+      h('div.levelup-in',
+        h('small', `${who ? who.toUpperCase() + ' · ' : ''}${level === 67 ? 'EL NÚMERO SAGRADO' : 'SUBISTE DE NIVEL'}`),
+        h('b', String(level)),
+        h('span', special || title),
+        h('em', [piesTotal ? `+${piesTotal} PIES` : null, ...items].filter(Boolean).join(' · ') || '¡Seguí así!')));
+    document.getElementById('stage').append(el);
+    this.audio.play(level === 67 ? 'fanfare' : 'unlock');
+    const fx = this.app.renderer.overlayFx;
+    fx.confetti(640, 300, level === 67 ? 260 : 90, level === 67 ? 1.6 : 1.1, false);
+    if (level === 67) setTimeout(() => fx.confetti(640, 200, 200, 1.8, false), 900);
+    const time = level === 67 ? 5200 : 2600;
+    setTimeout(() => el.classList.add('out'), time);
     setTimeout(() => el.remove(), time + 500);
   }
 

@@ -90,6 +90,8 @@ export const ICONS = {
   note: I('<path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="6.5" cy="18" r="3" fill="currentColor"/><circle cx="17.5" cy="16" r="3" fill="currentColor"/>'),
   fish: I('<path d="M2 12c3-5 9-6 14-2l5-4v12l-5-4c-5 4-11 3-14-2z" fill="currentColor"/><circle cx="7" cy="11" r="1.2" fill="#0B1020"/>'),
   blocks: I('<path d="M3 13h6v6H3zM9 13h6v6H9zM9 7h6v6H9zM15 13h6v6h-6z" fill="currentColor"/>'),
+  bell: I('<path d="M12 3a6 6 0 016 6v4l2 3H4l2-3V9a6 6 0 016-6zM9.5 18h5a2.5 2.5 0 01-5 0z" fill="currentColor"/>'),
+  pie: I('<ellipse cx="12" cy="15" rx="6.4" ry="7.6" fill="currentColor"/><circle cx="6.6" cy="5.6" r="2.4" fill="currentColor"/><circle cx="9.6" cy="4.2" r="1.8" fill="currentColor"/><circle cx="12.6" cy="4" r="1.7" fill="currentColor"/><circle cx="15.4" cy="4.8" r="1.6" fill="currentColor"/><circle cx="17.8" cy="6.4" r="1.4" fill="currentColor"/>'),
 };
 export function icon(name) {
   const s = h('span.icon');

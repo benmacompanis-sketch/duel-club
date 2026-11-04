@@ -6,7 +6,7 @@ import { DIFFS, runDuel, runTournament, runSurvival } from '../core/tournamentMa
 import { playerSelectScreen } from './playerSelect.js';
 import { shuffle } from '../core/utils.js';
 
-const DIFF_CHOICES = [['easy', 'Fácil'], ['normal', 'Normal'], ['hard', 'Difícil']];
+const DIFF_CHOICES = [['easy', 'Fácil'], ['normal', 'Normal'], ['hard', 'Difícil'], ['caos', 'CAOS']];
 
 function proceed(ui, title, run, backTo) {
   ui.show(playerSelectScreen, {

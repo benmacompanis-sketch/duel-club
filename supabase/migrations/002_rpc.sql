@@ -1,5 +1,5 @@
 -- DUEL CLUB · 002 · Lógica del servidor (RPC)
--- Toda modificación de KEKE, PIES, RESISTENCIA, logros, inventario y estadísticas ocurre AQUÍ.
+-- Toda modificación de KEKE, PIES, SUSI, logros, inventario y estadísticas ocurre AQUÍ.
 -- El navegador solo envía resultados de partidas; el servidor valida sesiones, límites y plausibilidad
 -- y calcula las recompensas con sus propias reglas.
 
@@ -559,7 +559,7 @@ begin
   if a1 is not null then v_names[1] := (select display_name from accounts where id = a1); end if;
   if a2 is not null then v_names[2] := (select display_name from accounts where id = a2); end if;
 
-  -- RESISTENCIA: solo entre dos cuentas
+  -- SUSI: solo entre dos cuentas
   if a1 is not null and a2 is not null then
     select rating, played into r1, pl1 from accounts where id = a1 for update;
     select rating, played into r2, pl2 from accounts where id = a2 for update;

@@ -3,16 +3,19 @@
 import { GAMES, GAME_BY_ID } from '../games/index.js';
 import { pickEvent } from './events.js';
 import { shuffle, choice } from './utils.js';
+import { PLAYER_COLORS } from './characters.js';
 import { vsScreen } from '../ui/vs.js';
 import { resultsScreen } from '../ui/results.js';
 import { championScreen } from '../ui/champion.js';
 import { standingsScreen } from '../ui/scoreboard.js';
 import { quickPlayScreen } from '../ui/quickPlay.js';
+import { uid } from '../net/api.js';
 
 export const DIFFS = {
   easy: { label: 'Fácil', v: 0 },
   normal: { label: 'Normal', v: 0.5 },
   hard: { label: 'Difícil', v: 1 },
+  caos: { label: 'CAOS', v: 0.75, caos: true },
 };
 
 export class Session {
@@ -36,6 +39,7 @@ export class Session {
     this.rounds = [];
     this.roundBonus = [0, 0];
     this.tiebreak = false;
+    this.clientId = uid('c'); // identifica la competición en el servidor
   }
   addResult(gameId, res, mult = 1) {
     const pts = [0, 0];
@@ -77,7 +81,13 @@ export class Session {
 }
 
 function snapshotPlayers(app) {
-  return app.profiles.map((p) => ({ ...p }));
+  const pl = app.profiles.map((p) => ({ ...p, acc: p.acc && typeof p.acc === 'object' ? { ...p.acc } : p.acc }));
+  // dos cuentas con el mismo color: J2 usa otro color solo durante la partida
+  if (pl[0].color?.toUpperCase() === pl[1].color?.toUpperCase()) {
+    const alt = PLAYER_COLORS.find((c) => c.hex.toUpperCase() !== pl[0].color.toUpperCase() && (c.hex === '#FF654F' || c.hex === '#3985FF')) || PLAYER_COLORS[1];
+    pl[1].color = alt.hex;
+  }
+  return pl;
 }
 
 export function buildQueue(cfg) {
@@ -107,6 +117,7 @@ async function playOne(app, session, gameId, info) {
     res = await app.runner.play(gameId, {
       players: session.players,
       difficulty: info.difficulty ?? DIFFS[session.cfg.difficulty || 'normal'].v,
+      caos: !!DIFFS[session.cfg.difficulty]?.caos,
       event,
       options: app.save.gameOptions[gameId] || {},
       label: info.label,
@@ -121,9 +132,10 @@ async function playOne(app, session, gameId, info) {
   }
   const rec = app.stats.recordMinigame(res, session.mode);
   rec.newRecords.forEach((v, p) => v && session.recordsBroken.push({ gameId, p }));
-  Object.assign(rec, app.accounts.applyMinigame(res));
-  app.achievements.evaluate({ type: 'minigame', res });
-  app.accounts.flush(res.players);
+  rec.server = app.accounts.submitMatch(res, {
+    mode: session.mode, compId: session.clientId,
+    difficulty: info.difficulty ?? DIFFS[session.cfg.difficulty || 'normal'].v, caos: !!DIFFS[session.cfg.difficulty]?.caos,
+  });
   const before = session.points.slice();
   const livesBefore = session.lives.slice();
   if (session.mode === 'survival') {
@@ -147,8 +159,8 @@ async function playOne(app, session, gameId, info) {
 
 async function finishCompetition(app, session, rematch) {
   app.stats.recordCompetition(session);
-  app.achievements.evaluate({ type: 'competition', session });
-  app.accounts.applyCompetition(session);
+  session.cfg.caos = !!DIFFS[session.cfg.difficulty]?.caos;
+  session.server = app.accounts.submitCompetition(session);
   app.audio.playMusic('champion');
   const action = await app.ui.ask(championScreen, { session });
   if (action === 'rematch') return rematch();
@@ -247,7 +259,6 @@ export async function runSurvival(app, cfg) {
       eventChance: Math.min(0.85, 0.25 + session.stage * 0.07), survival: true,
     });
     if (!ok) return app.ui.goMenu();
-    app.achievements.evaluate({ type: 'survivalStage', stage: session.stage, session });
   }
   return finishCompetition(app, session, () => runSurvival(app, cfg));
 }
@@ -262,6 +273,7 @@ export async function runQuick(app, gameId, cfg) {
       res = await app.runner.play(gameId, {
         players: snapshotPlayers(app),
         difficulty: DIFFS[cfg.difficulty || 'normal'].v,
+        caos: !!DIFFS[cfg.difficulty]?.caos,
         event,
         options: app.save.gameOptions[gameId] || {},
         label: 'QUICK PLAY',
@@ -276,12 +288,7 @@ export async function runQuick(app, gameId, cfg) {
       throw e;
     }
     const rec = app.stats.recordMinigame(res, 'quick');
-    Object.assign(rec, app.accounts.applyMinigame(res));
-    app.achievements.evaluate({ type: 'minigame', res });
-    app.accounts.flush(res.players);
-    if (res.players.some((pl) => pl.accountId)) {
-      app.accounts.addFeed({ mode: 'quick', title: GAME_BY_ID[gameId].meta.name, players: res.players, winner: res.winner, score: res.display, detail: res.scoreLabel });
-    }
+    rec.server = app.accounts.submitMatch(res, { mode: 'quick', difficulty: DIFFS[cfg.difficulty || 'normal'].v, caos: !!DIFFS[cfg.difficulty]?.caos });
     const action = await app.ui.ask(resultsScreen, { session: null, res, rec, info: { quick: true } });
     app.runner.close();
     if (action === 'rematch') continue;

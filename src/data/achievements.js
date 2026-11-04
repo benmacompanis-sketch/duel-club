@@ -25,7 +25,7 @@ export const TIERS = {
 };
 
 export const ACH_CATEGORIES = {
-  general: 'Progreso', juegos: 'Minijuegos', competicion: 'Competición', resistencia: 'RESISTENCIA',
+  general: 'Progreso', juegos: 'Minijuegos', competicion: 'Competición', resistencia: 'SUSI',
   social: 'Social', coleccion: 'Colección', dominio: 'Dominio', meme: 'Absurdos', secreto: 'Secretos',
 };
 
@@ -95,13 +95,13 @@ const GENERAL = [
   A('lvl_100', 'general', 'legendary', 'Inmortal', 'Llegá al nivel 100.', 'crown', { t: 'level', gte: 100 }),
   A('time10h', 'meme', 'legendary', 'Demasiado tiempo libre', 'Acumulá 10 horas de juego.', 'clock', { t: 'stat', k: 'time_played', gte: 36000 }, ['title_tiempo_libre']),
 
-  // ---------------------------------------------------------------- RESISTENCIA
-  A('res_1100', 'resistencia', 'normal', 'Subiendo', 'Llegá a 1100 de RESISTENCIA.', 'arrow', { t: 'stat', k: 'best_rating', gte: 1100 }),
-  A('res_1200', 'resistencia', 'hard', 'Avanzado', 'Llegá a 1200 de RESISTENCIA.', 'arrow', { t: 'stat', k: 'best_rating', gte: 1200 }),
-  A('res_1400', 'resistencia', 'hard', 'Experto', 'Llegá a 1400 de RESISTENCIA.', 'shield', { t: 'stat', k: 'best_rating', gte: 1400 }, ['emo_necesidad']),
-  A('res_1600', 'resistencia', 'legendary', 'Élite competitiva', 'Llegá a 1600 de RESISTENCIA.', 'shield', { t: 'stat', k: 'best_rating', gte: 1600 }),
-  A('res_1800', 'resistencia', 'legendary', 'Maestro de la resistencia', 'Llegá a 1800 de RESISTENCIA.', 'crown', { t: 'stat', k: 'best_rating', gte: 1800 }, ['frame_cosmico']),
-  A('res_2000', 'resistencia', 'legendary', 'Gran Maestro', 'Llegá a 2000 de RESISTENCIA.', 'crown', { t: 'stat', k: 'best_rating', gte: 2000 }, ['emo_aura']),
+  // ---------------------------------------------------------------- SUSI
+  A('res_1100', 'resistencia', 'normal', 'Subiendo', 'Llegá a 1100 de SUSI.', 'arrow', { t: 'stat', k: 'best_rating', gte: 1100 }),
+  A('res_1200', 'resistencia', 'hard', 'Avanzado', 'Llegá a 1200 de SUSI.', 'arrow', { t: 'stat', k: 'best_rating', gte: 1200 }),
+  A('res_1400', 'resistencia', 'hard', 'Experto', 'Llegá a 1400 de SUSI.', 'shield', { t: 'stat', k: 'best_rating', gte: 1400 }, ['emo_necesidad']),
+  A('res_1600', 'resistencia', 'legendary', 'Élite competitiva', 'Llegá a 1600 de SUSI.', 'shield', { t: 'stat', k: 'best_rating', gte: 1600 }),
+  A('res_1800', 'resistencia', 'legendary', 'Maestro del SUSI', 'Llegá a 1800 de SUSI.', 'crown', { t: 'stat', k: 'best_rating', gte: 1800 }, ['frame_cosmico']),
+  A('res_2000', 'resistencia', 'legendary', 'Gran Maestro', 'Llegá a 2000 de SUSI.', 'crown', { t: 'stat', k: 'best_rating', gte: 2000 }, ['emo_aura']),
 
   // ---------------------------------------------------------------- competición (ids heredados)
   A('champion', 'competicion', 'hard', 'Campeón del club', 'Ganá una competición en DUEL MODE.', 'trophy', { t: 'comp', mode: 'duel', win: true }, ['char_rex']),

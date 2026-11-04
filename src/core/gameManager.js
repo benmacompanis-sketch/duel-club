@@ -16,6 +16,23 @@ import { introScreen } from '../ui/intro.js';
 import { pauseModal } from '../ui/pause.js';
 import { GAMES, GAME_BY_ID } from '../games/index.js';
 
+// Modificadores de la dificultad CAOS (afectan a los dos jugadores por igual)
+const CAOS_MODS = {
+  turbo: { name: 'TURBO', desc: 'Todo va un 40% más rápido durante unos segundos.', dur: 5, scale: 1.4 },
+  lento: { name: 'CÁMARA LENTA', desc: 'El tiempo se arrastra. Aprovechá para pensar.', dur: 4.5, scale: 0.65 },
+  invert: { name: 'CONTROLES INVERTIDOS', desc: 'Izquierda es derecha. Arriba es abajo. Para los dos.', dur: 4 },
+  mirror: { name: 'ESPEJO', desc: 'La pantalla se da vuelta. Los controles no.', dur: 5 },
+  niebla: { name: 'APAGÓN', desc: 'Se cortó la luz del club. Se ve solo el centro.', dur: 5 },
+  temblor: { name: 'TERREMOTO', desc: 'La pantalla tiembla. Nadie sabe por qué.', dur: 4 },
+};
+function shuffleArr(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export class CancelledError extends Error {
   constructor() {
     super('cancelled');
@@ -34,7 +51,7 @@ export class App {
     this.input.setBindings(this.settings.bindings);
     this.input.attach();
     this.audio = new AudioManager();
-    this.audio.setVolumes({ master: this.settings.master, music: this.settings.music, sfx: this.settings.sfx });
+    this.audio.setVolumes({ master: this.settings.master, music: this.settings.musicOff ? 0 : this.settings.music, sfx: this.settings.sfxOff ? 0 : this.settings.sfx });
     this.stats = new StatsManager(this);
     this.achievements = new AchievementManager(this);
     this.accounts = new AccountService(this);
@@ -62,6 +79,9 @@ export class App {
   get settings() {
     return this.save.settings;
   }
+  gameMeta(id) {
+    return GAME_BY_ID[id]?.meta || null;
+  }
   get profiles() {
     return this.save.profiles;
   }
@@ -72,7 +92,7 @@ export class App {
     const s = this.settings;
     quality.set(s.quality, s.animations);
     document.body.classList.toggle('no-anim', !s.animations);
-    this.audio.setVolumes({ master: s.master, music: s.music, sfx: s.sfx });
+    this.audio.setVolumes({ master: s.master, music: s.musicOff ? 0 : s.music, sfx: s.sfxOff ? 0 : s.sfx });
     this.renderer.resize();
     this.persist();
   }
@@ -82,9 +102,8 @@ export class App {
       setTimeout(() => this.ui.toast({ title: 'Modo sin guardado', text: 'El navegador no permite LocalStorage: las estadísticas no se conservarán.', kind: 'warn' }), 1500);
     }
     this.ui.goTitle();
-    // revisar logros cuyas condiciones ya se cumplen (p. ej. datos de una versión anterior)
+    // validar las sesiones guardadas contra el servidor y enviar resultados pendientes
     this.accounts.init().catch((e) => console.warn('cuentas', e));
-    setTimeout(() => this.achievements.evaluate({ type: 'check' }), 1500);
     requestAnimationFrame(this._loop);
   }
   loop(now) {
@@ -151,6 +170,9 @@ export class MinigameRunner {
     this.t = 0;
     this.endT = 0;
     this.invert = { next: rand(6, 9), phase: 'off', t: 0 };
+    this.baseTimeScale = this.game.timeScale;
+    // Dificultad CAOS: modificadores temporales, iguales para ambos jugadores y siempre anunciados antes
+    this.caos = this.opts.caos ? { next: rand(7, 10), phase: 'off', t: 0, kind: null, bag: [] } : null;
   }
   showIntro() {
     this.app.ui.show(introScreen, {
@@ -274,12 +296,14 @@ export class MinigameRunner {
       game.time += sdt;
       this.playSeconds += dt;
       if (game.event === 'invert') this.updateInvert(dt);
+      if (this.caos) this.updateCaos(dt);
       if (this.goFlash > 0) this.goFlash -= dt;
       game.update(sdt);
       if (game.done) {
         this.state = 'ending';
         this.endT = 0;
         game.inverted = false;
+        if (this.caos) this.caos.kind = null;
         this.app.audio.play('bell');
       }
     } else if (st === 'ending') {
@@ -322,6 +346,38 @@ export class MinigameRunner {
     }
   }
 
+  updateCaos(dt) {
+    const c = this.caos;
+    const game = this.game;
+    c.t += dt;
+    if (c.phase === 'off' && game.time >= c.next) {
+      if (!c.bag.length) c.bag = shuffleArr(Object.keys(CAOS_MODS));
+      c.kind = c.bag.pop();
+      if (c.kind === 'invert' && game.event === 'invert') c.kind = 'turbo';
+      c.phase = 'warn';
+      c.t = 0;
+      this.app.audio.play('alarm');
+    } else if (c.phase === 'warn' && c.t >= 1.4) {
+      c.phase = 'on';
+      c.t = 0;
+      this.app.audio.play('zap');
+      const m = CAOS_MODS[c.kind];
+      if (m.scale) game.timeScale = this.baseTimeScale * m.scale;
+      if (c.kind === 'invert') game.inverted = true;
+    } else if (c.phase === 'on') {
+      if (c.kind === 'temblor') game.fx.shake?.(4);
+      if (c.t >= CAOS_MODS[c.kind].dur) {
+        c.phase = 'off';
+        c.t = 0;
+        game.timeScale = this.baseTimeScale;
+        if (c.kind === 'invert') game.inverted = false;
+        c.kind = null;
+        c.next = game.time + rand(8, 12);
+        this.app.audio.play('resume');
+      }
+    }
+  }
+
   render() {
     const r = this.app.renderer;
     r.clearGame();
@@ -329,7 +385,8 @@ export class MinigameRunner {
     const game = this.game;
     g.save();
     g.translate(game.fx.shakeX, game.fx.shakeY);
-    if (game.event === 'mirror') {
+    const caosMirror = this.caos?.phase === 'on' && this.caos.kind === 'mirror';
+    if ((game.event === 'mirror') !== caosMirror) {
       g.translate(W, 0);
       g.scale(-1, 1);
     }
@@ -375,6 +432,26 @@ export class MinigameRunner {
         g.strokeRect(5, 5, W - 10, H - 10);
         panel(g, W / 2 - 200, H - 100, 400, 44, { r: 22, fill: rgba('#FF5FA2', 0.3), stroke: '#FF5FA2' });
         text(g, `INVERTIDOS · ${(3.5 - iv.t).toFixed(1)} s`, W / 2, H - 78, { size: 20, color: '#fff' });
+      }
+    }
+    if (this.caos && (this.state === 'playing' || this.state === 'paused')) {
+      const c = this.caos;
+      const m = c.kind && CAOS_MODS[c.kind];
+      if (c.phase === 'on' && c.kind === 'niebla') {
+        const grd = g.createRadialGradient(W / 2, H / 2, 120, W / 2, H / 2, 720);
+        grd.addColorStop(0, 'rgba(11,16,32,0)');
+        grd.addColorStop(1, 'rgba(11,16,32,0.82)');
+        g.fillStyle = grd;
+        g.fillRect(0, 0, W, H);
+      }
+      if (c.phase === 'warn' && m) {
+        const a = 0.65 + Math.sin(t * 18) * 0.35;
+        panel(g, W / 2 - 280, H - 116, 560, 62, { r: 30, fill: 'rgba(255,59,92,0.25)', stroke: '#FF3B5C' });
+        text(g, `CAOS · ${m.name}`, W / 2, H - 92, { size: 24, color: '#fff', alpha: a });
+        text(g, m.desc, W / 2, H - 68, { size: 13, color: '#FFD0D8', body: true, weight: 700 });
+      } else if (c.phase === 'on' && m) {
+        panel(g, W / 2 - 170, H - 52, 340, 36, { r: 18, fill: 'rgba(255,59,92,0.28)', stroke: '#FF3B5C' });
+        text(g, `CAOS · ${m.name} · ${Math.max(0, m.dur - c.t).toFixed(1)} s`, W / 2, H - 34, { size: 15, color: '#fff' });
       }
     }
     if (this.state === 'ending') {

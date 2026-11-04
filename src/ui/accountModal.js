@@ -1,97 +1,156 @@
-// Ventana de cuenta de un jugador: iniciar sesión con nombre + PIN o crear una cuenta nueva.
+// Ventana de cuenta de un jugador (J1 o J2): iniciar sesión, crear cuenta, recuperar una cuenta de la
+// versión anterior con su PIN, elegir una cuenta ya iniciada en esta compu, cerrar sesión o jugar de invitado.
 import { h, icon } from './dom.js';
-import { drawCharacter } from '../core/characters.js';
 import { slugify } from '../core/accountService.js';
+import { errorText } from '../net/api.js';
+import { avatar, lookOf, levelBadge, resist } from './kit.js';
 
 export function accountModal(ui, { p, onDone }) {
   const app = ui.app;
   const svc = app.accounts;
-  const prof = app.profiles[p];
   let tab = 'login';
   let busy = false;
   const m = {};
+  const otherUser = () => app.profiles[1 - p].accountId;
 
-  const nameIn = h('input.acc-input#acc-name', { type: 'text', maxlength: 16, autocomplete: 'off', spellcheck: 'false', nav: true, placeholder: 'Ej.: Ana', 'aria-label': 'Nombre de cuenta' });
-  const pinIn = h('input.acc-input.acc-pin#acc-pin', { type: 'password', inputmode: 'numeric', maxlength: 4, autocomplete: 'off', nav: true, placeholder: '••••', 'aria-label': 'PIN de 4 números' });
+  const input = (id, type, ph, max, extra = {}) => h('input.acc-input#' + id, { type, maxlength: max, autocomplete: 'off', spellcheck: 'false', nav: true, placeholder: ph, ...extra });
+  const userIn = input('acc-user', 'text', 'usuario', 16, { 'aria-label': 'Usuario' });
+  const nameIn = input('acc-name', 'text', 'Nombre visible (ej.: Ana)', 16, { 'aria-label': 'Nombre visible' });
+  const passIn = input('acc-pass', 'password', 'contraseña', 72, { 'aria-label': 'Contraseña' });
+  const pass2In = input('acc-pass2', 'password', 'repetir contraseña', 72, { 'aria-label': 'Repetir contraseña' });
+  const pinIn = input('acc-pin', 'password', 'PIN anterior (4 números)', 4, { inputmode: 'numeric', 'aria-label': 'PIN de la versión anterior' });
   pinIn.addEventListener('input', () => { pinIn.value = pinIn.value.replace(/\D/g, '').slice(0, 4); });
+  userIn.addEventListener('input', () => {
+    const v = userIn.value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    if (v !== userIn.value) userIn.value = v;
+  });
+  nameIn.addEventListener('input', () => {
+    if (tab === 'create' && !userIn.dataset.touched) userIn.value = slugify(nameIn.value) || '';
+  });
+  userIn.addEventListener('keydown', () => { userIn.dataset.touched = '1'; });
   const err = h('p.acc-error');
   const hint = h('p.acc-hint');
   const submitBtn = h('button.btn.primary', { nav: true, onclick: () => submit() });
-  const recentBox = h('div.acc-recent');
-  const tabs = h('div.tabs.acc-tabs',
-    h('button.tab', { nav: true, dataset: { t: 'login' }, onclick: () => setTab('login') }, 'INICIAR SESIÓN'),
-    h('button.tab', { nav: true, dataset: { t: 'create' }, onclick: () => setTab('create') }, 'CREAR CUENTA'));
+  const fields = h('div.acc-fields');
+  const saved = h('div.acc-saved');
+  const tabsEl = h('div.tabs.acc-tabs');
 
   function setTab(t) {
     tab = t;
     err.textContent = '';
-    tabs.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b.dataset.t === t));
-    submitBtn.textContent = t === 'login' ? 'ENTRAR' : 'CREAR CUENTA';
-    hint.textContent = t === 'login'
-      ? 'Usá la misma cuenta desde cualquier computadora que abra el juego.'
-      : 'El nombre es único en el ranking (3 a 16 letras o números). La cuenta se crea con el personaje, color y accesorio que tenés elegidos.';
-    recentBox.classList.toggle('hidden', t !== 'login' || !recentBox.childElementCount);
-    app.audio.play('click');
+    tabsEl.replaceChildren(...[['login', 'INICIAR SESIÓN'], ['create', 'CREAR CUENTA'], ['claim', 'CUENTA ANTERIOR']].map(([id, label]) =>
+      h('button.tab' + (id === t ? '.on' : ''), { nav: true, onclick: () => { setTab(id); app.audio.play('click'); } }, label)));
+    if (t === 'login') {
+      fields.replaceChildren(label('Usuario', userIn), label('Contraseña', passIn));
+      submitBtn.textContent = 'ENTRAR';
+      hint.textContent = 'Tu cuenta funciona en cualquier computadora o celular que abra DUEL CLUB.';
+    } else if (t === 'create') {
+      fields.replaceChildren(label('Nombre visible', nameIn), label('Usuario único', userIn), label('Contraseña (mín. 6)', passIn), label('Repetir', pass2In));
+      submitBtn.textContent = 'CREAR CUENTA';
+      hint.textContent = 'Solo pedimos usuario y contraseña: nada de email ni datos personales. Arrancás con 300 PIES de regalo.';
+    } else {
+      fields.replaceChildren(label('Usuario anterior', userIn), label('PIN anterior', pinIn), label('Nueva contraseña', passIn), label('Repetir', pass2In));
+      submitBtn.textContent = 'RECUPERAR CUENTA';
+      hint.textContent = '¿Tenías cuenta en la versión anterior (nombre + PIN)? Tu progreso se migró: confirmá tu PIN y elegí una contraseña nueva.';
+    }
   }
+  const label = (txt, el) => h('label.acc-field', h('span', txt), el);
 
-  function renderRecent() {
-    const other = app.profiles[1 - p].accountId;
-    const ids = svc.recent().filter((id) => id !== other);
-    recentBox.replaceChildren(...ids.map((id) => {
-      const a = svc.get(id);
-      const label = a ? a.name : id;
-      return h('button.acc-chip', { nav: true, onclick: () => { nameIn.value = label; pinIn.focus(); app.audio.play('click'); } },
-        a ? ui.preview(m, 28, 28, (g, w, hh, t) => drawCharacter(g, { id: a.char, x: w / 2, y: hh + 4, s: 0.32, color: a.color, anim: 'idle', t, acc: a.acc, shadow: false })) : null,
-        h('span', label));
-    }));
-    if (ids.length) recentBox.prepend(h('small', 'EN ESTA COMPU'));
+  function renderSaved() {
+    const list = svc.savedAccounts();
+    const mine = app.profiles[p].accountId;
+    saved.replaceChildren();
+    if (!list.length) return;
+    saved.append(h('small', 'CUENTAS INICIADAS EN ESTA COMPU'));
+    for (const a of list) {
+      const usedByOther = a.username === otherUser();
+      const isMine = a.username === mine;
+      saved.append(h('div.acc-row' + (isMine ? '.on' : ''),
+        avatar(ui, m, lookOf(a), 40),
+        h('div.acc-row-main', h('b', a.name || a.username), h('span', '@' + a.username), a.level ? h('div.row', levelBadge(a.level), resist(a.rating, { short: true })) : null),
+        usedByOther ? h('span.chip', `ES J${2 - p}`)
+          : isMine ? h('span.chip', `J${p + 1}`)
+            : h('button.btn.small', { nav: true, onclick: () => choose(a.username) }, `USAR COMO J${p + 1}`),
+        h('button.icon-btn.small', { nav: true, title: 'Cerrar sesión en esta compu', onclick: () => logout(a.username) }, icon('close'))));
+    }
+  }
+  function choose(u) {
+    try {
+      svc.attach(p, u);
+      app.audio.play('confirm');
+      finish();
+    } catch (e) {
+      err.textContent = errorText(e);
+    }
+  }
+  async function logout(u) {
+    const ok = await ui.confirm({ title: 'Cerrar sesión', text: `Se cierra la sesión de @${u} en esta compu. El progreso queda guardado en el servidor.`, yes: 'Cerrar sesión', no: 'Cancelar' });
+    if (!ok) return;
+    await svc.logout(u);
+    renderSaved();
   }
 
   async function submit() {
     if (busy) return;
-    const name = nameIn.value.trim();
-    const pin = pinIn.value.trim();
     err.textContent = '';
-    if (!slugify(name)) { err.textContent = 'Escribí un nombre de 3 a 16 letras o números.'; app.audio.play('error'); nameIn.focus(); return; }
-    if (!/^\d{4}$/.test(pin)) { err.textContent = 'El PIN tiene que tener 4 números.'; app.audio.play('error'); pinIn.focus(); return; }
-    if (svc.mode === 'connecting') { err.textContent = 'Conectando con el ranking… probá en unos segundos.'; return; }
+    const user = userIn.value.trim().toLowerCase();
+    const pass = passIn.value;
+    const fail = (msg, el) => { err.textContent = msg; app.audio.play('error'); el?.focus(); };
+    if (!/^[a-z0-9_-]{3,16}$/.test(user)) return fail('El usuario tiene que tener de 3 a 16 caracteres: letras, números, - o _.', userIn);
+    if (user === otherUser()) return fail(`Esa cuenta ya está jugando como J${2 - p}.`, userIn);
+    if (tab === 'create' && nameIn.value.trim().length < 3) return fail('El nombre visible tiene que tener al menos 3 caracteres.', nameIn);
+    if (tab === 'claim' && !/^\d{4}$/.test(pinIn.value)) return fail('El PIN anterior tiene 4 números.', pinIn);
+    if (pass.length < 6) return fail('La contraseña tiene que tener al menos 6 caracteres.', passIn);
+    if (tab !== 'login' && pass !== pass2In.value) return fail('Las contraseñas no coinciden.', pass2In);
     busy = true;
     submitBtn.disabled = true;
-    submitBtn.textContent = tab === 'login' ? 'ENTRANDO…' : 'CREANDO…';
-    const r = tab === 'login' ? await svc.login(p, name, pin) : await svc.create(p, name, pin);
-    busy = false;
-    submitBtn.disabled = false;
-    setTab(tab);
-    if (r.error) {
-      err.textContent = r.error;
-      app.audio.play('error');
-      return;
+    const prev = submitBtn.textContent;
+    submitBtn.textContent = 'CONECTANDO…';
+    try {
+      if (tab === 'login') await svc.login(p, user, pass);
+      else if (tab === 'create') await svc.register(p, user, nameIn.value.trim(), pass);
+      else await svc.claim(p, user, pinIn.value, pass);
+      app.audio.play('confirm');
+      const me = svc.slotAccount(p);
+      ui.toast({ kind: 'achievement', icon: 'user', title: tab === 'create' ? 'Cuenta creada' : tab === 'claim' ? 'Cuenta recuperada' : 'Sesión iniciada', name: me?.name || user, text: `Jugando como J${p + 1}.` });
+      finish();
+    } catch (e) {
+      if (e.code === 'legacy_claim_required') {
+        setTab('claim');
+        userIn.value = user;
+        passIn.value = '';
+      }
+      fail(errorText(e));
+    } finally {
+      busy = false;
+      submitBtn.disabled = false;
+      submitBtn.textContent = prev;
     }
-    app.audio.play('ready');
-    ui.toast({ title: tab === 'login' ? 'Sesión iniciada' : 'Cuenta creada', name: `¡Hola, ${r.account.name}!`, text: `Jugador ${p + 1} · ${r.account.rating} ELO`, time: 2600 });
-    m.close();
-    onDone?.(r.account);
   }
 
-  m.el = h('div.dialog.acc-dialog', { style: { '--c': prof.color } },
-    h('div.acc-head', h('span.chip', { style: { borderColor: prof.color, color: prof.color, background: 'transparent' } }, `JUGADOR ${p + 1}`), h('h2', 'Tu cuenta')),
-    h('div.acc-mode', icon(svc.mode === 'cloud' ? 'records' : 'user'), svc.modeLabel),
-    tabs,
-    recentBox,
-    h('label.acc-label', { for: 'acc-name' }, 'Nombre de cuenta'), nameIn,
-    h('label.acc-label', { for: 'acc-pin' }, 'PIN (4 números)'), pinIn,
-    err, hint,
-    h('div.dialog-actions', h('button.btn.ghost', { nav: true, onclick: () => { app.audio.play('back'); m.close(); } }, 'CANCELAR'), submitBtn));
-  m.onBack = () => m.close();
-  m.onEnter = (target) => {
-    if (target === nameIn && !pinIn.value) pinIn.focus();
-    else submit();
-  };
-  nameIn.setAttribute('data-autofocus', '');
-  renderRecent();
-  setTab('login');
-  if (!svc.canWrite && svc.mode !== 'connecting') {
-    tabs.querySelector('[data-t="create"]').disabled = true;
+  function guest() {
+    if (app.profiles[p].accountId) svc.detach(p);
+    app.audio.play('click');
+    finish();
   }
+  function finish() {
+    m.close?.();
+    onDone?.();
+  }
+
+  setTab('login');
+  renderSaved();
+  m.el = h('div.dialog.acc-dialog',
+    h('div.acc-head', h('h2', `JUGADOR ${p + 1}`), h('button.icon-btn', { nav: true, title: 'Cerrar', onclick: () => finish() }, icon('close'))),
+    saved,
+    tabsEl,
+    fields,
+    err,
+    hint,
+    h('div.dialog-actions',
+      h('button.btn.ghost', { nav: true, onclick: guest }, app.profiles[p].accountId ? 'JUGAR COMO INVITADO' : 'SEGUIR COMO INVITADO'),
+      submitBtn));
+  m.onBack = () => finish();
+  m.onEnter = () => submit();
   return m;
 }

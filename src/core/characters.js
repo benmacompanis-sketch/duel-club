@@ -3,6 +3,7 @@
 // jugador para que siempre se identifique a quién pertenece.
 // Animaciones: idle, run, jump, fall, win, lose, celebrate, attack, block, hurt, dizzy.
 import { TAU, shade, mix, rgba, roundRect, quality } from './utils.js';
+import { SKINS, HATS, FACES, BODIES, drawChairIcon } from './cosmetics.js';
 
 export const CHARACTERS = [
   { id: 'volt', name: 'Volt', title: 'El robot optimista', accent: '#7CF7FF', accent2: '#FFD84D', unlock: null,
@@ -21,9 +22,23 @@ export const CHARACTERS = [
     bio: 'Vino de otra galaxia a estudiar los juegos terrestres. Ya es adicto.' },
   { id: 'rex', name: 'Rex', title: 'El mini dino campeón', accent: '#FFD23F', accent2: '#FFFFFF', unlock: 'champion',
     bio: 'Bracitos cortos, ambición enorme. Solo aparece ante verdaderos campeones.' },
+  // MEME COLLECTION (diseños originales)
+  { id: 'npc', name: 'Gerardo NPC', title: 'El ciudadano promedio', accent: '#F1C9A5', accent2: '#5B3A23', unlock: 'store', meme: true,
+    bio: 'Camisa a cuadros, mirada perdida y una rutina impecable. Nadie sabe de dónde salió.' },
+  { id: 'formal', name: 'Sr. Formalidad', title: 'El oficinista serio', accent: '#F1C9A5', accent2: '#1B2033', unlock: 'store', meme: true,
+    bio: 'Llega a los duelos con planilla de Excel y corbata. No se ríe. Nunca.' },
+  { id: 'frigo', name: 'Frigo-Bot', title: 'El electrodoméstico', accent: '#7CF7FF', accent2: '#F6F7FB', unlock: 'store', meme: true,
+    bio: 'Una heladera con sueños competitivos. Mantiene la calma a 4 °C.' },
+  { id: 'toasty', name: 'Tostadín', title: 'La tostadora valiente', accent: '#F2B66D', accent2: '#C9D0E3', unlock: 'store', meme: true,
+    bio: 'Cuando algo le sale bien, salta una tostada. Cuando sale mal, también.' },
+  { id: 'silla', name: 'La Silla', title: 'Leyenda de plástico', accent: '#F5F7FC', accent2: '#B8C0D6', unlock: 'secret', meme: true,
+    bio: 'Sobrevivió a mil asados. Símbolo universal de la neutralidad. Personaje secreto.' },
+  { id: 'tuntun', name: 'Tun-Tun Tronco', title: 'El ritmo del bosque', accent: '#8B5A2B', accent2: '#E8C99A', unlock: 'store', meme: true,
+    bio: 'Un tronco con palillo de tambor que marca el ritmo del duelo. Tun. Tun. Tun.' },
 ];
 export const CHAR_BY_ID = Object.fromEntries(CHARACTERS.map((c) => [c.id, c]));
 
+// lista de la versión anterior (se conserva para compatibilidad)
 export const ACCESSORIES = [
   { id: 'none', name: 'Ninguno', unlock: null },
   { id: 'cap', name: 'Gorra', unlock: null },
@@ -657,134 +672,381 @@ const DRAW = {
     g.restore();
     limb(g, 16, -38, s.armR * 0.6 + 0.8, 9, 5, c.body, 3);
   },
+  // ================================================================ MEME COLLECTION
+  npc(g, s, c, t, ch) {
+    const skin = '#F1C9A5', jeans = '#3D5A99';
+    const lp = s.leg * 6;
+    g.fillStyle = jeans;
+    roundRect(g, -13, -26 - Math.max(0, lp), 11, 26, 3); g.fill();
+    roundRect(g, 2, -26 - Math.max(0, -lp), 11, 26, 3); g.fill();
+    g.fillStyle = '#2A2F45';
+    roundRect(g, -15, -5 - Math.max(0, lp), 15, 6, 3); g.fill();
+    roundRect(g, 1, -5 - Math.max(0, -lp), 15, 6, 3); g.fill();
+    limb(g, -17, -54, -s.armL, 22, 8, c.dark, 4.5, skin);
+    // camisa a cuadros
+    g.fillStyle = c.body;
+    roundRect(g, -19, -62, 38, 40, 7); g.fill();
+    g.save();
+    g.beginPath(); roundRect(g, -19, -62, 38, 40, 7); g.clip();
+    g.fillStyle = 'rgba(0,0,0,0.18)';
+    for (let x = -18; x < 20; x += 9) g.fillRect(x, -62, 3.5, 40);
+    for (let y = -60; y < -20; y += 9) g.fillRect(-19, y, 38, 3.5);
+    g.restore();
+    g.fillStyle = '#fff';
+    g.beginPath(); g.moveTo(-6, -62); g.lineTo(0, -54); g.lineTo(6, -62); g.fill();
+    g.save();
+    g.translate(0, s.headY);
+    g.fillStyle = skin;
+    roundRect(g, -16, -100, 32, 38, 13); g.fill();
+    g.fillStyle = ch.accent2;
+    g.beginPath(); g.moveTo(-17, -84); g.quadraticCurveTo(-18, -104, 0, -103); g.quadraticCurveTo(18, -104, 17, -86); g.quadraticCurveTo(4, -94, -17, -84); g.fill();
+    const lx = s.look * 2.5;
+    if (s.eyes === 'open' || s.eyes === 'closed') {
+      g.fillStyle = '#1B2033';
+      if (s.eyes === 'closed') { g.fillRect(-9 + lx, -80, 6, 2); g.fillRect(4 + lx, -80, 6, 2); }
+      else { g.beginPath(); g.arc(-6 + lx, -79, 2.2, 0, TAU); g.arc(7 + lx, -79, 2.2, 0, TAU); g.fill(); }
+    } else {
+      drawEye(g, -6, -79, 4, s.eyes, s.look);
+      drawEye(g, 7, -79, 4, s.eyes, s.look);
+    }
+    drawMouth(g, 1 + lx, -70, 4, s.mouth === 'smile' ? 'flat' : s.mouth);
+    g.restore();
+    limb(g, 17, -54, s.armR, 22, 8, c.body, 4.5, skin);
+  },
+
+  formal(g, s, c, t, ch) {
+    const skin = '#F1C9A5', suit = '#4A5068';
+    const lp = s.leg * 6;
+    g.fillStyle = shade(suit, -0.2);
+    roundRect(g, -13, -28 - Math.max(0, lp), 11, 28, 3); g.fill();
+    roundRect(g, 2, -28 - Math.max(0, -lp), 11, 28, 3); g.fill();
+    g.fillStyle = '#10131F';
+    roundRect(g, -16, -5 - Math.max(0, lp), 16, 6, 3); g.fill();
+    roundRect(g, 0, -5 - Math.max(0, -lp), 16, 6, 3); g.fill();
+    // maletín en la mano trasera
+    const [bx, by] = limb(g, -18, -56, -s.armL, 22, 8, shade(suit, -0.1), 4.5, skin);
+    g.fillStyle = '#5B3A23'; roundRect(g, bx - 9, by + 2, 18, 13, 3); g.fill();
+    g.fillStyle = '#FFD16B'; g.fillRect(bx - 2, by + 6, 4, 2);
+    g.fillStyle = suit;
+    roundRect(g, -20, -64, 40, 42, 7); g.fill();
+    g.fillStyle = '#F6F7FB';
+    g.beginPath(); g.moveTo(-8, -64); g.lineTo(0, -44); g.lineTo(8, -64); g.fill();
+    g.fillStyle = c.body;
+    g.beginPath(); g.moveTo(-3, -62); g.lineTo(3, -62); g.lineTo(4, -42); g.lineTo(0, -36); g.lineTo(-4, -42); g.fill();
+    g.fillStyle = shade(suit, -0.25);
+    g.beginPath(); g.moveTo(-20, -64); g.lineTo(-8, -64); g.lineTo(0, -44); g.lineTo(-12, -40); g.fill();
+    g.beginPath(); g.moveTo(20, -64); g.lineTo(8, -64); g.lineTo(0, -44); g.lineTo(12, -40); g.fill();
+    g.save();
+    g.translate(0, s.headY);
+    g.fillStyle = skin;
+    roundRect(g, -16, -102, 32, 40, 12); g.fill();
+    g.fillStyle = ch.accent2;
+    g.beginPath(); g.moveTo(-17, -88); g.quadraticCurveTo(-16, -106, 2, -105); g.quadraticCurveTo(18, -104, 17, -90); g.lineTo(-2, -97); g.closePath(); g.fill();
+    // anteojos rectangulares
+    g.strokeStyle = '#1B2033'; g.lineWidth = 2;
+    g.strokeRect(-13, -86, 11, 8); g.strokeRect(2, -86, 11, 8);
+    g.beginPath(); g.moveTo(-2, -82); g.lineTo(2, -82); g.stroke();
+    const happy = s.eyes === 'happy';
+    g.fillStyle = '#1B2033';
+    if (s.eyes === 'closed' || happy) { g.fillRect(-10, -82, 6, 1.6); g.fillRect(5, -82, 6, 1.6); }
+    else if (s.eyes === 'hurt' || s.eyes === 'dizzy') { drawEye(g, -7, -82, 3.4, s.eyes, 0); drawEye(g, 7, -82, 3.4, s.eyes, 0); }
+    else { g.beginPath(); g.arc(-7 + s.look * 2, -82, 1.8, 0, TAU); g.arc(8 + s.look * 2, -82, 1.8, 0, TAU); g.fill(); }
+    // cejas serias
+    g.lineWidth = 2.4;
+    g.beginPath(); g.moveTo(-13, -90); g.lineTo(-3, -89); g.moveTo(3, -89); g.lineTo(13, -90); g.stroke();
+    drawMouth(g, 1, -71, 4, s.mouth === 'open' ? 'o' : s.mouth === 'sad' ? 'sad' : 'flat');
+    g.restore();
+    limb(g, 18, -56, s.armR, 22, 8, suit, 4.5, skin);
+  },
+
+  frigo(g, s, c, t, ch) {
+    const white = '#EEF1F8', metal = '#AEB8D6';
+    const roll = s.leg * 2;
+    g.fillStyle = '#2A2F45';
+    g.beginPath(); g.arc(-14, -5, 5, 0, TAU); g.arc(14, -5, 5, 0, TAU); g.fill();
+    g.fillStyle = metal; g.beginPath(); g.arc(-14 + roll, -5, 2, 0, TAU); g.arc(14 + roll, -5, 2, 0, TAU); g.fill();
+    limb(g, -24, -56, -s.armL, 18, 5, metal, 5, c.body);
+    g.fillStyle = white;
+    roundRect(g, -24, -106, 48, 98, 10); g.fill();
+    g.fillStyle = c.body; g.fillRect(-24, -66, 48, 4);
+    g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect(14, -104, 8, 94);
+    // manijas
+    g.fillStyle = metal; roundRect(g, 16, -96, 4, 22, 2); g.fill(); roundRect(g, 16, -56, 4, 30, 2); g.fill();
+    // imanes
+    g.fillStyle = '#FF5FA2'; g.fillRect(-16, -54, 7, 7);
+    g.fillStyle = '#FFC93C'; g.beginPath(); g.arc(-4, -40, 4, 0, TAU); g.fill();
+    g.fillStyle = '#48D597'; g.fillRect(-18, -30, 10, 5);
+    g.save();
+    g.translate(0, s.headY);
+    g.fillStyle = '#0E1630'; roundRect(g, -16, -98, 30, 24, 6); g.fill();
+    g.save();
+    if (quality.glow) { g.shadowColor = ch.accent; g.shadowBlur = 8; }
+    g.strokeStyle = ch.accent; g.fillStyle = ch.accent; g.lineWidth = 2.4; g.lineCap = 'round';
+    const ex = s.look * 3;
+    for (const sx of [-8, 6]) {
+      g.beginPath();
+      if (s.eyes === 'closed') { g.moveTo(sx - 3 + ex, -88); g.lineTo(sx + 3 + ex, -88); g.stroke(); }
+      else if (s.eyes === 'happy') { g.arc(sx + ex, -86, 3.5, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); }
+      else if (s.eyes === 'sad') { g.arc(sx + ex, -91, 3.5, Math.PI * 0.15, Math.PI * 0.85); g.stroke(); }
+      else if (s.eyes === 'hurt' || s.eyes === 'dizzy') { g.moveTo(sx - 3, -91); g.lineTo(sx + 3, -85); g.moveTo(sx + 3, -91); g.lineTo(sx - 3, -85); g.stroke(); }
+      else { roundRect(g, sx - 2.5 + ex, -92, 5, 7, 2); g.fill(); }
+    }
+    g.beginPath();
+    if (s.mouth === 'open') { g.arc(ex - 1, -80, 3, 0, Math.PI); g.fill(); }
+    else if (s.mouth === 'sad') { g.arc(ex - 1, -77, 3, Math.PI * 1.2, Math.PI * 1.8); g.stroke(); }
+    else { g.moveTo(ex - 4, -80); g.lineTo(ex + 2, -80); g.stroke(); }
+    g.restore();
+    // escarcha
+    g.fillStyle = 'rgba(190,240,255,0.8)';
+    g.font = '10px sans-serif'; g.fillText('4°', -20, -100 + 0);
+    g.restore();
+    limb(g, 24, -56, s.armR, 18, 5, metal, 5.5, c.body);
+  },
+
+  toasty(g, s, c, t, ch) {
+    const chrome = '#C9D0E3';
+    const lp = s.leg * 5;
+    g.fillStyle = '#2A2F45';
+    roundRect(g, -12, -18 - Math.max(0, lp), 8, 18, 3); g.fill();
+    roundRect(g, 4, -18 - Math.max(0, -lp), 8, 18, 3); g.fill();
+    limb(g, -15, -36, -s.armL, 14, 5, c.dark, 4.5);
+    g.fillStyle = c.body; roundRect(g, -16, -46, 32, 30, 8); g.fill();
+    g.fillStyle = c.dark; roundRect(g, -16, -24, 32, 8, 4); g.fill();
+    g.save();
+    g.translate(0, s.headY);
+    // tostadas que saltan
+    const up = s.eyes === 'happy' || s.mouth === 'open' ? 10 + Math.abs(Math.sin(t * 8)) * 8 : 2;
+    g.fillStyle = '#D9944A';
+    roundRect(g, -14, -96 - up, 12, 16, 4); g.fill(); roundRect(g, 3, -96 - up * 0.8, 12, 16, 4); g.fill();
+    g.fillStyle = '#F2C78E';
+    roundRect(g, -12, -94 - up, 8, 12, 3); g.fill(); roundRect(g, 5, -94 - up * 0.8, 8, 12, 3); g.fill();
+    // cuerpo de tostadora
+    g.fillStyle = chrome; roundRect(g, -23, -90, 46, 44, 11); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.55)'; roundRect(g, -19, -86, 6, 34, 3); g.fill();
+    g.fillStyle = '#5E6788'; g.fillRect(-16, -90, 12, 4); g.fillRect(4, -90, 12, 4);
+    g.fillStyle = '#2A2F45'; roundRect(g, 22, -74, 6, 14, 2); g.fill();
+    drawEye(g, -8, -70, 4.5, s.eyes, s.look);
+    drawEye(g, 9, -70, 4.5, s.eyes, s.look);
+    g.fillStyle = rgba('#FF8E3C', 0.5);
+    g.beginPath(); g.ellipse(-15, -61, 4, 2.5, 0, 0, TAU); g.ellipse(16, -61, 4, 2.5, 0, 0, TAU); g.fill();
+    drawMouth(g, 1, -60, 5, s.mouth);
+    g.restore();
+    limb(g, 15, -36, s.armR, 14, 5, c.body, 4.5);
+  },
+
+  silla(g, s, c, t, ch) {
+    const plastic = mix(c.body, '#FFFFFF', 0.72);
+    const dark = shade(plastic, -0.14);
+    const lp = s.leg * 7;
+    // patas (las de adelante caminan)
+    g.fillStyle = dark;
+    g.fillRect(-20, -34, 6, 34 - Math.max(0, lp)); g.fillRect(14, -34, 6, 34 - Math.max(0, -lp));
+    g.fillStyle = plastic;
+    g.fillRect(-26, -34, 7, 34 - Math.max(0, -lp)); g.fillRect(19, -34, 7, 34 - Math.max(0, lp));
+    // asiento
+    g.fillStyle = plastic; roundRect(g, -30, -42, 60, 10, 4); g.fill();
+    g.fillStyle = dark; g.fillRect(-28, -34, 56, 3);
+    limb(g, -26, -50, -s.armL, 12, 4, dark, 3.5, plastic);
+    g.save();
+    g.translate(0, s.headY);
+    // respaldo con cara
+    g.fillStyle = plastic; roundRect(g, -26, -104, 52, 62, 12); g.fill();
+    g.fillStyle = dark;
+    for (let i = 0; i < 4; i++) roundRect(g, -19 + i * 10, -66, 6, 18, 3), g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.6)'; roundRect(g, -22, -100, 8, 26, 4); g.fill();
+    drawEye(g, -8, -86, 5, s.eyes, s.look);
+    drawEye(g, 9, -86, 5, s.eyes, s.look);
+    drawMouth(g, 1, -75, 5, s.mouth);
+    g.restore();
+    limb(g, 26, -50, s.armR, 12, 4, dark, 3.5, plastic);
+  },
+
+  tuntun(g, s, c, t, ch) {
+    const wood = '#9A6A3A', woodD = '#6E4524', woodL = '#C99A62';
+    const lp = s.leg * 5;
+    g.fillStyle = woodD;
+    roundRect(g, -14, -16 - Math.max(0, lp), 10, 16, 4); g.fill();
+    roundRect(g, 4, -16 - Math.max(0, -lp), 10, 16, 4); g.fill();
+    limb(g, -20, -58, -s.armL, 18, 6, woodD, 5, woodL);
+    // tronco
+    g.fillStyle = wood; roundRect(g, -21, -104, 42, 92, 14); g.fill();
+    g.strokeStyle = woodD; g.lineWidth = 2;
+    for (const x of [-12, 2, 13]) { g.beginPath(); g.moveTo(x, -98); g.quadraticCurveTo(x + 3, -60, x - 1, -18); g.stroke(); }
+    g.fillStyle = woodL; g.beginPath(); g.ellipse(0, -103, 20, 6, 0, 0, TAU); g.fill();
+    g.strokeStyle = woodD; g.lineWidth = 1.2; g.beginPath(); g.ellipse(0, -103, 12, 3.4, 0, 0, TAU); g.ellipse(0, -103, 5, 1.6, 0, 0, TAU); g.stroke();
+    g.save();
+    g.translate(0, s.headY);
+    // vincha del color del jugador
+    g.fillStyle = c.body; g.fillRect(-21, -96, 42, 7);
+    g.beginPath(); g.moveTo(-21, -94); g.lineTo(-30, -88 + Math.sin(t * 8) * 3); g.lineTo(-28, -97); g.fill();
+    // cara tallada
+    g.fillStyle = '#2A1708';
+    const ey = -80;
+    if (s.eyes === 'closed' || s.eyes === 'happy') { g.fillRect(-12, ey, 9, 2.5); g.fillRect(4, ey, 9, 2.5); }
+    else { g.beginPath(); g.ellipse(-7 + s.look * 2, ey, 4.5, 6, 0, 0, TAU); g.ellipse(9 + s.look * 2, ey, 4.5, 6, 0, 0, TAU); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(-6 + s.look * 2, ey - 2, 1.4, 0, TAU); g.arc(10 + s.look * 2, ey - 2, 1.4, 0, TAU); g.fill(); }
+    g.fillStyle = '#2A1708';
+    if (s.mouth === 'open' || s.mouth === 'o') { g.beginPath(); g.ellipse(1, -64, 8, 6, 0, 0, TAU); g.fill(); }
+    else if (s.mouth === 'sad') { g.lineWidth = 2.5; g.strokeStyle = '#2A1708'; g.beginPath(); g.arc(1, -58, 7, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); }
+    else { g.fillRect(-7, -66, 16, 3); }
+    g.restore();
+    // palillo de tambor en la mano delantera
+    const swing = s.armR + Math.sin(t * 9) * (s.eyes === 'angry' || s.mouth === 'open' ? 0.4 : 0.08);
+    const [hx, hy] = limb(g, 20, -58, swing, 18, 6, woodD, 5, woodL);
+    g.save();
+    g.translate(hx, hy);
+    g.rotate(-swing + 2.2);
+    g.fillStyle = '#E8C99A'; roundRect(g, -3, -34, 6, 38, 3); g.fill();
+    g.fillStyle = '#F6E3C2'; g.beginPath(); g.arc(0, -35, 5.5, 0, TAU); g.fill();
+    g.restore();
+  },
 };
 
 // Anclajes de cabeza para accesorios: [x, y superior, ancho, y de ojos]
 const HEAD = {
   volt: [0, -96, 54, -76], mochi: [2, -74, 56, -40], pico: [6, -70, 40, -56], brik: [2, -92, 40, -78],
   nimbus: [2, -96, 56, -60], fang: [2, -84, 46, -68], ozzy: [2, -84, 58, -58], rex: [10, -86, 42, -72],
+  npc: [0, -100, 40, -80], formal: [0, -102, 40, -82], frigo: [0, -104, 48, -88], toasty: [2, -94, 46, -74],
+  silla: [0, -104, 50, -86], tuntun: [0, -106, 42, -82],
+};
+// Anclaje del cuello para accesorios de cuerpo: [x, y, ancho del torso]
+const NECK = {
+  volt: [0, -54, 46], mochi: [0, -30, 58], pico: [2, -44, 34], brik: [0, -56, 44], nimbus: [0, -36, 52], fang: [0, -46, 38],
+  ozzy: [0, -46, 46], rex: [2, -46, 40], npc: [0, -60, 36], formal: [0, -62, 38], frigo: [0, -66, 46], toasty: [0, -54, 32],
+  silla: [0, -52, 48], tuntun: [0, -62, 40],
 };
 
-function drawAccessory(g, id, charId, t, color) {
-  const [hx, hy, hw, ey] = HEAD[charId] || [0, -90, 50, -70];
-  g.save();
-  g.translate(hx, hy);
-  switch (id) {
-    case 'cap':
-      g.fillStyle = '#232A44';
-      g.beginPath(); g.ellipse(0, 4, hw * 0.42, hw * 0.32, 0, Math.PI, 0); g.fill();
-      roundRect(g, 0, -1, hw * 0.62, 6, 3); g.fill();
-      g.fillStyle = color; g.beginPath(); g.arc(-2, -6, 4, 0, TAU); g.fill();
-      break;
-    case 'bow':
-      g.translate(hw * 0.28, 2);
-      g.fillStyle = '#FF5FA2';
-      g.beginPath(); g.moveTo(0, 0); g.lineTo(-12, -9); g.lineTo(-12, 9); g.fill();
-      g.beginPath(); g.moveTo(0, 0); g.lineTo(12, -9); g.lineTo(12, 9); g.fill();
-      g.fillStyle = '#FFB3D1'; g.beginPath(); g.arc(0, 0, 4, 0, TAU); g.fill();
-      break;
-    case 'party':
-      g.rotate(-0.15);
-      g.fillStyle = '#9B6CFF';
-      g.beginPath(); g.moveTo(-12, 4); g.lineTo(0, -30); g.lineTo(12, 4); g.fill();
-      g.fillStyle = '#FFC93C';
-      g.beginPath(); g.moveTo(-8, -6); g.lineTo(8, -8); g.lineTo(6, -14); g.lineTo(-5, -12); g.fill();
-      g.fillStyle = '#48D597'; g.beginPath(); g.arc(0, -31, 4.5, 0, TAU); g.fill();
-      break;
-    case 'headphones':
-      g.strokeStyle = '#232A44'; g.lineWidth = 5;
-      g.beginPath(); g.arc(0, 18, hw * 0.52, Math.PI * 1.08, Math.PI * 1.92); g.stroke();
-      g.fillStyle = '#232A44';
-      roundRect(g, -hw * 0.58, 10, 12, 20, 5); g.fill();
-      roundRect(g, hw * 0.58 - 12, 10, 12, 20, 5); g.fill();
-      g.fillStyle = '#48D597';
-      g.beginPath(); g.arc(-hw * 0.58 + 6, 20, 3, 0, TAU); g.arc(hw * 0.58 - 6, 20, 3, 0, TAU); g.fill();
-      break;
-    case 'shades': {
-      const y = ey - hy;
-      g.fillStyle = '#10131F';
-      roundRect(g, -hw * 0.38, y - 6, hw * 0.34, 12, 4); g.fill();
-      roundRect(g, hw * 0.06, y - 6, hw * 0.34, 12, 4); g.fill();
-      g.fillRect(-hw * 0.06, y - 4, hw * 0.14, 3);
-      g.fillStyle = 'rgba(255,255,255,0.35)';
-      g.fillRect(-hw * 0.32, y - 4, 5, 3); g.fillRect(hw * 0.12, y - 4, 5, 3);
-      break;
-    }
-    case 'helmet':
-      g.fillStyle = '#F6F7FB';
-      g.beginPath(); g.ellipse(0, 10, hw * 0.55, hw * 0.45, 0, Math.PI, 0); g.fill();
-      g.fillStyle = color; g.fillRect(-4, 10 - hw * 0.45, 8, hw * 0.45);
-      g.fillStyle = 'rgba(37,207,230,0.75)';
-      roundRect(g, hw * 0.05, 2, hw * 0.48, 9, 4); g.fill();
-      break;
-    case 'halo':
-      g.save();
-      if (quality.glow) { g.shadowColor = '#FFE45C'; g.shadowBlur = 12; }
-      g.strokeStyle = '#FFE45C'; g.lineWidth = 4;
-      g.beginPath(); g.ellipse(0, -14 + Math.sin(t * 3) * 2, hw * 0.36, 6, 0, 0, TAU); g.stroke();
-      g.restore();
-      break;
-    case 'horns':
-      g.fillStyle = '#E8E3D3';
-      g.beginPath(); g.moveTo(-hw * 0.4, 0); g.quadraticCurveTo(-hw * 0.75, -8, -hw * 0.62, -26); g.quadraticCurveTo(-hw * 0.5, -10, -hw * 0.25, -4); g.fill();
-      g.beginPath(); g.moveTo(hw * 0.4, 0); g.quadraticCurveTo(hw * 0.75, -8, hw * 0.62, -26); g.quadraticCurveTo(hw * 0.5, -10, hw * 0.25, -4); g.fill();
-      g.fillStyle = '#8D97B5';
-      g.beginPath(); g.ellipse(0, 6, hw * 0.45, hw * 0.36, 0, Math.PI, 0); g.fill();
-      g.fillStyle = '#C7CEE3'; g.fillRect(-hw * 0.45, 2, hw * 0.9, 5);
-      break;
-    case 'tophat':
-      g.fillStyle = '#151A2C';
-      roundRect(g, -hw * 0.4, 0, hw * 0.8, 6, 3); g.fill();
-      roundRect(g, -hw * 0.26, -30, hw * 0.52, 32, 4); g.fill();
-      g.fillStyle = color; g.fillRect(-hw * 0.26, -8, hw * 0.52, 6);
-      break;
-    case 'crown':
-      g.save();
-      if (quality.glow) { g.shadowColor = '#FFC93C'; g.shadowBlur = 10; }
-      g.fillStyle = '#FFC93C';
-      g.beginPath();
-      g.moveTo(-hw * 0.34, 4); g.lineTo(-hw * 0.36, -16); g.lineTo(-hw * 0.17, -6); g.lineTo(0, -22); g.lineTo(hw * 0.17, -6); g.lineTo(hw * 0.36, -16); g.lineTo(hw * 0.34, 4);
-      g.closePath(); g.fill();
-      g.restore();
-      g.fillStyle = '#FF5FA2'; g.beginPath(); g.arc(0, -4, 3, 0, TAU); g.fill();
-      g.fillStyle = '#25CFE6'; g.beginPath(); g.arc(-hw * 0.2, -2, 2.5, 0, TAU); g.arc(hw * 0.2, -2, 2.5, 0, TAU); g.fill();
-      break;
-    default:
-      break;
+// accesorios de la versión anterior -> objetos del catálogo
+export const LEGACY_ACC = { cap: 'acc_cap', bow: 'acc_bow', party: 'acc_party', headphones: 'acc_headphones', shades: 'acc_shades', helmet: 'acc_helmet', halo: 'acc_halo', horns: 'acc_horns', tophat: 'acc_tophat', crown: 'acc_crown' };
+/** Normaliza el "look" de un jugador: string de la versión anterior u objeto {skin, hat, face, body}. */
+export function normLook(acc) {
+  if (!acc || acc === 'none') return {};
+  if (typeof acc === 'string') {
+    const id = LEGACY_ACC[acc] || acc;
+    return FACES[id] ? { face: id } : HATS[id] ? { hat: id } : {};
   }
+  return acc;
+}
+
+function drawHead(g, look, charId, t, color) {
+  const [hx, hy, hw, ey] = HEAD[charId] || [0, -90, 50, -70];
+  if (look.face && FACES[look.face]) {
+    g.save();
+    g.translate(hx, ey);
+    FACES[look.face](g, hw, t, color);
+    g.restore();
+  }
+  if (look.hat && HATS[look.hat]) {
+    g.save();
+    g.translate(hx, hy);
+    HATS[look.hat](g, hw, t, color);
+    g.restore();
+  }
+}
+function drawBodyItem(g, look, charId, t, color, back) {
+  const b = look.body && BODIES[look.body];
+  if (!b || !!b.back !== back) return;
+  const [nx, ny, bw] = NECK[charId] || [0, -50, 44];
+  g.save();
+  g.translate(nx, ny);
+  b.draw(g, bw, t, color);
   g.restore();
 }
+
+// lienzo auxiliar para aplicar el patrón de la skin solo dentro de la silueta
+const OFF = [];
+function offCanvas(i, w, h) {
+  let c = OFF[i];
+  if (!c) {
+    c = OFF[i] = document.createElement('canvas');
+    c.g = c.getContext('2d');
+  }
+  if (c.width < w || c.height < h) {
+    c.width = Math.max(c.width, w);
+    c.height = Math.max(c.height, h);
+  }
+  return c;
+}
+let offIdx = 0;
 
 /**
  * Dibuja un personaje.
  * @param {CanvasRenderingContext2D} g
- * @param {object} o {id, x, y (pies), s (escala), color, anim, t, facing, acc, alpha, shadow}
+ * @param {object} o {id, x, y (pies), s (escala), color, anim, t, facing, acc (look), alpha, shadow}
+ *   acc: id de accesorio de la versión anterior o {skin, hat, face, body}
  */
 export function drawCharacter(g, o) {
   const ch = CHAR_BY_ID[o.id] || CHARACTERS[0];
   const t = o.t ?? performance.now() / 1000;
   const st = animState(o.anim || 'idle', t, (o.seed ?? 0) + ch.id.length * 0.37);
   if (o.eyes) st.eyes = o.eyes;
-  const base = st.gray ? mix(o.color || '#3985FF', '#7C849E', st.gray) : o.color || '#3985FF';
+  const look = normLook(o.acc);
+  const skin = look.skin && SKINS[look.skin];
+  let base0 = o.color || '#3985FF';
+  if (skin?.tint) base0 = skin.tint(base0);
+  const base = st.gray ? mix(base0, '#7C849E', st.gray) : base0;
   const c = { body: base, dark: shade(base, -0.32), light: shade(base, 0.28) };
   const s = o.s ?? 1;
+  const facing = (o.facing ?? 1) * st.flip;
+  const shakeX = st.shake ? (Math.random() - 0.5) * st.shake * 2 : 0;
+  const bodyTf = (ctx, sc) => {
+    ctx.scale(sc * facing, sc);
+    if (shakeX) ctx.translate(shakeX, 0);
+    ctx.translate(0, st.y);
+    ctx.rotate(st.rot);
+    ctx.scale(st.sx, st.sy);
+  };
   g.save();
   if (o.alpha != null) g.globalAlpha *= o.alpha;
+  if (skin?.alpha) g.globalAlpha *= skin.alpha;
   g.translate(o.x, o.y);
   if (o.shadow !== false) {
     const sh = Math.max(0.3, 1 + st.y / 60);
     g.fillStyle = 'rgba(0,0,0,0.28)';
     g.beginPath(); g.ellipse(0, 0, 30 * s * sh, 7 * s * sh, 0, 0, TAU); g.fill();
   }
-  g.scale(s * (o.facing ?? 1) * st.flip, s);
-  if (st.shake) g.translate((Math.random() - 0.5) * st.shake * 2, 0);
-  g.translate(0, st.y);
-  g.rotate(st.rot);
-  g.scale(st.sx, st.sy);
-  DRAW[ch.id](g, st, c, t, ch);
-  if (o.acc && o.acc !== 'none') {
+  // capa trasera (capa, alas, aura...)
+  if (look.body) {
+    g.save();
+    bodyTf(g, s);
+    g.translate(0, st.headY * 0.5);
+    drawBodyItem(g, look, ch.id, t, base, true);
+    g.restore();
+  }
+  const tf = g.getTransform();
+  const px = Math.hypot(tf.a, tf.b) * s;
+  if (skin?.overlay && quality.level !== 'low' && px > 0.05 && px < 12) {
+    // cuerpo en un lienzo auxiliar + patrón con 'source-atop' (solo pinta dentro de la silueta)
+    const k = px;
+    const W2 = Math.ceil(180 * k), H2 = Math.ceil(180 * k);
+    const off = offCanvas(offIdx++ % 6, W2, H2);
+    const og = off.g;
+    og.setTransform(1, 0, 0, 1, 0, 0);
+    og.clearRect(0, 0, off.width, off.height);
+    og.setTransform(k, 0, 0, k, 90 * k, 160 * k);
+    og.save();
+    bodyTf(og, 1);
+    DRAW[ch.id](og, st, c, t, ch);
+    og.restore();
+    og.globalCompositeOperation = 'source-atop';
+    og.save();
+    skin.overlay(og, t, base);
+    og.restore();
+    og.globalCompositeOperation = 'source-over';
+    og.shadowBlur = 0;
+    g.drawImage(off, 0, 0, W2 - 1, H2 - 1, -90 * s, -160 * s, 180 * s * (W2 - 1) / W2, 180 * s * (H2 - 1) / H2);
+  } else {
+    g.save();
+    bodyTf(g, s);
+    DRAW[ch.id](g, st, c, t, ch);
+    g.restore();
+  }
+  if (look.hat || look.face || look.body) {
+    g.save();
+    bodyTf(g, s);
     g.translate(0, st.headY);
-    drawAccessory(g, o.acc, ch.id, t, base);
+    drawBodyItem(g, look, ch.id, t, o.color || base, false);
+    drawHead(g, look, ch.id, t, o.color || base);
+    g.restore();
   }
   g.restore();
 }

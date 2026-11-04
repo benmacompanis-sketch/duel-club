@@ -3,9 +3,10 @@ import { h, icon, keycap, toggleFullscreen } from './dom.js';
 import { header, segGroup, toggleRow, rangeRow } from './widgets.js';
 import { ACTIONS, ACTION_LABELS, keyName } from '../core/inputManager.js';
 
-export function settingsScreen(ui) {
+export function settingsScreen(ui, params = {}) {
   const app = ui.app;
   const scr = {};
+  const goBack = () => (params?.back ? params.back() : ui.goMenu());
   const s = app.settings;
   let waiting = null; // {p, action, btn}
   const apply = () => app.applySettings();
@@ -62,12 +63,14 @@ export function settingsScreen(ui) {
   fsSync();
 
   scr.el = h('div.page',
-    header(ui, 'SETTINGS', 'Los cambios se guardan automáticamente.', () => ui.goMenu()),
+    header(ui, 'CONFIGURACIÓN', 'Los cambios se guardan automáticamente en este navegador.', () => goBack()),
     h('div.set-body',
       h('div.card', h('h3', 'SONIDO'),
         rangeRow('Volumen general', null, 0, 1, 0.05, () => s.master, (v) => { s.master = v; apply(); }),
         rangeRow('Música', null, 0, 1, 0.05, () => s.music, (v) => { s.music = v; apply(); }),
         rangeRow('Efectos de sonido', null, 0, 1, 0.05, () => s.sfx, (v) => { s.sfx = v; apply(); }),
+        toggleRow('Música', 'Música del menú y de los minijuegos', () => !s.musicOff, (v) => { s.musicOff = !v; apply(); }, ui),
+        toggleRow('Efectos', 'Sonidos de botones, golpes y premios', () => !s.sfxOff, (v) => { s.sfxOff = !v; apply(); }, ui),
         h('div.set-actions', { style: { marginTop: '10px' } },
           h('button.btn.small', { nav: true, onclick: () => app.audio.play('win') }, icon('sound'), 'Probar efectos'),
           h('button.btn.small', { nav: true, onclick: () => { s.master = 0; apply(); ui.show(settingsScreen); } }, 'Silenciar todo'))),
@@ -81,31 +84,19 @@ export function settingsScreen(ui) {
         bindGrid,
         h('div.set-actions', { style: { marginTop: '12px' } },
           h('button.btn.small', { nav: true, onclick: () => { app.input.resetBindings(); s.bindings = null; app.persist(); renderBinds(); app.audio.play('confirm'); } }, 'Restablecer controles'))),
-      h('div.card', h('h3', 'DATOS'),
-        h('p.muted', { style: { margin: '0 0 12px', fontSize: '13px', lineHeight: 1.5 } }, 'Todo se guarda localmente en este navegador (LocalStorage). No hay cuentas ni servidores.'),
+      h('div.card', h('h3', 'DATOS Y CUENTAS'),
+        h('p.muted', { style: { margin: '0 0 12px', fontSize: '13px', lineHeight: 1.5 } }, 'El progreso de las cuentas (KEKE, PIES, SUSI, logros, inventario, historial) se guarda en el servidor y funciona desde cualquier dispositivo. Este navegador guarda solo los ajustes, los controles, las sesiones iniciadas y los récords locales de esta compu.'),
         h('div.set-actions',
           h('button.btn.small.danger', { nav: true, onclick: async () => {
-            if (await ui.confirm({ title: '¿Reiniciar estadísticas?', text: 'Se borrarán victorias, récords, rachas e historial. Los logros se conservan.', yes: 'Reiniciar', no: 'Cancelar' })) {
+            if (await ui.confirm({ title: '¿Borrar los datos locales?', text: 'Se borran las estadísticas e historial de ESTA compu (partidas de invitados). Las cuentas no se tocan.', yes: 'Borrar', no: 'Cancelar' })) {
               app.storage.resetStats();
-              ui.toast({ title: 'Listo', text: 'Estadísticas reiniciadas.', time: 2500 });
+              ui.toast({ title: 'Listo', text: 'Estadísticas locales reiniciadas.', time: 2500 });
             }
-          } }, 'Reiniciar estadísticas'),
-          h('button.btn.small.danger', { nav: true, onclick: async () => {
-            if (await ui.confirm({ title: '¿Reiniciar logros?', text: 'Se bloquearán de nuevo los personajes y accesorios especiales.', yes: 'Reiniciar', no: 'Cancelar' })) {
-              app.storage.resetAchievements();
-              for (const p of [0, 1]) {
-                const prof = app.profiles[p];
-                if (!app.achievements.isCharUnlocked(prof.char, p)) prof.char = p ? 'mochi' : 'volt';
-                if (!app.achievements.isAccUnlocked(prof.acc, p)) prof.acc = 'none';
-              }
-              app.persist();
-              ui.toast({ title: 'Listo', text: 'Logros y desbloqueos reiniciados.', time: 2500 });
-            }
-          } }, 'Reiniciar logros')),
-        h('p.muted', { style: { margin: '14px 0 0', fontSize: '12px' } }, `Guardado local: ${app.storage.available ? 'disponible' : 'no disponible en este navegador'}`))));
+          } }, 'Reiniciar estadísticas locales')),
+        h('p.muted', { style: { margin: '14px 0 0', fontSize: '12px' } }, `Guardado local: ${app.storage.available ? 'disponible' : 'no disponible en este navegador'} · Servidor: ${app.accounts.modeLabel}`))));
   scr.onBack = () => {
     if (waiting) return;
-    ui.goMenu();
+    goBack();
   };
   scr.destroy = () => document.removeEventListener('fullscreenchange', fsSync);
   return scr;
