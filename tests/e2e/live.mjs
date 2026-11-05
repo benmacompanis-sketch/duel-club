@@ -7,6 +7,8 @@ const tag = Math.random().toString(36).slice(2, 7);
 const A = { user: `e2ea${tag}`, name: `E2E A ${tag}`, pass: 'clave-e2e-1' };
 const B = { user: `e2eb${tag}`, name: `E2E B ${tag}`, pass: 'clave-e2e-2' };
 let failures = 0;
+let step = 'inicio';
+let lastPage = null;
 const ok = (msg) => console.log(`::notice title=OK::${msg}`);
 const bad = (msg) => { failures++; console.log(`::error title=FALLA::${msg}`); };
 const check = (cond, msg, extra = '') => (cond ? ok(msg) : bad(`${msg} ${extra}`));
@@ -98,16 +100,21 @@ try {
     check(sub.winner === -1 ? sub.slots[0].delta === 0 : sub.slots[0].delta === -sub.slots[1].delta && sub.slots[0].delta !== 0, 'SUSI cambió de forma simétrica entre las dos cuentas', JSON.stringify(sub));
   }
   // 4) PIE STORE: compra real desde la interfaz
+  lastPage = p1;
   await p1.waitForSelector('.hub', { timeout: 15000 });
   await p1.waitForTimeout(800);
   const before = await p1.evaluate(() => window.DC.accounts.slotAccount(0).pies);
   await p1.evaluate(() => { window.DC.save.viewer = 0; });
+  step = 'tienda: abrir sección';
   await p1.click('.sn-btn[data-id="store"]');
   await p1.waitForSelector('.item-card');
+  step = 'tienda: abrir objeto';
   await p1.click('.item-card:not(.owned) >> nth=0');
   await p1.waitForSelector('.item-dialog .btn.green');
+  step = 'tienda: botón comprar';
   await p1.click('.item-dialog .btn.green');
   await p1.waitForSelector('.dialog-actions .btn.primary >> text=Comprar');
+  step = 'tienda: confirmar';
   await p1.click('.dialog-actions .btn.primary >> text=Comprar');
   await p1.waitForFunction((b) => window.DC.accounts.slotAccount(0).pies !== b, before, { timeout: 15000 }).catch(() => {});
   const afterBuy = await p1.evaluate(() => ({ pies: window.DC.accounts.slotAccount(0).pies, inv: window.DC.accounts.slotAccount(0).inventory }));
@@ -130,6 +137,7 @@ try {
   }, B.user);
   check(fr.r1 === 'pending' && fr.friends === 1, 'Solicitud de amistad enviada y aceptada', JSON.stringify(fr));
   // 7) ranking mundial con datos reales
+  step = 'ranking';
   await p1.click('.sn-btn[data-id="ranking"]');
   await p1.waitForSelector('.rank-row', { timeout: 15000 });
   const names = await p1.locator('.rank-row .rank-name b').allTextContents();
@@ -155,7 +163,18 @@ try {
   check(!afterLogout.slot && afterLogout.sessions === 0, 'Cierre de sesión', JSON.stringify(afterLogout));
   await c2.ctx.close();
 } catch (e) {
-  bad('Excepción: ' + (e.stack || e.message));
+  bad(`Excepción en el paso "${step}": ` + (e.message || '').split('\n')[0]);
+  if (lastPage) {
+    const info = await lastPage.evaluate(() => ({
+      modal: document.querySelector('#modal')?.innerText.slice(0, 300),
+      section: document.querySelector('.sn-btn.on')?.dataset.id,
+      pies: window.DC?.accounts.slotAccount(0)?.pies,
+      cards: document.querySelectorAll('.item-card').length,
+      firstCard: document.querySelector('.item-card:not(.owned)')?.className,
+      btn: document.querySelector('.item-dialog .btn.green')?.outerHTML.slice(0, 200),
+    })).catch((err) => ({ err: String(err) }));
+    console.log(`::notice title=DIAGNÓSTICO::${JSON.stringify(info)}`);
+  }
 } finally {
   await browser.close();
 }
