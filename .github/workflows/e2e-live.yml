@@ -1,0 +1,22 @@
+# Prueba de punta a punta contra el sitio publicado y la base de datos real (otra máquina, sin Claude).
+name: Prueba del sitio publicado
+on:
+  workflow_run:
+    workflows: ['Publicar en GitHub Pages']
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ['tests/e2e/**', '.github/workflows/e2e-live.yml']
+  workflow_dispatch:
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save playwright@1.47.2
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/e2e/live.mjs
