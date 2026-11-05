@@ -262,6 +262,10 @@ export class AccountService {
     this.emit();
     return me;
   }
+  /** Vuelve a leer las cuentas de J1 y J2 (p. ej. una amistad entre ellas da logros a las dos). */
+  async refreshAll() {
+    await Promise.all(this.slotUsers().map((u) => this.refresh(u).catch(() => {})));
+  }
   async refresh(username) {
     return this._setMe(await this._call(username, 'dc_me'));
   }
@@ -307,17 +311,17 @@ export class AccountService {
   }
   async friendRequest(p, username) {
     const r = await this._call(this.slotUser(p), 'dc_friend_request', { p_username: username });
-    this.refresh(this.slotUser(p)).catch(() => {});
+    this.refreshAll();
     return r;
   }
   async friendRespond(p, username, accept) {
     const r = await this._call(this.slotUser(p), 'dc_friend_respond', { p_username: username, p_accept: accept });
-    this.refresh(this.slotUser(p)).catch(() => {});
+    await this.refreshAll();
     return r;
   }
   async friendRemove(p, username) {
     const r = await this._call(this.slotUser(p), 'dc_friend_remove', { p_username: username });
-    this.refresh(this.slotUser(p)).catch(() => {});
+    this.refreshAll();
     return r;
   }
   async notifications(p) {

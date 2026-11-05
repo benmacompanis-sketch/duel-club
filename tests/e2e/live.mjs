@@ -143,11 +143,14 @@ try {
   step = 'ranking';
   await p1.click('.sn-btn[data-id="ranking"]');
   await p1.waitForSelector('.rank-row', { timeout: 15000 });
+  await p1.click('.rf >> text=Top 100');
+  await p1.waitForTimeout(2500);
   const names = await p1.locator('.rank-row .rank-name b').allTextContents();
   check(names.some((n) => n.includes(A.name)) && names.some((n) => n.includes(B.name)), 'Las dos cuentas aparecen en el ranking mundial', names.join(', '));
   const profileA = await p1.evaluate(async (u) => (await window.DC.accounts.profile(u)), A.user);
   check(profileA.matches.length === 1 && profileA.rating_history.length === 1, 'Perfil público con historial y evolución de SUSI', JSON.stringify({ m: profileA.matches.length, rh: profileA.rating_history.length }));
-  const savedA = await p1.evaluate(() => window.DC.accounts.slotAccount(0));
+  const savedA = await p1.evaluate(async () => { await window.DC.accounts.refreshAll(); return window.DC.accounts.slotAccount(0); });
+  check(fr.r1 && savedA.achievements?.friend_1, 'El logro "Ya no jugás solo" se otorga y se ve al instante en las dos cuentas');
   check(c1.errors.length === 0, 'Sin errores de JavaScript durante la sesión', c1.errors.join(' | '));
   await c1.ctx.close();
 
