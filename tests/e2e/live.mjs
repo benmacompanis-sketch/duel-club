@@ -9,7 +9,8 @@ const B = { user: `e2eb${tag}`, name: `E2E B ${tag}`, pass: 'clave-e2e-2' };
 let failures = 0;
 let step = 'inicio';
 let lastPage = null;
-const ok = (msg) => console.log(`::notice title=OK::${msg}`);
+const passed = [];
+const ok = (msg) => { passed.push(msg); console.log('OK  ' + msg); };
 const bad = (msg) => { failures++; console.log(`::error title=FALLA::${msg}`); };
 const check = (cond, msg, extra = '') => (cond ? ok(msg) : bad(`${msg} ${extra}`));
 
@@ -118,6 +119,8 @@ try {
   await p1.click('.dialog-actions .btn.primary >> text=Comprar');
   await p1.waitForFunction((b) => window.DC.accounts.slotAccount(0).pies !== b, before, { timeout: 15000 }).catch(() => {});
   const afterBuy = await p1.evaluate(() => ({ pies: window.DC.accounts.slotAccount(0).pies, inv: window.DC.accounts.slotAccount(0).inventory }));
+  await p1.click('.item-dialog .btn.ghost');
+  await p1.waitForTimeout(400);
   check(afterBuy.pies < before && afterBuy.inv.length > 0, `Compra en la PIE STORE descuenta PIES (${before} → ${afterBuy.pies}) y agrega el objeto`, JSON.stringify(afterBuy));
   // 5) intento de trampa desde la consola: escribir directo en las tablas debe fallar
   const hack = await p1.evaluate(async () => {
@@ -178,5 +181,5 @@ try {
 } finally {
   await browser.close();
 }
-console.log(`::notice title=RESUMEN::cuentas de prueba ${A.user} y ${B.user} · fallas: ${failures}`);
+console.log(`::notice title=RESUMEN::${passed.length} pruebas OK, ${failures} fallas · cuentas de prueba ${A.user} y ${B.user} ✔ ${passed.join(' ✔ ')}`);
 process.exit(failures ? 1 : 0);
