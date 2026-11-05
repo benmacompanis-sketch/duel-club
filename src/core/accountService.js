@@ -232,6 +232,17 @@ export class AccountService {
     if (tok) await rpc('dc_logout', { p_token: tok }).catch(() => {});
   }
 
+  /** Elimina la cuenta del jugador p en el servidor (pide la contraseña). No se puede deshacer. */
+  async deleteAccount(p, password) {
+    const u = this.slotUser(p);
+    await this._call(u, 'dc_delete_account', { p_password: password });
+    for (const q of [0, 1]) if (this.app.profiles[q].accountId === u) this.detach(q);
+    delete this.sessions[u];
+    this.cache.delete(u);
+    this.saveSessions();
+    this.emit();
+  }
+
   _sessionLost(username) {
     delete this.sessions[username];
     this.cache.delete(username);

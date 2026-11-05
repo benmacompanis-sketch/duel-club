@@ -128,6 +128,23 @@ export function accountModal(ui, { p, onDone }) {
     }
   }
 
+  async function deleteAccount() {
+    const me = svc.slotAccount(p);
+    if (!me) return;
+    const pass = window.prompt(`Para ELIMINAR la cuenta @${me.username} escribí tu contraseña. Se borra todo su progreso y no se puede deshacer.`);
+    if (!pass) return;
+    const ok = await ui.confirm({ title: '¿Eliminar la cuenta para siempre?', text: `Se borran KEKE, PIES, SUSI, logros, inventario, amigos e historial de @${me.username}.`, yes: 'Eliminar', no: 'Cancelar' });
+    if (!ok) return;
+    try {
+      await svc.deleteAccount(p, pass);
+      ui.toast({ kind: 'warn', title: 'Cuenta eliminada', text: `@${me.username} ya no existe.` });
+      finish();
+    } catch (e) {
+      err.textContent = errorText(e);
+      app.audio.play('error');
+    }
+  }
+
   function guest() {
     if (app.profiles[p].accountId) svc.detach(p);
     app.audio.play('click');
@@ -149,7 +166,8 @@ export function accountModal(ui, { p, onDone }) {
     hint,
     h('div.dialog-actions',
       h('button.btn.ghost', { nav: true, onclick: guest }, app.profiles[p].accountId ? 'JUGAR COMO INVITADO' : 'SEGUIR COMO INVITADO'),
-      submitBtn));
+      submitBtn),
+    svc.slotAccount(p) ? h('button.linkbtn.acc-delete', { nav: true, onclick: deleteAccount }, `Eliminar la cuenta @${svc.slotAccount(p).username}`) : null);
   m.onBack = () => finish();
   m.onEnter = () => submit();
   return m;

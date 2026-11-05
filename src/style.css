@@ -1191,3 +1191,5 @@ button.home-slot:focus { border-color: var(--violet); }
 .achievements .ach-rew small { display: block; }
 .gv-cols .kv b { white-space: nowrap; font-size: 13px; }
 .person .btn.small { min-height: 34px; padding: 0 12px; }
+
+.acc-delete { --c: #ff8a78; align-self: center; font-size: 12px; margin-top: 2px; }

@@ -167,6 +167,21 @@ try {
   await p2.evaluate(async (u) => window.DC.accounts.logout(u), A.user);
   const afterLogout = await p2.evaluate(() => ({ slot: !!window.DC.accounts.slotAccount(0), sessions: Object.keys(window.DC.accounts.sessions).length }));
   check(!afterLogout.slot && afterLogout.sessions === 0, 'Cierre de sesión', JSON.stringify(afterLogout));
+  // 9) limpieza: las cuentas de prueba se eliminan solas (también prueba "eliminar cuenta")
+  const del = await p2.evaluate(async ([a, b]) => {
+    const out = [];
+    for (const acc of [a, b]) {
+      try {
+        await window.DC.accounts.login(0, acc.user, acc.pass);
+        await window.DC.accounts.deleteAccount(0, acc.pass);
+        out.push('ok');
+      } catch (e) { out.push(e.code || String(e)); }
+    }
+    let gone = 'no';
+    try { await window.DC.accounts.login(0, a.user, a.pass); } catch (e) { gone = e.code; }
+    return { out, gone };
+  }, [A, B]);
+  check(del.out.every((x) => x === 'ok') && del.gone === 'bad_credentials', 'Eliminar cuenta borra las cuentas de prueba', JSON.stringify(del));
   await c2.ctx.close();
 } catch (e) {
   bad(`Excepción en el paso "${step}": ` + (e.message || '').split('\n')[0]);
