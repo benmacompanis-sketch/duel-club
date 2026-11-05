@@ -88,6 +88,7 @@ try {
     const res = window.__res;
     if (!res) return { err: 'el minijuego no terminó' };
     DC.runner.close();
+    DC.ui.goMenu();
     const out = await DC.accounts.submitMatch(res, { mode: 'quick', difficulty: 0.5 });
     return { winner: res.winner, dur: res.playSeconds, slots: out?.slots?.map((s) => s && { keke: s.keke, pies: s.pies, delta: s.delta, res: s.res, ach: s.achievements.length }) };
   });
@@ -97,6 +98,8 @@ try {
     check(sub.winner === -1 ? sub.slots[0].delta === 0 : sub.slots[0].delta === -sub.slots[1].delta && sub.slots[0].delta !== 0, 'SUSI cambió de forma simétrica entre las dos cuentas', JSON.stringify(sub));
   }
   // 4) PIE STORE: compra real desde la interfaz
+  await p1.waitForSelector('.hub', { timeout: 15000 });
+  await p1.waitForTimeout(800);
   const before = await p1.evaluate(() => window.DC.accounts.slotAccount(0).pies);
   await p1.evaluate(() => { window.DC.save.viewer = 0; });
   await p1.click('.sn-btn[data-id="store"]');
