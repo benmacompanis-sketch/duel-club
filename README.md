@@ -10,7 +10,7 @@ dominio por minijuego, amigos, cara a cara, rankings mundiales y una banda sonor
 
 ## Jugar
 
-- Versión publicada: ver la URL del proyecto en Vercel (no hace falta cuenta de nada para entrar).
+- **Jugar ahora: https://benmacompanis-sketch.github.io/duel-club/** (no hace falta cuenta de nada para entrar).
 - Se puede jugar como **invitado** sin registrarse. Para guardar progreso permanente (KEKE, PIES, SUSI,
   logros, inventario, historial) cada jugador crea una cuenta con **usuario + contraseña** (sin email).
 - J1 y J2 pueden tener cada uno su cuenta en la misma computadora. La misma cuenta no puede ser J1 y J2.
@@ -102,6 +102,14 @@ npm run build
 - **Minijuego**: crear la clase en `src/games/`, registrarla en `src/games/index.js`, agregar el id en
   `GAME_IDS`/`GAME_NAMES`/`GAME_RECORDS` de `catalog.js` y regenerar el seed (crea sus 5 desafíos y su dominio).
 - **Cambios del servidor**: nueva migración en `supabase/migrations/` aplicada al proyecto de Supabase.
+
+### Publicación y pruebas automáticas
+
+- Cada push a `main` compila y publica en GitHub Pages (`.github/workflows/deploy.yml`). La URL no cambia.
+- Después de cada publicación corre `tests/e2e/live.mjs` en GitHub Actions (`e2e-live.yml`): abre el sitio publicado
+  en un navegador limpio, crea dos cuentas, juega un minijuego real, compra en la PIE STORE, prueba amistad, ranking,
+  inicio de sesión desde otro navegador, bloqueo de trampas desde la consola y elimina sus cuentas de prueba.
+- `keepalive.yml` hace una lectura diaria para que el plan gratuito de Supabase no pause la base de datos.
 
 ### Modo de prueba
 

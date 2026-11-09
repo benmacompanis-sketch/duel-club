@@ -24,4 +24,7 @@ Archivo de seguimiento para continuar el trabajo entre sesiones.
 - [x] RESISTENCIA renombrada a **SUSI** (pedido del usuario).
 - [x] Migración de las 4 cuentas antiguas (benuchinb2, gustabochasusana, matetas67, pepe7545) re-leídas del Artifact el 2026-11-04; verificada.
 - [x] Código en GitHub; GitHub Pages activado por el usuario (Source: GitHub Actions).
-- [ ] Pruebas desde el sitio publicado contra la base real (pendiente de la publicación).
+- [x] Sitio publicado: https://benmacompanis-sketch.github.io/duel-club/ (GitHub Pages, deploy automático).
+- [x] Prueba E2E en GitHub Actions contra el sitio publicado y la base real: 22/22 OK (registro, partida, KEKE, SUSI, PIES, tienda, amistad, ranking, perfil, otro navegador, contraseña incorrecta, logout, eliminar cuenta, trampa desde consola bloqueada).
+- [x] Eliminar cuenta (dc_delete_account, migración 004). Tarea diaria anti-pausa de Supabase (keepalive.yml).
+- Nota: el 2026-11-09 la base estaba pausada por inactividad (plan gratuito) y se reactivó.
