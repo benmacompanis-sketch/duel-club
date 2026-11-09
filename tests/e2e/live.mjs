@@ -53,7 +53,7 @@ try {
     const { ctx, page, errors } = await openSite(browser, false);
     check(await page.title() === 'DUEL CLUB · One club. Infinite duels.', 'El sitio publicado carga (título correcto)');
     check(await page.locator('.sn-btn').count() === 11, 'Menú con 11 secciones visible para un invitado');
-    const online = await page.locator('.tb-status.online').count();
+    const online = await page.waitForSelector('.tb-status.online', { timeout: 20000 }).then(() => 1).catch(() => 0);
     check(online === 1, 'El sitio publicado se conecta al servidor (estado EN LÍNEA)');
     check(errors.length === 0, 'Sin errores de JavaScript en la carga', errors.join(' | '));
     await ctx.close();
