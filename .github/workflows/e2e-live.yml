@@ -19,4 +19,8 @@ jobs:
           node-version: 20
       - run: npm install --no-save playwright@1.47.2
       - run: npx playwright install --with-deps chromium
-      - run: node tests/e2e/live.mjs
+      - name: Prueba general (cuentas, partida, tienda, amigos, ranking)
+        run: node tests/e2e/live.mjs
+      - name: Prueba del modo online (dos compus)
+        if: ${{ always() }}
+        run: node tests/e2e/live-online.mjs
