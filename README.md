@@ -2,9 +2,9 @@
 
 **ONE CLUB. INFINITE DUELS. QUESTIONABLE AURA.**
 
-Arcade competitivo 1v1 para **dos jugadores en el mismo teclado**, en el navegador. 16 minijuegos, cuentas
-online, nivel con **KEKE**, rating competitivo **SUSI**, moneda **PIES** y la **PIE STORE**, 148 logros,
-dominio por minijuego, amigos, cara a cara, rankings mundiales y una banda sonora generada en tiempo real.
+Arcade competitivo 1v1 en el navegador: **dos jugadores en el mismo teclado** o **cada uno en su compu (online)**.
+16 minijuegos, cuentas online, nivel con **KEKE**, rating competitivo **SUSI**, moneda **PIES** y la **PIE STORE**,
+152 logros, dominio por minijuego, amigos, cara a cara, rankings mundiales y una banda sonora generada en tiempo real.
 
 ---
 
@@ -28,6 +28,23 @@ dominio por minijuego, amigos, cara a cara, rankings mundiales y una banda sonor
 
 Se pueden reasignar en **Configuración → Controles**. Menús: flechas/WASD, `F`/`ENTER` elige, `ESC` vuelve.
 
+## Jugar online (cada uno en su compu)
+
+- **Jugar → JUGAR ONLINE** (hace falta cuenta). Tres formas:
+  - **Buscar rival**: el servidor te empareja con alguien de SUSI parecido (el rango se abre si tarda). Mejor de 3.
+  - **Sala con código**: creás la sala (única, mejor de 3 o de 5; minijuegos al azar o uno elegido; CAOS opcional)
+    y le pasás a tu amigo el código o el link `…/duel-club/?sala=CODIGO`.
+  - **Desafiar a un amigo** del CLUB: le aparece el aviso al instante si tiene el juego abierto.
+- Cada uno juega con sus teclas de siempre (WASD + F/G o flechas + ENTER/SHIFT). No hay pausa: ESC = abandonar.
+- La partida cuenta para SUSI, KEKE, PIES, dominio y logros igual que en una compu. Revancha con un botón.
+- Si alguien abandona o deja de responder 25 s, pierde la ronda en curso y la serie.
+
+**Cómo funciona.** Las dos compus se conectan directo (WebRTC); si alguna red no lo permite, los mensajes pasan
+por el servidor (Supabase Realtime). Solo viajan las teclas: las dos compus simulan exactamente la misma partida
+en pasos fijos de 1/60 s con la misma semilla de azar ("lockstep" con unos frames de retardo de entrada iguales
+para los dos). Cada segundo comparan una huella del estado; si no coincide, la ronda se anula. Al terminar, cada
+compu informa el resultado y **el servidor solo lo cuenta si las dos coinciden**.
+
 ## Contenido
 
 - **Modos**: Duel, Quick Play, Tournament, Survival. Dificultades Fácil/Normal/Difícil y **CAOS**
@@ -44,7 +61,7 @@ Se pueden reasignar en **Configuración → Controles**. Menús: flechas/WASD, `
   Solo cosméticos: no dan ventajas. Sin dinero real, sin cajas aleatorias.
 - **MEME COLLECTION**: personajes originales (Gerardo NPC, Sr. Formalidad, Frigo-Bot, Tostadín, La Silla,
   Tun-Tun Tronco), sombreros, emotes, títulos absurdos y frases contextuales que no se repiten.
-- **Logros**: 148 (16 minijuegos × 5 desafíos + generales, competitivos, sociales, colección, meme y secretos).
+- **Logros**: 152 (16 minijuegos × 5 desafíos + generales, competitivos, sociales, online, colección, meme y secretos).
 - **CLUB**: amigos (en línea/última actividad), búsqueda, solicitudes (aceptar/rechazar/cancelar), cara a cara con VS.
 - **Ranking mundial**: SUSI, nivel, KEKE, victorias, por minijuego y récords; General/Amigos, Top 10/100 y mi posición.
 
@@ -54,13 +71,15 @@ Se pueden reasignar en **Configuración → Controles**. Menús: flechas/WASD, `
 src/
   config.js            URL y clave publicable de Supabase (segura para el navegador)
   net/api.js           cliente RPC (fetch) + mensajes de error
+  net/netplay.js       online: conexión (WebRTC + respaldo Realtime) y simulación sincronizada (lockstep)
+  net/onlineMatch.js   online: una serie contra el rival (estado del servidor, rondas, resultados)
   data/catalog.js      FUENTE ÚNICA: objetos, rarezas, títulos, tarjetas, niveles, rangos SUSI, dominio
-  data/achievements.js FUENTE ÚNICA: 148 logros con condiciones evaluadas por el servidor
+  data/achievements.js FUENTE ÚNICA: 152 logros con condiciones evaluadas por el servidor
   core/                motor: bucle, input, audio, renderer, personajes, cosméticos, cuentas (accountService)
   games/               un archivo por minijuego (todos extienden BaseGame) + index.js (registro)
   ui/                  hub (menú y barra superior), store, inventory, achievementsView, profile, club,
-                       ranking, statsView, gamesView, notifications, accountModal, kit (componentes)
-supabase/migrations/   esquema y lógica del servidor (001_core.sql, 002_rpc.sql)
+                       ranking, statsView, gamesView, notifications, accountModal, online, kit (componentes)
+supabase/migrations/   esquema y lógica del servidor (001_core … 005_online.sql)
 supabase/seed/         catalog.sql generado desde src/data con scripts/gen-seed.mjs
 scripts/               gen-seed.mjs (catálogo → SQL), gen-legacy-migration.py (migración de la versión anterior)
 ```
@@ -79,6 +98,8 @@ scripts/               gen-seed.mjs (catálogo → SQL), gen-legacy-migration.py
 - Este navegador guarda solo: ajustes, controles, sesiones iniciadas y estadísticas locales de la compu.
 - Limitación honesta: los minijuegos corren en el navegador, así que el servidor no puede verificar la física
   de cada jugada. Por eso se limitan valores, ritmo y recompensas diarias, y el SUSI exige dos cuentas con sesión.
+  Online, además, las dos compus tienen que informar lo mismo para que la ronda cuente. La conexión directa
+  WebRTC hace que cada compu vea la IP pública de la otra (como en cualquier juego P2P).
 
 ## Desarrollo
 
@@ -109,6 +130,8 @@ npm run build
 - Después de cada publicación corre `tests/e2e/live.mjs` en GitHub Actions (`e2e-live.yml`): abre el sitio publicado
   en un navegador limpio, crea dos cuentas, juega un minijuego real, compra en la PIE STORE, prueba amistad, ranking,
   inicio de sesión desde otro navegador, bloqueo de trampas desde la consola y elimina sus cuentas de prueba.
+- `tests/e2e/live-online.mjs` prueba el modo online con dos navegadores separados: sala con código, conexión
+  directa, partida real confirmada por el servidor, respaldo por Realtime, buscar rival y abandono.
 - `keepalive.yml` hace una lectura diaria para que el plan gratuito de Supabase no pause la base de datos.
 
 ### Modo de prueba
