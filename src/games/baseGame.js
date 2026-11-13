@@ -16,7 +16,10 @@ export class BaseGame {
     this.event = opts.event || null;
     this.options = opts.options || {};
     this.fx = new FX();
-    this.inputs = [new PlayerInput(app.input, 0, this), new PlayerInput(app.input, 1, this)];
+    // En las partidas online el input llega del módulo de red (mismas teclas en las dos compus, frame a frame)
+    const src = opts.input || app.input;
+    this.inputs = [new PlayerInput(src, 0, this), new PlayerInput(src, 1, this)];
+    this.online = !!opts.online;
     this.time = 0; // tiempo de juego (afectado por la escala de tiempo)
     this.realTime = 0;
     this.done = false;
@@ -49,6 +52,10 @@ export class BaseGame {
   }
   sfx(name, o) {
     this.audio.play(name, o);
+  }
+  /** Reloj en milisegundos para medir reflejos. Online es el reloj de la simulación (idéntico en las dos compus). */
+  now() {
+    return this.opts.clock ? this.opts.clock() : performance.now();
   }
 
   init() {}

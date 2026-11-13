@@ -4,7 +4,8 @@
 //
 // Tipos de condición (t):
 //  stat     {k, gte}            columna de la cuenta (wins, played, best_streak, comp_wins, tournaments,
-//                               survival_best, best_rating, pies_spent, time_played, draws, draw_streak, loss_streak)
+//                               survival_best, best_rating, pies_spent, time_played, draws, draw_streak, loss_streak,
+//                               online_played, online_wins)
 //  level    {gte}               nivel de KEKE
 //  gwins    {g, gte}            victorias en un minijuego      gstreak {g, gte} mejor racha en un minijuego
 //  grank    {g, gte}            rango de dominio en un minijuego (0..4)
@@ -123,6 +124,11 @@ const GENERAL = [
   A('friend_5', 'social', 'hard', 'Alma del club', 'Tené 5 amigos en el CLUB.', 'user', { t: 'friends', gte: 5 }, ['title_social']),
   A('friend_win', 'social', 'normal', 'Entre amigos', 'Ganale un minijuego a alguien de tu lista de amigos.', 'heart', { t: 'friendwin' }),
   A('rival_25', 'social', 'hard', 'El verdadero problema', 'Jugá 25 minijuegos contra la misma cuenta.', 'duel', { t: 'rival', gte: 25 }, ['title_verdadero_problema']),
+  // ---------------------------------------------------------------- online (cada uno en su compu)
+  A('online_1', 'social', 'normal', 'Conexión establecida', 'Jugá tu primer minijuego online, cada uno desde su compu.', 'bolt', { t: 'stat', k: 'online_played', gte: 1 }),
+  A('online_50', 'social', 'hard', 'Señal estable', 'Jugá 50 minijuegos online.', 'clock', { t: 'stat', k: 'online_played', gte: 50 }),
+  A('online_series', 'competicion', 'normal', 'Del otro lado de la pantalla', 'Ganá una serie online.', 'duel', { t: 'comp', mode: 'online', win: true }),
+  A('online_win_10', 'competicion', 'hard', 'Sin cables', 'Ganá 10 minijuegos online.', 'trophy', { t: 'stat', k: 'online_wins', gte: 10 }),
 
   // ---------------------------------------------------------------- colección y PIE STORE
   A('buy_1', 'coleccion', 'normal', 'Primera compra', 'Comprá algo en la PIE STORE.', 'star', { t: 'buys', gte: 1 }),

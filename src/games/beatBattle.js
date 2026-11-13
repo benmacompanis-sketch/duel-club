@@ -126,14 +126,23 @@ export default class BeatBattle extends BaseGame {
     return this.event === 'double' && this.songTime >= (this.song.duration * 2) / 3 ? 2 : 1;
   }
   offset() {
+    // online cada compu corrige su propia latencia de audio antes de enviar la pulsación (ver netPressBias)
+    if (this.online) return 0;
+    return this.localOffset();
+  }
+  localOffset() {
     return this.audio.latency() + (this.app.settings.beatOffset || 0) / 1000;
   }
+  /** Milisegundos a restar a las pulsaciones de esta compu en una partida online. */
+  netPressBias() {
+    return Math.max(-60, Math.min(200, this.localOffset() * 1000));
+  }
   clock() {
-    return performance.now() / 1000 - this.perfStart - this.offset();
+    return this.now() / 1000 - this.perfStart - this.offset();
   }
 
   startSong(from = 0, lead = this.lead) {
-    this.perfStart = performance.now() / 1000 + lead - from;
+    this.perfStart = this.now() / 1000 + lead - from;
     if (this.audio.ctx && this.audio.ctx.state === 'running') {
       this.player = this.audio.playSong(this.songId, { when: this.audio.ctx.currentTime + lead, offset: Math.max(0, from) });
     }
@@ -168,7 +177,9 @@ export default class BeatBattle extends BaseGame {
       const inp = this.inputs[p];
       const notes = this.notes[p];
       // notas perdidas
-      while (this.next[p] < notes.length && this.songTime - notes[this.next[p]].t > WIN.good) {
+      // online las pulsaciones llegan con unos frames de retraso (con su hora real): se espera ese margen antes de dar la nota por perdida
+      const lag = this.online ? (this.opts.inputLag || 0) : 0;
+      while (this.next[p] < notes.length && this.songTime - lag - notes[this.next[p]].t > WIN.good) {
         const n = notes[this.next[p]];
         if (!n.hit) { n.hit = 'miss'; this.registerJudge(p, 'miss', n.lane); }
         this.next[p]++;

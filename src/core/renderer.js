@@ -1,6 +1,6 @@
 // Renderer: escala el escenario lógico 1280x720 a cualquier ventana, gestiona los canvas
 // (fondo animado, juego y capa de efectos) y provee el sistema de partículas/FX.
-import { W, H, TAU, rand, clamp, rgba, quality, text, choice, PALETTE, lerp } from './utils.js';
+import { W, H, TAU, vrand as rand, clamp, rgba, quality, text, vchoice as choice, PALETTE, lerp } from './utils.js';
 
 export class Renderer {
   constructor() {

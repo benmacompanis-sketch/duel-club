@@ -104,7 +104,9 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
   } else if (session?.mode === 'survival' && session.lives[0] > 0 && session.lives[1] > 0) {
     next = h('div.next-card', h('div', { style: { padding: '6px 10px' } }, h('small', 'PRÓXIMA ETAPA'), h('b', `Etapa ${session.stage + 1} · más difícil`)));
   }
-  const actions = quick
+  const online = info?.online || null;
+  const actions = online ? online.actions(choose)
+    : quick
     ? h('div.res-actions',
       h('button.btn', { nav: true, onclick: () => choose('menu') }, 'MENÚ'),
       h('button.btn', { nav: true, onclick: () => choose('other') }, 'OTRO MINIJUEGO'),
@@ -138,15 +140,18 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
         s.factor < 1 ? h('span.res-reward.wait', s.factor === 0 ? 'Límite diario alcanzado' : 'Recompensa reducida (muchas partidas hoy)') : null);
     }
   };
-  fillRewards(undefined);
-  rec?.server?.then((out) => { if (!scr.disposed) fillRewards(out); });
+  if (online) online.rewards((p, nodes) => { if (!scr.disposed) rewardBox[p].replaceChildren(...nodes.filter(Boolean)); }, scr);
+  else {
+    fillRewards(undefined);
+    rec?.server?.then((out) => { if (!scr.disposed) fillRewards(out); });
+  }
   scr.el = h('div.results', { style: { '--c': w >= 0 ? players[w].color : '#9B6CFF' } },
-    h('div.res-kicker', `${quick ? 'QUICK PLAY' : info.label || ''} · ${meta.name}${event ? ' · ' + event.short.toUpperCase() : ''}`),
-    h('div.res-banner', banner),
+    h('div.res-kicker', online ? `${online.kicker} · ${meta.name}` : `${quick ? 'QUICK PLAY' : info.label || ''} · ${meta.name}${event ? ' · ' + event.short.toUpperCase() : ''}`),
+    h('div.res-banner', online?.banner || banner),
     phraseText ? h('div.res-phrase', phraseText) : null,
     h('div.res-cols', col(0), h('div.res-stats', h('h4', 'ESTADÍSTICAS'), ...statRows), col(1)),
-    board,
-    h('div.res-footer', next || h('div'), actions));
+    online ? online.board : board,
+    h('div.res-footer', (online ? online.next : next) || h('div'), actions));
   scr.onBack = () => {};
 
   // efectos

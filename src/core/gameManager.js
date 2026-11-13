@@ -15,6 +15,7 @@ import { UI } from '../ui/ui.js';
 import { introScreen } from '../ui/intro.js';
 import { pauseModal } from '../ui/pause.js';
 import { GAMES, GAME_BY_ID } from '../games/index.js';
+import { onlineScreen, startChallengeWatcher } from '../ui/online.js';
 
 // Modificadores de la dificultad CAOS (afectan a los dos jugadores por igual)
 const CAOS_MODS = {
@@ -57,6 +58,8 @@ export class App {
     this.accounts = new AccountService(this);
     this.ui = new UI(this);
     this.runner = new MinigameRunner(this);
+    this.net = null; // ronda online en curso (simulación sincronizada)
+    this.online = null; // serie online en curso
     this.storage.onError = () => this.ui.toast({ title: 'No se pudo guardar', text: 'El navegador bloqueó el almacenamiento local.', kind: 'warn' });
     this.last = performance.now();
     this.debugScale = 1;
@@ -103,7 +106,16 @@ export class App {
     }
     this.ui.goTitle();
     // validar las sesiones guardadas contra el servidor y enviar resultados pendientes
-    this.accounts.init().catch((e) => console.warn('cuentas', e));
+    const ready = this.accounts.init().catch((e) => console.warn('cuentas', e));
+    // modo online: desafíos entrantes y links de sala (?sala=CODIGO)
+    ready.then(() => {
+      startChallengeWatcher(this);
+      const code = new URLSearchParams(location.search).get('sala');
+      if (code && /^[A-Za-z0-9]{5}$/.test(code)) {
+        history.replaceState(null, '', location.pathname + location.search.replace(/[?&]sala=[^&]*/, '').replace(/^&/, '?'));
+        this.ui.show(onlineScreen, { code: code.toUpperCase() });
+      }
+    });
     requestAnimationFrame(this._loop);
   }
   loop(now) {
@@ -113,9 +125,14 @@ export class App {
     dt = Math.min(dt, 0.05); // evita saltos tras pestaña inactiva
     try {
       this.renderer.renderBackground(dt, this.runner.active ? 'game' : 'menu');
-      // en modo de prueba se puede acelerar con subpasos (misma física, más rápido)
-      const steps = this.testMode ? Math.max(1, Math.round(this.debugScale)) : 1;
-      for (let i = 0; i < steps && this.runner.active; i++) this.runner.frame(dt, i === steps - 1);
+      if (this.net?.running) {
+        // partida online: la simulación avanza en pasos fijos sincronizados con el rival
+        this.net.frame(dt);
+      } else {
+        // en modo de prueba se puede acelerar con subpasos (misma física, más rápido)
+        const steps = this.testMode ? Math.max(1, Math.round(this.debugScale)) : 1;
+        for (let i = 0; i < steps && this.runner.active; i++) this.runner.frame(dt, i === steps - 1);
+      }
       this.ui.frame(dt);
       this.renderer.renderOverlay(dt);
     } catch (e) {
@@ -158,7 +175,8 @@ export class MinigameRunner {
     return new Promise((resolve, reject) => {
       this._resolve = resolve;
       this._reject = reject;
-      this.showIntro();
+      // online la presentación la maneja la sala (los dos tienen que estar listos) y el juego arranca con la red
+      if (!opts.online) this.showIntro();
     });
   }
   createGame() {
@@ -196,12 +214,21 @@ export class MinigameRunner {
     if (!this.active || e.handled) return;
     const isPause = e.code === 'Escape' || e.code === 'KeyP';
     if (!isPause || e.repeat) return;
+    // online no se puede pausar (el rival sigue jugando): ESC ofrece abandonar
+    if (this.opts?.online) {
+      if (e.code === 'Escape' && !this.app.ui.modals.length) {
+        e.event.preventDefault();
+        this.opts.onEscape?.();
+      }
+      return;
+    }
     if (this.state === 'playing' || this.state === 'countdown') {
       e.event.preventDefault();
       this.pause();
     }
   }
   autoPause() {
+    if (this.opts?.online) return;
     if (this.active && (this.state === 'playing' || this.state === 'countdown')) this.pause();
   }
   pause() {
@@ -465,5 +492,7 @@ export class MinigameRunner {
       g.fillStyle = 'rgba(11,16,32,0.55)';
       g.fillRect(0, 0, W, H);
     }
+    // partidas online: quién sos, conexión y avisos de espera
+    this.opts?.netOverlay?.(g, this);
   }
 }

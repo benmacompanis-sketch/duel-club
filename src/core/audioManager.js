@@ -3,7 +3,7 @@
 // - Secuenciador musical con "lookahead scheduling" sobre el reloj de audio (preciso).
 // - Canciones compuestas proceduralmente con semilla fija (siempre suenan igual).
 // El AudioContext se crea/reanuda con el primer gesto del usuario (política de autoplay).
-import { mulberry32, clamp } from './utils.js';
+import { mulberry32, clamp, NATIVE_RANDOM } from './utils.js';
 
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 const SCALES = { minor: [0, 2, 3, 5, 7, 8, 10], major: [0, 2, 4, 5, 7, 9, 11], dorian: [0, 2, 3, 5, 7, 9, 10] };
@@ -246,7 +246,7 @@ export class AudioManager {
         const len = c.sampleRate * 1;
         this.noise = c.createBuffer(1, len, c.sampleRate);
         const d = this.noise.getChannelData(0);
-        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        for (let i = 0; i < len; i++) d[i] = NATIVE_RANDOM() * 2 - 1;
         this.applyVolumes();
         this._timer = setInterval(() => this.tick(), 25);
         if (this.wantedMusic) {
@@ -377,7 +377,7 @@ export class AudioManager {
     s.buffer = this.noise;
     s.loop = true;
     s.connect(dest);
-    s.start(t, Math.random() * 0.5);
+    s.start(t, NATIVE_RANDOM() * 0.5);
     s.stop(stop);
     return s;
   }

@@ -3,6 +3,7 @@ import { h, icon } from './dom.js';
 import { tabs, timeAgo, loading, errorBox, empty } from './kit.js';
 import { ACH_BY_ID } from '../data/achievements.js';
 import { errorText } from '../net/api.js';
+import { onlineScreen } from './online.js';
 
 export const NOTIFY_KINDS = [
   ['friend', 'Amistad', 'Solicitudes y solicitudes aceptadas'],
@@ -10,12 +11,13 @@ export const NOTIFY_KINDS = [
   ['level', 'Niveles', 'Subidas de nivel y recompensas'],
   ['mastery', 'Dominio', 'Nuevos rangos en minijuegos'],
   ['record', 'Récords', 'Récords mundiales y récords perdidos'],
+  ['challenge', 'Desafíos online', 'Amigos que te desafían a jugar online'],
 ];
 export function notifyEnabled(app, kind) {
   const k = kind.startsWith('friend') ? 'friend' : kind.startsWith('record') ? 'record' : kind;
   return app.save.settings.notify?.[k] !== false;
 }
-const KIND_ICON = { friend_request: 'user', friend_accept: 'heart', achievement: 'trophy', level: 'star', mastery: 'medal', record: 'records', record_lost: 'records', welcome: 'bolt' };
+const KIND_ICON = { friend_request: 'user', friend_accept: 'heart', achievement: 'trophy', level: 'star', mastery: 'medal', record: 'records', record_lost: 'records', welcome: 'bolt', challenge: 'duel' };
 
 export function notificationsModal(ui, { onChange }) {
   const app = ui.app;
@@ -43,7 +45,9 @@ export function notificationsModal(ui, { onChange }) {
           const text = ach ? `${ach.name} — ${ach.desc}` : n.body || '';
           const actions = n.kind === 'friend_request' && n.data?.user
             ? h('div.row', h('button.btn.small.green', { nav: true, onclick: () => respond(n.data.user, true) }, 'ACEPTAR'), h('button.btn.small.ghost', { nav: true, onclick: () => respond(n.data.user, false) }, 'RECHAZAR'))
-            : null;
+            : n.kind === 'challenge' && n.data?.code && Date.now() - new Date(n.at).getTime() < 15 * 60000
+              ? h('div.row', h('button.btn.small.green', { nav: true, onclick: () => { m.close?.(); ui.show(onlineScreen, { code: n.data.code }); } }, 'IR A LA SALA ' + n.data.code))
+              : null;
           return h('div.notif' + (n.read ? '' : '.unread'), h('span.notif-ico', icon(KIND_ICON[n.kind] || 'star')),
             h('div.notif-main', h('b', n.title), h('span', text), actions), h('small', timeAgo(n.at)));
         }))

@@ -34,6 +34,10 @@ const MESSAGES = {
   invalid_comp: 'La competición no pasó la validación del servidor.',
   network: 'Sin conexión con el servidor.',
   invalid: 'Operación no válida.',
+  not_friends: 'Solo podés desafiar a tus amigos del CLUB (o pasale el código de una sala).',
+  room_not_found: 'No hay ninguna sala abierta con ese código.',
+  room_full: 'Esa sala ya está completa.',
+  room_private: 'Ese desafío es para otra cuenta.',
 };
 export const errorText = (e) => MESSAGES[e?.code] || e?.message || 'Error inesperado.';
 

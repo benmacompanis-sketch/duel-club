@@ -379,15 +379,22 @@ export class AccountService {
   submitMatch(res, { mode = 'quick', compId = null, difficulty = 0.5, caos = false } = {}) {
     const users = [this.slotUser(0), this.slotUser(1)];
     if (!users[0] && !users[1]) return Promise.resolve(null);
-    const meta = this.app.gameMeta?.(res.gameId);
-    const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-    const fmt = (v) => (v == null ? null : meta?.record?.format ? meta.record.format(v) : String(v));
     const payload = {
       client_id: uid('m'),
       comp_id: compId,
-      game: res.gameId,
       mode,
       difficulty: caos ? 'caos' : DIFF_NAMES[difficulty] || 'normal',
+      ...this.matchPayload(res),
+    };
+    return this._enqueue({ kind: 'match', users, payload });
+  }
+  /** Datos de una partida terminada tal como los recibe el servidor (también se usa online). */
+  matchPayload(res) {
+    const meta = this.app.gameMeta?.(res.gameId);
+    const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+    const fmt = (v) => (v == null ? null : meta?.record?.format ? meta.record.format(v) : String(v));
+    return {
+      game: res.gameId,
       winner: res.winner,
       scores: (res.scores || []).map(num),
       display: (res.display || []).map((s) => String(s ?? '')),
@@ -403,7 +410,6 @@ export class AccountService {
       names: res.players.map((pl) => pl.name),
       colors: res.players.map((pl) => pl.color),
     };
-    return this._enqueue({ kind: 'match', users, payload });
   }
 
   /** Envía una competición terminada (Duel, Torneo o Survival). */
@@ -497,32 +503,40 @@ export class AccountService {
   /** Actualiza las cuentas con la respuesta del servidor y anuncia niveles, logros, dominio y récords. */
   applyServerResult(out, item) {
     const slots = out.slots || [];
-    slots.forEach((s, i) => {
-      if (!s) return;
-      const me = s.me;
-      if (me) this.cache.set(me.username, me);
-      const who = me?.name || item.payload.names?.[i] || '';
-      let delay = 300;
-      const later = (fn) => {
-        setTimeout(fn, delay);
-        delay += 650;
-      };
-      const allow = (k) => this.app.save.settings.notify?.[k] !== false;
-      if (s.record && allow('record')) later(() => this.app.ui?.toast({ kind: 'record', icon: 'trophy', title: `¡Récord mundial de ${who}!`, name: GAME_NAMES[item.payload.game] || '', text: 'Ya figura en el ranking de récords.' }));
-      if (s.mastery && allow('mastery')) {
-        const ranks = ['Principiante', 'Aficionado', 'Competente', 'Experto', 'Maestro'];
-        later(() => this.app.ui?.toast({ kind: 'mastery', icon: 'medal', title: `Dominio de ${who}`, name: `${GAME_NAMES[s.mastery.game]}: ${ranks[s.mastery.rank]}`, text: s.mastery.rank === 4 ? 'Skin y título exclusivos desbloqueados.' : 'Nuevo rango y recompensas.' }));
-      }
-      const levels = [...(s.levels || []), ...(s.achievements || []).flatMap((a) => a.levels || [])];
-      this.announceAchievements(s.achievements, who, () => delay);
-      delay += (s.achievements?.length || 0) * 650;
-      if (levels.length) {
-        const top = levels.reduce((m, l) => (l.level > m.level ? l : m));
-        later(() => this.app.ui?.levelUp?.(top.level, who, levels));
-      }
-    });
+    slots.forEach((s, i) => this.announceSlot(s, item.payload.game, item.payload.names?.[i]));
     this.syncProfiles();
     this.emit();
+  }
+  /** Resultado online propio (una ronda o la serie): actualiza la cuenta y anuncia logros y niveles. */
+  applyOnlineOut(s, gameId) {
+    if (!s) return;
+    this.announceSlot(s, gameId, '');
+    this.syncProfiles();
+    this.emit();
+  }
+  announceSlot(s, gameId, fallbackName) {
+    if (!s) return;
+    const me = s.me;
+    if (me) this.cache.set(me.username, me);
+    const who = me?.name || fallbackName || '';
+    let delay = 300;
+    const later = (fn) => {
+      setTimeout(fn, delay);
+      delay += 650;
+    };
+    const allow = (k) => this.app.save.settings.notify?.[k] !== false;
+    if (s.record && allow('record')) later(() => this.app.ui?.toast({ kind: 'record', icon: 'trophy', title: `¡Récord mundial de ${who}!`, name: GAME_NAMES[gameId] || '', text: 'Ya figura en el ranking de récords.' }));
+    if (s.mastery && allow('mastery')) {
+      const ranks = ['Principiante', 'Aficionado', 'Competente', 'Experto', 'Maestro'];
+      later(() => this.app.ui?.toast({ kind: 'mastery', icon: 'medal', title: `Dominio de ${who}`, name: `${GAME_NAMES[s.mastery.game]}: ${ranks[s.mastery.rank]}`, text: s.mastery.rank === 4 ? 'Skin y título exclusivos desbloqueados.' : 'Nuevo rango y recompensas.' }));
+    }
+    const levels = [...(s.levels || []), ...(s.achievements || []).flatMap((a) => a.levels || [])];
+    this.announceAchievements(s.achievements, who, () => delay);
+    delay += (s.achievements?.length || 0) * 650;
+    if (levels.length) {
+      const top = levels.reduce((m, l) => (l.level > m.level ? l : m));
+      later(() => this.app.ui?.levelUp?.(top.level, who, levels));
+    }
   }
   announceAchievements(list, who, delayFn = () => 300) {
     if (!list?.length || this.app.save.settings.notify?.achievement === false) return;

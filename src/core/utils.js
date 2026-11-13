@@ -8,6 +8,12 @@ export const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const invLerp = (a, b, v) => (b === a ? 0 : (v - a) / (b - a));
 export const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
+// Azar "visual" (partículas, sonido, temblores de dibujo): usa siempre el Math.random original del navegador.
+// En las partidas online Math.random se reemplaza por un RNG con semilla compartida mientras se simula,
+// y lo puramente visual no debe consumir esa secuencia (depende de la calidad gráfica de cada compu).
+export const NATIVE_RANDOM = Math.random.bind(Math);
+export const vrand = (a = 0, b = 1) => a + NATIVE_RANDOM() * (b - a);
+export const vchoice = (arr) => arr[Math.floor(NATIVE_RANDOM() * arr.length)];
 export const randInt = (a, b) => Math.floor(rand(a, b + 1));
 export const choice = (arr) => arr[Math.floor(Math.random() * arr.length)];
 export const sign = (v) => (v < 0 ? -1 : v > 0 ? 1 : 0);

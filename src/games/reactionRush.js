@@ -130,14 +130,17 @@ export default class ReactionRush extends BaseGame {
       if (this.st >= this.waitTime) {
         this.state = 'signal';
         this.st = 0;
-        this.signalPerf = performance.now();
+        this.signalPerf = this.now();
         this.sfx(this.sig === 'bell' ? 'bell' : 'signal');
         this.fx.flash(this.sig === 'flash' ? '#48D597' : '#ffffff', this.sig === 'flash' ? 0.5 : 0.18);
       }
     } else if (this.state === 'signal') {
+      // online la pulsación llega unos frames después con la hora en que se hizo: si fue antes de ver la señal, es adelantada
+      const early = [0, 1].filter((p) => pressed[p] && this.react[p] == null && (this.inputs[p].pressTime('a') ?? Infinity) < this.signalPerf);
+      if (early.length) return this.falseStart(early);
       for (const p of [0, 1]) {
         if (pressed[p] && this.react[p] == null) {
-          const t = this.inputs[p].pressTime('a') ?? performance.now();
+          const t = this.inputs[p].pressTime('a') ?? this.now();
           this.react[p] = Math.max(1, t - this.signalPerf);
           this.pressAt[p] = this.st;
           this.sfx('hit', { pitch: p ? 1.2 : 1 });

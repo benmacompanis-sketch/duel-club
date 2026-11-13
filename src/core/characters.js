@@ -2,7 +2,7 @@
 // Cada uno tiene silueta, personalidad y detalles propios; el cuerpo toma el color del
 // jugador para que siempre se identifique a quién pertenece.
 // Animaciones: idle, run, jump, fall, win, lose, celebrate, attack, block, hurt, dizzy.
-import { TAU, shade, mix, rgba, roundRect, quality } from './utils.js';
+import { TAU, shade, mix, rgba, roundRect, quality, NATIVE_RANDOM } from './utils.js';
 import { SKINS, HATS, FACES, BODIES, drawChairIcon } from './cosmetics.js';
 
 export const CHARACTERS = [
@@ -987,7 +987,7 @@ export function drawCharacter(g, o) {
   const c = { body: base, dark: shade(base, -0.32), light: shade(base, 0.28) };
   const s = o.s ?? 1;
   const facing = (o.facing ?? 1) * st.flip;
-  const shakeX = st.shake ? (Math.random() - 0.5) * st.shake * 2 : 0;
+  const shakeX = st.shake ? (NATIVE_RANDOM() - 0.5) * st.shake * 2 : 0;
   const bodyTf = (ctx, sc) => {
     ctx.scale(sc * facing, sc);
     if (shakeX) ctx.translate(shakeX, 0);

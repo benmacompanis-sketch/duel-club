@@ -18,6 +18,7 @@ import { clubSection } from './club.js';
 import { rankingSection } from './ranking.js';
 import { statsSection } from './statsView.js';
 import { gamesSection } from './gamesView.js';
+import { onlineScreen } from './online.js';
 
 export const SECTIONS = [
   { id: 'home', name: 'Inicio', icon: 'star', color: '#9B6CFF' },
@@ -223,8 +224,13 @@ function playSection(ui, owner, ctx) {
   ];
   const el = h('div.play',
     h('div.sec-head', h('h2', 'JUGAR'), h('p', 'Las partidas entre cuentas dan KEKE, PIES y SUSI. Contra invitados se gana KEKE y PIES, pero el SUSI no cambia.')),
-    h('div.mode-grid', MODES.map((m, i) =>
-      h('button.mode-card', { nav: true, 'data-autofocus': i === 0 || null, style: { '--accent': m.color }, onclick: () => { app.audio.play('confirm'); m.go(); } },
+    h('button.online-card', { nav: true, 'data-autofocus': true, onclick: () => { app.audio.play('confirm'); ui.show(onlineScreen); } },
+      h('span.oc-ico', icon('bolt')),
+      h('div.oc-main', h('small', 'NUEVO'), h('b', 'JUGAR ONLINE'), h('span', 'Vos en tu compu, tu amigo en la suya. Buscá rival por SUSI, creá una sala con código o desafiá a un amigo del CLUB.')),
+      h('span.oc-go', icon('play'))),
+    h('div.sec-sub', 'EN ESTA COMPU · DOS JUGADORES, UN TECLADO'),
+    h('div.mode-grid', MODES.map((m) =>
+      h('button.mode-card', { nav: true, style: { '--accent': m.color }, onclick: () => { app.audio.play('confirm'); m.go(); } },
         h('span.mode-ico', icon(m.icon)), h('b', m.title), h('span', m.sub)))),
     h('div.card.caos-card',
       h('div', h('b', 'DIFICULTAD CAOS'), h('p.muted', 'Disponible en todos los modos. Turbo, cámara lenta, controles invertidos, espejo, apagón y terremoto: siempre anunciados y siempre iguales para los dos.')),

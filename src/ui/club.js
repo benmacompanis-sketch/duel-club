@@ -4,6 +4,7 @@ import { h, icon } from './dom.js';
 import { tabs, loading, errorBox, empty, avatar, lookOf, levelBadge, resist, timeAgo, gameChip, profileCard, fmtN, titleOf } from './kit.js';
 import { GAME_NAMES } from '../data/catalog.js';
 import { errorText } from '../net/api.js';
+import { challengeFriend } from './online.js';
 import { drawCharacter } from '../core/characters.js';
 import { TAU, rgba } from '../core/utils.js';
 
@@ -117,7 +118,8 @@ export function clubSection(ui, owner, ctx) {
         const online = f.friends.filter((x) => x.online).length;
         body.replaceChildren(f.friends.length
           ? h('div.people', h('p.muted', `${online} en línea · ${f.friends.length} amigos`), ...f.friends.map((a) => personRow(ui, owner, a, [
-            h('button.btn.small.primary', { nav: true, title: 'Invitar a jugar en esta compu', onclick: () => invite(a) }, icon('play'), 'JUGAR'),
+            h('button.btn.small.primary', { nav: true, title: 'Desafiar a jugar online (cada uno en su compu)', onclick: () => challengeFriend(ui, svc.slotUser(p), a) }, icon('bolt'), 'ONLINE'),
+            h('button.btn.small', { nav: true, title: 'Invitar a jugar en esta compu', onclick: () => invite(a) }, icon('play'), 'ACÁ'),
             h('button.btn.small', { nav: true, onclick: () => vs(a.username) }, icon('duel')),
             h('button.btn.small', { nav: true, onclick: () => viewProfile(a.username) }, icon('user')),
             h('button.btn.small.ghost', { nav: true, title: 'Quitar amigo', onclick: async () => { if (await ui.confirm({ title: `¿Quitar a ${a.name}?`, text: 'Se elimina de tu lista de amigos.', yes: 'Quitar', no: 'Cancelar' })) act(() => svc.friendRemove(p, a.username), 'Amigo quitado'); } }, icon('close'))])))
