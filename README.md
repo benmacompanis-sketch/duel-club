@@ -10,7 +10,9 @@ Arcade competitivo 1v1 en el navegador: **dos jugadores en el mismo teclado** o 
 
 ## Jugar
 
-- **Jugar ahora: https://benmacompanis-sketch.github.io/duel-club/** (no hace falta cuenta de nada para entrar).
+- **Jugar ahora: https://duelclub.vercel.app/** (no hace falta cuenta de nada para entrar).
+- El link viejo (`benmacompanis-sketch.github.io/duel-club`) redirige solo al nuevo y lleva la sesión, los ajustes
+  y las estadísticas de ese navegador, y los links de sala `?sala=CODIGO`.
 - Se puede jugar como **invitado** sin registrarse. Para guardar progreso permanente (KEKE, PIES, SUSI,
   logros, inventario, historial) cada jugador crea una cuenta con **usuario + contraseña** (sin email).
 - J1 y J2 pueden tener cada uno su cuenta en la misma computadora. La misma cuenta no puede ser J1 y J2.
@@ -140,8 +142,11 @@ npm run build
 
 ### Publicación y pruebas automáticas
 
-- Cada push a `main` compila y publica en GitHub Pages (`.github/workflows/deploy.yml`). La URL no cambia.
-- Después de cada publicación corre `tests/e2e/live.mjs` en GitHub Actions (`e2e-live.yml`): abre el sitio publicado
+- Cada push a `main` se publica solo en **Vercel** (proyecto `duel-club`, link `duelclub.vercel.app`, conectado al
+  repositorio de GitHub). GitHub Pages sigue publicándose, pero solo como redirección al link nuevo
+  (`deploy/redirect-to.txt` + `scripts/make-redirect.mjs`). Para dejar de redirigir, vaciar ese archivo.
+- Después de cada publicación corre `tests/e2e/live.mjs` en GitHub Actions (`e2e-live.yml`): espera a que Vercel tenga
+  el mismo commit, comprueba que el link viejo redirija y abre el sitio publicado
   en un navegador limpio, crea dos cuentas, juega un minijuego real, compra en la PIE STORE, prueba amistad, ranking,
   inicio de sesión desde otro navegador, bloqueo de trampas desde la consola y elimina sus cuentas de prueba.
 - `tests/e2e/live-online.mjs` prueba el modo online con dos navegadores separados: sala con código, conexión
