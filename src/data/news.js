@@ -4,6 +4,25 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-13-link-nuevo',
+    date: '2026-11-13',
+    version: '3.1.1',
+    title: 'Nuevo link: duelclub.vercel.app',
+    tag: 'NUEVO LINK',
+    color: '#FFC93C',
+    intro: 'DUEL CLUB ahora vive en duelclub.vercel.app. Guardalo y compartilo con ese link.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'El link viejo te trae solo al nuevo, con tu sesión iniciada, tus ajustes y tus estadísticas: no tenés que hacer nada.',
+        'Los links de sala para jugar online también funcionan desde el link viejo.',
+      ] },
+      { kind: 'nuevo', items: [
+        'Modo online: buscá rival, creá una sala con código o desafiá a un amigo del CLUB (está en Jugar).',
+      ] },
+    ],
+    action: { label: 'JUGAR ONLINE', go: 'online' },
+  },
+  {
     id: '2026-11-13-online',
     date: '2026-11-13',
     version: '3.1',
