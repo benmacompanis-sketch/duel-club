@@ -38,6 +38,9 @@ const MESSAGES = {
   room_not_found: 'No hay ninguna sala abierta con ese código.',
   room_full: 'Esa sala ya está completa.',
   room_private: 'Ese desafío es para otra cuenta.',
+  report_invalid: 'Contanos qué pasó con al menos 10 letras (máximo 2000).',
+  too_many_reports: 'Llegaste al máximo de reportes por hoy. ¡Gracias por ayudar! Probá mañana.',
+  not_admin: 'Solo los administradores pueden ver esto.',
 };
 export const errorText = (e) => MESSAGES[e?.code] || e?.message || 'Error inesperado.';
 

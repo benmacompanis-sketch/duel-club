@@ -27,6 +27,10 @@ async function computer(acc, query = '?test') {
   await page.waitForFunction(() => window.DC?.accounts?.ready, null, { timeout: 30000 });
   await page.evaluate(() => window.DC.ui.goMenu());
   await page.waitForSelector('.hub', { timeout: 15000 });
+  // cartel de novedades de un visitante nuevo
+  const news = await page.waitForSelector('.news-dialog', { timeout: 6000 }).catch(() => null);
+  if (news) await page.click('.news-dialog .btn.primary');
+  await page.waitForTimeout(500);
   // registro desde la interfaz
   await page.click('.tb-slot >> nth=0');
   await page.waitForSelector('.acc-dialog');

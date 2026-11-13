@@ -58,6 +58,15 @@ export class App {
     this.accounts = new AccountService(this);
     this.ui = new UI(this);
     this.runner = new MinigameRunner(this);
+    // últimos errores de JavaScript (se adjuntan a los reportes de errores si el jugador quiere)
+    this.errorLog = [];
+    const logErr = (msg) => {
+      this.errorLog.push(`${new Date().toISOString().slice(11, 19)} ${String(msg).slice(0, 280)}`);
+      if (this.errorLog.length > 10) this.errorLog.shift();
+    };
+    this.logError = logErr;
+    window.addEventListener('error', (e) => logErr(`${e.message} @ ${(e.filename || '').split('/').pop()}:${e.lineno}:${e.colno}`));
+    window.addEventListener('unhandledrejection', (e) => logErr('promesa: ' + (e.reason?.message || e.reason)));
     this.net = null; // ronda online en curso (simulación sincronizada)
     this.online = null; // serie online en curso
     this.storage.onError = () => this.ui.toast({ title: 'No se pudo guardar', text: 'El navegador bloqueó el almacenamiento local.', kind: 'warn' });
@@ -137,6 +146,7 @@ export class App {
       this.renderer.renderOverlay(dt);
     } catch (e) {
       console.error('DUEL CLUB loop error', e);
+      this.logError?.(`bucle: ${e?.message} ${(e?.stack || '').split('\n')[1]?.trim() || ''}`);
       this.runner.crash(e);
     }
     this.input.endFrame();

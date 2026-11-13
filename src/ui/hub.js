@@ -19,6 +19,7 @@ import { rankingSection } from './ranking.js';
 import { statsSection } from './statsView.js';
 import { gamesSection } from './gamesView.js';
 import { onlineScreen } from './online.js';
+import { newsSection, newsBanner, newsUnseen, maybeShowNews } from './news.js';
 
 export const SECTIONS = [
   { id: 'home', name: 'Inicio', icon: 'star', color: '#9B6CFF' },
@@ -31,11 +32,12 @@ export const SECTIONS = [
   { id: 'inventory', name: 'Inventario', icon: 'card', color: '#9B6CFF' },
   { id: 'achievements', name: 'Logros', icon: 'trophy', color: '#FF8E3C' },
   { id: 'stats', name: 'Estadísticas', icon: 'arrow', color: '#48D597' },
+  { id: 'news', name: 'Novedades', icon: 'flame', color: '#25CFE6' },
   { id: 'settings', name: 'Configuración', icon: 'settings', color: '#8C96B8' },
 ];
 const RENDER = {
   home: homeSection, play: playSection, games: gamesSection, profile: profileSection, club: clubSection, ranking: rankingSection,
-  store: storeSection, inventory: inventorySection, achievements: achievementsSection, stats: statsSection,
+  store: storeSection, inventory: inventorySection, achievements: achievementsSection, stats: statsSection, news: newsSection,
 };
 
 /** Jugador que está "mirando" las secciones personales (J1 o J2). */
@@ -67,6 +69,7 @@ export function hubScreen(ui, params = {}) {
     goto: (id, p = {}) => open(id, p),
     login: (p) => openAccount(p),
     refresh: () => open(section, ctx.params, true),
+    refreshNav: () => renderNavDots(),
   };
 
   // ---------------------------------------------------------------- barra superior
@@ -112,6 +115,13 @@ export function hubScreen(ui, params = {}) {
   const nav = h('nav.sidenav', SECTIONS.map((s) =>
     h('button.sn-btn', { nav: true, dataset: { id: s.id }, style: { '--accent': s.color }, onclick: () => open(s.id) },
       h('span.sn-ico', icon(s.icon)), h('span', s.name))));
+  // punto en Novedades cuando hay una actualización que este navegador no vio
+  function renderNavDots() {
+    const b = nav.querySelector('.sn-btn[data-id="news"]');
+    b?.querySelector('.sn-dot')?.remove();
+    if (b && newsUnseen()) b.append(h('span.sn-dot'));
+  }
+  renderNavDots();
   const content = h('div.hub-content');
 
   function open(id, p = {}, silent = false) {
@@ -152,6 +162,8 @@ export function hubScreen(ui, params = {}) {
   content));
   renderTop();
   open(section, params.sectionParams || {}, true);
+  // cartel de novedades (una vez por actualización)
+  setTimeout(() => { if (!scr.disposed) maybeShowNews(ui, (tab) => open('news', { tab })); }, 900);
   const unsub = svc.on(() => { if (!scr.disposed) renderTop(); });
   scr.destroy = () => {
     unsub();
@@ -169,6 +181,7 @@ function homeSection(ui, owner, ctx) {
   const svc = app.accounts;
   const feedBox = h('div.home-feed', loading());
   const el = h('div.home',
+    newsBanner(ui, ctx),
     h('div.home-hero',
       h('div.home-stage', duoStage(ui, owner, 600, 330, { scale: 1.45 })),
       h('div.home-cta',
@@ -190,7 +203,7 @@ function homeSection(ui, owner, ctx) {
           link('PIE STORE', 'Cosméticos con PIES', 'store', '#FFD16B'),
           link('Ranking mundial', 'SUSI, nivel y récords', 'ranking', '#FFC93C'),
           link('CLUB', 'Amigos, solicitudes y cara a cara', 'club', '#FF5FA2'),
-          link('Logros', '148 logros, algunos secretos', 'achievements', '#FF8E3C')))));
+          link('Logros', '152 logros, algunos secretos', 'achievements', '#FF8E3C')))));
   function link(t, s, id, c) {
     return h('button.home-link', { nav: true, style: { '--accent': c }, onclick: () => ctx.goto(id) }, h('b', t), h('span', s));
   }

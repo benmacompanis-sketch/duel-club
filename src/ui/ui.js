@@ -246,6 +246,7 @@ export class UI {
     if (!layer || layer.el.classList.contains('leave')) return;
     if (this.app.runner.active && this.app.runner.state !== 'intro' && this.app.runner.state !== 'done' && !this.modals.length) return;
     if (e.typing) {
+      if (e.event.target?.tagName === 'TEXTAREA' && (e.code === 'Enter' || e.code === 'NumpadEnter')) return;
       if ((e.code === 'Enter' || e.code === 'NumpadEnter') && layer.onEnter) {
         e.event.preventDefault();
         e.handled = true;

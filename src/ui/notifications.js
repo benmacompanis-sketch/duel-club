@@ -12,12 +12,13 @@ export const NOTIFY_KINDS = [
   ['mastery', 'Dominio', 'Nuevos rangos en minijuegos'],
   ['record', 'Récords', 'Récords mundiales y récords perdidos'],
   ['challenge', 'Desafíos online', 'Amigos que te desafían a jugar online'],
+  ['bug', 'Reportes de errores', 'Cuando respondemos o arreglamos un error que reportaste'],
 ];
 export function notifyEnabled(app, kind) {
   const k = kind.startsWith('friend') ? 'friend' : kind.startsWith('record') ? 'record' : kind;
   return app.save.settings.notify?.[k] !== false;
 }
-const KIND_ICON = { friend_request: 'user', friend_accept: 'heart', achievement: 'trophy', level: 'star', mastery: 'medal', record: 'records', record_lost: 'records', welcome: 'bolt', challenge: 'duel' };
+const KIND_ICON = { friend_request: 'user', friend_accept: 'heart', achievement: 'trophy', level: 'star', mastery: 'medal', record: 'records', record_lost: 'records', welcome: 'bolt', challenge: 'duel', bug: 'flag' };
 
 export function notificationsModal(ui, { onChange }) {
   const app = ui.app;

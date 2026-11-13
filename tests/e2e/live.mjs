@@ -23,8 +23,11 @@ async function openSite(browser, test = true) {
   await page.waitForTimeout(1200);
   await page.keyboard.press('Enter');
   await page.waitForSelector('.hub', { timeout: 15000 });
-  await page.waitForTimeout(1500);
-  return { ctx, page, errors };
+  // a un visitante nuevo le aparece el cartel de novedades: se cierra
+  const news = await page.waitForSelector('.news-dialog', { timeout: 6000 }).catch(() => null);
+  if (news) await page.click('.news-dialog .btn.primary');
+  await page.waitForTimeout(800);
+  return { ctx, page, errors, news: !!news };
 }
 async function register(page, slot, acc) {
   await page.click(`.tb-slot >> nth=${slot}`);
@@ -50,9 +53,11 @@ const browser = await chromium.launch();
 try {
   // 1) un visitante sin nada abre el link y ve el juego
   {
-    const { ctx, page, errors } = await openSite(browser, false);
+    const { ctx, page, errors, news } = await openSite(browser, false);
     check(await page.title() === 'DUEL CLUB · One club. Infinite duels.', 'El sitio publicado carga (título correcto)');
-    check(await page.locator('.sn-btn').count() === 11, 'Menú con 11 secciones visible para un invitado');
+    check(await page.locator('.sn-btn').count() === 12, 'Menú con 12 secciones visible para un invitado');
+    check(news, 'El cartel de novedades aparece a un visitante nuevo');
+    check(await page.locator('.news-banner').count() === 1, 'Cartel fijo de novedades en Inicio');
     const online = await page.waitForSelector('.tb-status.online', { timeout: 20000 }).then(() => 1).catch(() => 0);
     check(online === 1, 'El sitio publicado se conecta al servidor (estado EN LÍNEA)');
     check(errors.length === 0, 'Sin errores de JavaScript en la carga', errors.join(' | '));
@@ -139,6 +144,20 @@ try {
     return { r1: r1.status, friends: f.friends.length };
   }, B.user);
   check(fr.r1 === 'pending' && fr.friends === 1, 'Solicitud de amistad enviada y aceptada', JSON.stringify(fr));
+  // 6b) reportar un error desde la sección Novedades (queda en el servidor y se ve en MIS REPORTES)
+  step = 'reportar error';
+  await p1.evaluate(() => { window.DC.save.viewer = 0; });
+  await p1.click('.sn-btn[data-id="news"]');
+  await p1.click('.tabs .tab >> text=REPORTAR UN ERROR');
+  await p1.waitForSelector('.bug-form');
+  await p1.click('.bug-kind[data-id="bug"]');
+  await p1.fill('.bug-text', 'Reporte de prueba automática (E2E): se borra solo al eliminar la cuenta de prueba.');
+  await p1.click('.bug-form .btn.green');
+  const thanks = await p1.waitForSelector('.bug-thanks', { timeout: 15000 }).then((e) => e.textContent()).catch(() => '');
+  check(/REPORTE #\d+ RECIBIDO/.test(thanks), 'Reporte de error enviado y guardado en el servidor', thanks.slice(0, 80));
+  await p1.click('text=VER MIS REPORTES');
+  const mine = await p1.waitForSelector('.bug-row-item', { timeout: 15000 }).then((e) => e.textContent()).catch(() => '');
+  check(/Recibido/.test(mine) && /prueba automática/.test(mine), 'MIS REPORTES muestra el reporte con su estado', mine.slice(0, 80));
   // 7) ranking mundial con datos reales
   step = 'ranking';
   await p1.click('.sn-btn[data-id="ranking"]');

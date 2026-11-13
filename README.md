@@ -45,6 +45,19 @@ en pasos fijos de 1/60 s con la misma semilla de azar ("lockstep" con unos frame
 para los dos). Cada segundo comparan una huella del estado; si no coincide, la ronda se anula. Al terminar, cada
 compu informa el resultado y **el servidor solo lo cuenta si las dos coinciden**.
 
+## Novedades y reportes de errores
+
+- **Novedades** (menú lateral): cada actualización con lo nuevo, las mejoras y los errores corregidos. La última
+  aparece como cartel una sola vez a cada jugador y queda fija arriba de Inicio.
+- **Reportar un error** (Novedades → REPORTAR UN ERROR, o el botón "¿Un error?" de Inicio): tipo de problema, dónde
+  pasó y qué pasó. Se pueden adjuntar datos técnicos (versión, navegador, pantalla y últimos errores; nada personal).
+  Funciona con cuenta o como invitado. En **MIS REPORTES** cada uno ve el estado (recibido, visto, arreglándolo,
+  arreglado) y la respuesta; con cuenta llega una notificación cuando se responde.
+- **Administrar reportes**: las cuentas con `is_admin = true` ven la pestaña **ADMIN** (todos los reportes, datos
+  técnicos, cambiar estado y responder). Para dar acceso: `update accounts set is_admin = true where username = '…';`
+- **Anunciar una actualización**: agregar una entrada arriba de todo en `src/data/news.js` (id nuevo, fecha,
+  versión, bloques `nuevo` / `mejora` / `arreglo`). Al publicar, el cartel aparece solo.
+
 ## Contenido
 
 - **Modos**: Duel, Quick Play, Tournament, Survival. Dificultades Fácil/Normal/Difícil y **CAOS**
@@ -75,11 +88,12 @@ src/
   net/onlineMatch.js   online: una serie contra el rival (estado del servidor, rondas, resultados)
   data/catalog.js      FUENTE ÚNICA: objetos, rarezas, títulos, tarjetas, niveles, rangos SUSI, dominio
   data/achievements.js FUENTE ÚNICA: 152 logros con condiciones evaluadas por el servidor
+  data/news.js         novedades del juego (cartel y sección Novedades)
   core/                motor: bucle, input, audio, renderer, personajes, cosméticos, cuentas (accountService)
   games/               un archivo por minijuego (todos extienden BaseGame) + index.js (registro)
   ui/                  hub (menú y barra superior), store, inventory, achievementsView, profile, club,
                        ranking, statsView, gamesView, notifications, accountModal, online, kit (componentes)
-supabase/migrations/   esquema y lógica del servidor (001_core … 005_online.sql)
+supabase/migrations/   esquema y lógica del servidor (001_core … 005_online, 006_feedback)
 supabase/seed/         catalog.sql generado desde src/data con scripts/gen-seed.mjs
 scripts/               gen-seed.mjs (catálogo → SQL), gen-legacy-migration.py (migración de la versión anterior)
 ```
