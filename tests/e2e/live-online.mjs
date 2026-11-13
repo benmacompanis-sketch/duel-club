@@ -3,8 +3,25 @@
 // conexión directa WebRTC, una partida real, respaldo por el servidor (Realtime), búsqueda de rival y
 // abandono. Al final borra sus cuentas de prueba "e2eo…".
 import { chromium } from 'playwright';
+import { readFileSync } from 'node:fs';
 
-const BASE = process.env.SITE_URL || 'https://benmacompanis-sketch.github.io/duel-club/';
+// sitio a probar: el nuevo (si deploy/redirect-to.txt tiene la mudanza configurada) o GitHub Pages
+const OLD_URL = 'https://benmacompanis-sketch.github.io/duel-club/';
+const MOVED = (() => { try { return readFileSync(new URL('../../deploy/redirect-to.txt', import.meta.url), 'utf8').trim(); } catch { return ''; } })();
+const BASE = process.env.SITE_URL || (MOVED ? (MOVED.endsWith('/') ? MOVED : MOVED + '/') : OLD_URL);
+/** Espera a que el sitio publicado tenga este commit (Vercel publica por su cuenta). */
+async function waitForBuild(browser) {
+  const sha = process.env.GITHUB_SHA;
+  if (!sha || !MOVED) return;
+  const page = await browser.newPage();
+  for (let i = 0; i < 40; i++) {
+    const b = await page.goto(BASE, { waitUntil: 'domcontentloaded' }).then(() => page.evaluate(() => document.documentElement.dataset.build)).catch(() => null);
+    if (b === sha) break;
+    await page.waitForTimeout(10000);
+  }
+  await page.close();
+}
+
 const tag = Math.random().toString(36).slice(2, 7);
 const A = { user: `e2eoa${tag}`, name: `Online A ${tag}`, pass: 'clave-e2e-1' };
 const B = { user: `e2eob${tag}`, name: `Online B ${tag}`, pass: 'clave-e2e-2' };
@@ -17,6 +34,7 @@ const check = (cond, msg, extra = '') => (cond ? ok(msg) : bad(`${msg} ${extra}`
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required', '--disable-features=WebRtcHideLocalIpsWithMdns'] });
+await waitForBuild(browser);
 
 async function computer(acc, query = '?test') {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });

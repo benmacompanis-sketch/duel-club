@@ -1,8 +1,25 @@
 // Prueba de punta a punta contra el sitio PUBLICADO y la base de datos REAL.
 // Corre en GitHub Actions (otra máquina, navegador limpio, sin Claude). Crea cuentas de prueba "e2e…".
 import { chromium } from 'playwright';
+import { readFileSync } from 'node:fs';
 
-const BASE = process.env.SITE_URL || 'https://benmacompanis-sketch.github.io/duel-club/';
+// sitio a probar: el nuevo (si deploy/redirect-to.txt tiene la mudanza configurada) o GitHub Pages
+const OLD_URL = 'https://benmacompanis-sketch.github.io/duel-club/';
+const MOVED = (() => { try { return readFileSync(new URL('../../deploy/redirect-to.txt', import.meta.url), 'utf8').trim(); } catch { return ''; } })();
+const BASE = process.env.SITE_URL || (MOVED ? (MOVED.endsWith('/') ? MOVED : MOVED + '/') : OLD_URL);
+/** Espera a que el sitio publicado tenga este commit (Vercel publica por su cuenta). */
+async function waitForBuild(browser) {
+  const sha = process.env.GITHUB_SHA;
+  if (!sha || !MOVED) return;
+  const page = await browser.newPage();
+  for (let i = 0; i < 40; i++) {
+    const b = await page.goto(BASE, { waitUntil: 'domcontentloaded' }).then(() => page.evaluate(() => document.documentElement.dataset.build)).catch(() => null);
+    if (b === sha) break;
+    await page.waitForTimeout(10000);
+  }
+  await page.close();
+}
+
 const tag = Math.random().toString(36).slice(2, 7);
 const A = { user: `e2ea${tag}`, name: `E2E A ${tag}`, pass: 'clave-e2e-1' };
 const B = { user: `e2eb${tag}`, name: `E2E B ${tag}`, pass: 'clave-e2e-2' };
@@ -50,7 +67,16 @@ async function login(page, slot, acc) {
 }
 
 const browser = await chromium.launch();
+await waitForBuild(browser);
 try {
+  // 0) mudanza: el link viejo manda al nuevo
+  if (MOVED) {
+    const pg = await browser.newPage();
+    await pg.goto(OLD_URL + '?sala=ABCDE').catch(() => {});
+    await pg.waitForURL(BASE + '**', { timeout: 20000 }).catch(() => {});
+    check(pg.url().startsWith(BASE), 'El link viejo redirige al link nuevo', pg.url());
+    await pg.close();
+  }
   // 1) un visitante sin nada abre el link y ve el juego
   {
     const { ctx, page, errors, news } = await openSite(browser, false);
