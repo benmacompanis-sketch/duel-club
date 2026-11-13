@@ -4,10 +4,11 @@ on:
   workflow_run:
     workflows: ['Publicar en GitHub Pages']
     types: [completed]
-  push:
-    branches: [main]
-    paths: ['tests/e2e/**', '.github/workflows/e2e-live.yml']
   workflow_dispatch:
+# una sola prueba a la vez (dos pruebas en paralelo se cruzarían en "buscar rival")
+concurrency:
+  group: e2e-live
+  cancel-in-progress: false
 jobs:
   e2e:
     runs-on: ubuntu-latest

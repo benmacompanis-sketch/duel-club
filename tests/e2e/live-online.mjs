@@ -78,7 +78,8 @@ async function roomMatch(pa, pb, label) {
   await pb.fill('.ol-code', code);
   await pb.click('.ol-join .btn');
   await Promise.all([pa.waitForSelector('.ol-lobby', { timeout: 20000 }), pb.waitForSelector('.ol-lobby', { timeout: 20000 })]);
-  const mode = await pa.waitForFunction(() => ['p2p', 'relay'].includes(window.DC.online?.link?.mode), null, { timeout: 30000 })
+  const want = label === 'directa' ? ['p2p'] : ['relay'];
+  const mode = await pa.waitForFunction((w) => w.includes(window.DC.online?.link?.mode), want, { timeout: 30000 })
     .then(() => pa.evaluate(() => window.DC.online.link.mode)).catch(() => pa.evaluate(() => window.DC.online?.link?.mode || 'sin partida'));
   const fin = await playUntilFinal([pa, pb]);
   await sleep(3000);

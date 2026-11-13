@@ -448,8 +448,13 @@ function lobbyScreen(ui, { match, done }) {
     const ping = match.ping;
     if (mode === 'p2p' || mode === 'relay') {
       connectedAt ??= performance.now();
-      put(status, h('span.ol-led.on'), h('b', mode === 'p2p' ? 'CONEXIÓN DIRECTA' : 'CONECTADOS POR EL SERVIDOR'), ping != null ? h('span.muted', ` · ${ping} ms`) : null);
-      if (performance.now() - connectedAt > 1600 && performance.now() - t0 > 3200 && (ping != null || performance.now() - connectedAt > 4000)) finish('go');
+      // si primero conecta el respaldo por el servidor, se esperan unos segundos a la conexión directa (menos retardo)
+      const link = match.link;
+      const directPending = mode === 'relay' && link?.pc && !link.p2pFailed;
+      put(status, h('span.ol-led.on'), h('b', mode === 'p2p' ? 'CONEXIÓN DIRECTA' : 'CONECTADOS POR EL SERVIDOR'), ping != null ? h('span.muted', ` · ${ping} ms`) : null,
+        directPending ? h('span.muted', ' · buscando conexión directa…') : null);
+      const wait = directPending ? 7000 : 1600;
+      if (performance.now() - connectedAt > wait && performance.now() - t0 > 3200 && (ping != null || performance.now() - connectedAt > 4000)) finish('go');
     } else {
       const secs = (performance.now() - t0) / 1000;
       put(status, h('span.ol-led'), h('b', 'CONECTANDO CON ' + (match.opp?.name || 'EL RIVAL').toUpperCase() + '…'),
