@@ -7,12 +7,14 @@ import { readFileSync } from 'node:fs';
 
 // sitio a probar: el nuevo (si deploy/redirect-to.txt tiene la mudanza configurada) o GitHub Pages
 const OLD_URL = 'https://benmacompanis-sketch.github.io/duel-club/';
-const MOVED = (() => { try { return readFileSync(new URL('../../deploy/redirect-to.txt', import.meta.url), 'utf8').trim(); } catch { return ''; } })();
-const BASE = process.env.SITE_URL || (MOVED ? (MOVED.endsWith('/') ? MOVED : MOVED + '/') : OLD_URL);
+const readUrl = (f) => { try { const u = readFileSync(new URL('../../deploy/' + f, import.meta.url), 'utf8').trim(); return u && !u.endsWith('/') ? u + '/' : u; } catch { return ''; } };
+const MOVED = readUrl('redirect-to.txt'); // el link viejo ya redirige al nuevo
+const NEW_SITE = MOVED || readUrl('new-site.txt'); // sitio nuevo (Vercel)
+const BASE = process.env.SITE_URL || NEW_SITE || OLD_URL;
 /** Espera a que el sitio publicado tenga este commit (Vercel publica por su cuenta). */
 async function waitForBuild(browser) {
   const sha = process.env.GITHUB_SHA;
-  if (!sha || !MOVED) return;
+  if (!sha || !NEW_SITE) return;
   const page = await browser.newPage();
   for (let i = 0; i < 40; i++) {
     const b = await page.goto(BASE, { waitUntil: 'domcontentloaded' }).then(() => page.evaluate(() => document.documentElement.dataset.build)).catch(() => null);
