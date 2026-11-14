@@ -3,7 +3,7 @@
 **ONE CLUB. INFINITE DUELS.**
 
 Arcade competitivo 1v1 en el navegador: **dos jugadores en el mismo teclado** o **cada uno en su compu (online)**.
-16 minijuegos, cuentas online, nivel con **KEKE**, rating competitivo **SUSI**, moneda **PIES** y la **PIE STORE**,
+16 minijuegos, cuentas online, nivel con **XP**, rating competitivo **ELO**, moneda **PIES** y la **PIE STORE**,
 152 logros, dominio por minijuego, amigos, cara a cara, rankings mundiales y una banda sonora generada en tiempo real.
 
 ---
@@ -13,7 +13,7 @@ Arcade competitivo 1v1 en el navegador: **dos jugadores en el mismo teclado** o 
 - **Jugar ahora: https://duelclub.vercel.app/** (no hace falta cuenta de nada para entrar).
 - El link viejo (`benmacompanis-sketch.github.io/duel-club`) redirige solo al nuevo y lleva la sesión, los ajustes
   y las estadísticas de ese navegador, y los links de sala `?sala=CODIGO`.
-- Se puede jugar como **invitado** sin registrarse. Para guardar progreso permanente (KEKE, PIES, SUSI,
+- Se puede jugar como **invitado** sin registrarse. Para guardar progreso permanente (XP, PIES, ELO,
   logros, inventario, historial) cada jugador crea una cuenta con **usuario + contraseña** (sin email).
 - J1 y J2 pueden tener cada uno su cuenta en la misma computadora. La misma cuenta no puede ser J1 y J2.
 - Cuentas de la versión anterior (nombre + PIN): en *Cuenta → CUENTA ANTERIOR* se recuperan con el PIN y
@@ -33,12 +33,12 @@ Se pueden reasignar en **Configuración → Controles**. Menús: flechas/WASD, `
 ## Jugar online (cada uno en su compu)
 
 - **Jugar → JUGAR ONLINE** (hace falta cuenta). Tres formas:
-  - **Buscar rival**: el servidor te empareja con alguien de SUSI parecido (el rango se abre si tarda). Mejor de 3.
+  - **Buscar rival**: el servidor te empareja con alguien de ELO parecido (el rango se abre si tarda). Mejor de 3.
   - **Sala con código**: creás la sala (única, mejor de 3 o de 5; minijuegos al azar o uno elegido; CAOS opcional)
     y le pasás a tu amigo el código o el link `…/duel-club/?sala=CODIGO`.
   - **Desafiar a un amigo** del CLUB: le aparece el aviso al instante si tiene el juego abierto.
 - Cada uno juega con sus teclas de siempre (WASD + F/G o flechas + ENTER/SHIFT). No hay pausa: ESC = abandonar.
-- La partida cuenta para SUSI, KEKE, PIES, dominio y logros igual que en una compu. Revancha con un botón.
+- La partida cuenta para ELO, XP, PIES, dominio y logros igual que en una compu. Revancha con un botón.
 - Si alguien abandona o deja de responder 25 s, pierde la ronda en curso y la serie.
 
 **Cómo funciona.** Las dos compus se conectan directo (WebRTC); si alguna red no lo permite, los mensajes pasan
@@ -67,9 +67,9 @@ compu informa el resultado y **el servidor solo lo cuenta si las dos coinciden**
 - **16 minijuegos**: Reaction Rush, Micro Race, Pong Chaos, Last Platform, Hoop Master, Memory War,
   Color Control, Duel Arena, Target Panic, Beat Battle, Fish Frenzy, Block Battle y los nuevos
   **Shadow Sneak** (laberinto a oscuras), **Turbo Tennis**, **Tower Climb** (pantalla dividida) y **Blast Zone** (supervivencia).
-- **KEKE y niveles**: hace falta `25 × (L − 1) × (L + 2)` KEKE para el nivel L. Títulos 1/5/10/15/20/30/50/75/100
+- **XP y niveles**: hace falta `25 × (L − 1) × (L + 2)` XP para el nivel L. Títulos 1/5/10/15/20/30/50/75/100
   y niveles especiales 6, 21, 42, **67 (EL ELEGIDO)**, 69, 100 y 150 con recompensas propias.
-- **SUSI**: rating tipo ELO (empieza en 1000, K 36→24→16 según experiencia), solo entre dos cuentas,
+- **ELO**: rating tipo ELO (empieza en 1000, K 36→24→16 según experiencia), solo entre dos cuentas,
   con anti-abuso (entre la misma pareja, rinde la mitad desde la 6.ª partida en 24 h y nada desde la 12.ª).
 - **PIES y PIE STORE**: 80 objetos a la venta (20 comunes, 18 poco comunes, 16 raros, 12 épicos, 9 legendarios,
   5 míticos; 100/250/500/1000/2200/5000 PIES) + exclusivos por logros, niveles, dominio y secretos.
@@ -78,7 +78,7 @@ compu informa el resultado y **el servidor solo lo cuenta si las dos coinciden**
   Tun-Tun Tronco), sombreros, emotes, títulos absurdos y frases contextuales que no se repiten.
 - **Logros**: 152 (16 minijuegos × 5 desafíos + generales, competitivos, sociales, online, colección, meme y secretos).
 - **CLUB**: amigos (en línea/última actividad), búsqueda, solicitudes (aceptar/rechazar/cancelar), cara a cara con VS.
-- **Ranking mundial**: SUSI, nivel, KEKE, victorias, por minijuego y récords; General/Amigos, Top 10/100 y mi posición.
+- **Ranking mundial**: ELO, nivel, XP, victorias, por minijuego y récords; General/Amigos, Top 10/100 y mi posición.
 
 ## Arquitectura
 
@@ -88,7 +88,7 @@ src/
   net/api.js           cliente RPC (fetch) + mensajes de error
   net/netplay.js       online: conexión (WebRTC + respaldo Realtime) y simulación sincronizada (lockstep)
   net/onlineMatch.js   online: una serie contra el rival (estado del servidor, rondas, resultados)
-  data/catalog.js      FUENTE ÚNICA: objetos, rarezas, títulos, tarjetas, niveles, rangos SUSI, dominio
+  data/catalog.js      FUENTE ÚNICA: objetos, rarezas, títulos, tarjetas, niveles, rangos ELO, dominio
   data/achievements.js FUENTE ÚNICA: 152 logros con condiciones evaluadas por el servidor
   data/news.js         novedades del juego (cartel y sección Novedades)
   core/                motor: bucle, input, audio, renderer, personajes, cosméticos, cuentas (accountService)
@@ -106,14 +106,14 @@ scripts/               gen-seed.mjs (catálogo → SQL), gen-legacy-migration.py
   RLS activado sin políticas y sin permisos para `anon`/`authenticated`: no se pueden leer ni escribir directo.
 - Autenticación propia: contraseñas con bcrypt, sesiones con token aleatorio (se guarda solo su hash),
   límite de intentos fallidos y de registros.
-- El servidor calcula **todo** lo que importa: KEKE, niveles, PIES, SUSI, logros, dominio, récords e inventario.
+- El servidor calcula **todo** lo que importa: XP, niveles, PIES, ELO, logros, dominio, récords e inventario.
   El navegador envía el resultado de la partida; el servidor valida sesiones de ambos jugadores, duración mínima,
   ritmo, valores plausibles, idempotencia (`client_id` único: una partida nunca paga dos veces) y aplica
   recompensas decrecientes por día contra el farmeo. Las competiciones solo cuentan si tienen minijuegos registrados.
 - Sin conexión, los resultados quedan en una cola local y se envían al volver la conexión.
 - Este navegador guarda solo: ajustes, controles, sesiones iniciadas y estadísticas locales de la compu.
 - Limitación honesta: los minijuegos corren en el navegador, así que el servidor no puede verificar la física
-  de cada jugada. Por eso se limitan valores, ritmo y recompensas diarias, y el SUSI exige dos cuentas con sesión.
+  de cada jugada. Por eso se limitan valores, ritmo y recompensas diarias, y el ELO exige dos cuentas con sesión.
   Online, además, las dos compus tienen que informar lo mismo para que la ronda cuente. La conexión directa
   WebRTC hace que cada compu vea la IP pública de la otra (como en cualquier juego P2P).
 

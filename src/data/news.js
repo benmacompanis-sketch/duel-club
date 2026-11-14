@@ -32,8 +32,8 @@ export const NEWS = [
     intro: 'Ahora cada uno puede jugar desde su compu: vos en tu casa y tu amigo en la suya.',
     blocks: [
       { kind: 'nuevo', items: [
-        'JUGAR ONLINE (en Jugar): buscá rival por SUSI, creá una sala con código o link, o desafiá a un amigo del CLUB.',
-        'Las partidas online cuentan para SUSI, KEKE, PIES, dominio y logros. Revancha con un botón.',
+        'JUGAR ONLINE (en Jugar): buscá rival por ELO, creá una sala con código o link, o desafiá a un amigo del CLUB.',
+        'Las partidas online cuentan para ELO, XP, PIES, dominio y logros. Revancha con un botón.',
         '4 logros nuevos para el modo online.',
         'Esta sección de Novedades y el formulario para reportar errores: lo que reportes lo vemos y lo arreglamos.',
       ] },
@@ -82,7 +82,7 @@ export const NEWS = [
     blocks: [
       { kind: 'nuevo', items: [
         'Cuentas con usuario y contraseña que funcionan en cualquier compu o celular.',
-        'KEKE y niveles, SUSI (el rating competitivo), PIES y la PIE STORE con 80 objetos.',
+        'XP y niveles, ELO (el rating competitivo), PIES y la PIE STORE con 80 objetos.',
         '4 minijuegos nuevos: Shadow Sneak, Turbo Tennis, Tower Climb y Blast Zone. Dificultad CAOS en todos los modos.',
         'CLUB de amigos, cara a cara, ranking mundial, logros y dominio por minijuego.',
       ] },
@@ -103,7 +103,7 @@ export const BUG_KINDS = [
   ['bug', 'Error o falla', 'Algo no funciona, se traba o se cierra'],
   ['visual', 'Se ve mal', 'Textos cortados, cosas encimadas, colores raros'],
   ['online', 'Modo online', 'Conexión, salas, desafíos o resultados online'],
-  ['account', 'Cuenta o progreso', 'KEKE, PIES, SUSI, logros, tienda o inicio de sesión'],
+  ['account', 'Cuenta o progreso', 'XP, PIES, ELO, logros, tienda o inicio de sesión'],
   ['idea', 'Sugerencia', 'Algo que te gustaría que agreguemos o cambiemos'],
 ];
 

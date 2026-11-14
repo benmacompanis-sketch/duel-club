@@ -1,11 +1,11 @@
-// Rankings mundiales con datos reales del servidor: SUSI, nivel, KEKE, victorias, por minijuego
+// Rankings mundiales con datos reales del servidor: ELO, nivel, XP, victorias, por minijuego
 // y récords. Filtros General/Amigos, Top 10/Top 100, búsqueda y la posición propia aunque no esté arriba.
 import { h, icon } from './dom.js';
 import { tabs, loading, errorBox, empty, avatar, lookOf, levelBadge, resist, fmtN, tierName, timeAgo, gameChip, titleOf } from './kit.js';
 import { GAME_IDS, GAME_NAMES, levelInfo } from '../data/catalog.js';
 import { errorText } from '../net/api.js';
 
-const KINDS = [['rating', 'SUSI'], ['level', 'Nivel'], ['keke', 'KEKE'], ['wins', 'Victorias'], ['game', 'Por minijuego'], ['records', 'Récords']];
+const KINDS = [['rating', 'ELO'], ['level', 'Nivel'], ['xp', 'XP'], ['wins', 'Victorias'], ['game', 'Por minijuego'], ['records', 'Récords']];
 
 export function rankingSection(ui, owner, ctx) {
   const app = ui.app;
@@ -40,8 +40,8 @@ export function rankingSection(ui, owner, ctx) {
   }
   const valueOf = (r) => {
     if (kind === 'rating') return [resist(r.value), `Mejor: ${fmtN(r.value2)}`];
-    if (kind === 'level') return [levelBadge(levelInfo(r.value).level), `${fmtN(r.value)} KEKE`];
-    if (kind === 'keke') return [h('b.rank-val', fmtN(r.value)), 'KEKE'];
+    if (kind === 'level') return [levelBadge(levelInfo(r.value).level), `${fmtN(r.value)} XP`];
+    if (kind === 'xp') return [h('b.rank-val', fmtN(r.value)), 'XP'];
     if (kind === 'wins') return [h('b.rank-val', fmtN(r.value)), `de ${fmtN(r.value2)} partidas`];
     return [h('b.rank-val', fmtN(r.value)), `victorias · ${fmtN(r.value2)} pts de dominio`];
   };

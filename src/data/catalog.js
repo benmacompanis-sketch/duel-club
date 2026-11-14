@@ -2,6 +2,8 @@
 // El servidor recibe precios, rarezas y desbloqueos desde este archivo (scripts/gen-seed.mjs).
 // Ningún cosmético da ventajas: solo cambian el aspecto.
 
+import { SEASONS } from './pass.js';
+
 export const RARITIES = {
   common: { name: 'Común', color: '#A7B0C8', price: 100, order: 0 },
   uncommon: { name: 'Poco común', color: '#48D597', price: 250, order: 1 },
@@ -251,11 +253,11 @@ export const MASTERY_ITEMS = GAME_IDS.flatMap((g) => [
 ]);
 
 export const MASTERY_RANKS = [
-  { id: 0, name: 'Principiante', points: 0, keke: 0, pies: 0 },
-  { id: 1, name: 'Aficionado', points: 12, keke: 50, pies: 40 },
-  { id: 2, name: 'Competente', points: 35, keke: 100, pies: 80 },
-  { id: 3, name: 'Experto', points: 80, keke: 200, pies: 150 },
-  { id: 4, name: 'Maestro', points: 160, keke: 400, pies: 300 },
+  { id: 0, name: 'Principiante', points: 0, xp: 0, pies: 0 },
+  { id: 1, name: 'Aficionado', points: 12, xp: 50, pies: 40 },
+  { id: 2, name: 'Competente', points: 35, xp: 100, pies: 80 },
+  { id: 3, name: 'Experto', points: 80, xp: 200, pies: 150 },
+  { id: 4, name: 'Maestro', points: 160, xp: 400, pies: 300 },
 ];
 export const masteryPoints = (m) => (m ? m.played + m.wins * 2 : 0);
 export function masteryRank(m) {
@@ -289,7 +291,7 @@ export const SPECIAL_LEVELS = {
   6: 'Sos sospechoso', 21: 'Modo serio', 42: 'La respuesta', 67: 'EL ELEGIDO', 69: 'No preguntes', 100: 'Leyenda absoluta', 150: '¿Tenés vida?',
 };
 
-// Rangos de SUSI (rating competitivo)
+// Rangos de ELO (rating competitivo)
 export const RESIST_TIERS = [
   { min: -Infinity, name: 'Principiante', color: '#8C96B8' },
   { min: 800, name: 'Aspirante', color: '#A7B0C8' },
@@ -308,18 +310,22 @@ export const resistTier = (r) => {
   return { ...t, index: i };
 };
 
-// Niveles: hace falta 25·(L−1)·(L+2) KEKE para llegar al nivel L
-export const kekeForLevel = (L) => 25 * (L - 1) * (L + 2);
-export function levelInfo(keke) {
+// Niveles: hace falta 25·(L−1)·(L+2) XP para llegar al nivel L
+export const xpForLevel = (L) => 25 * (L - 1) * (L + 2);
+export function levelInfo(xp) {
   let L = 1;
-  while (kekeForLevel(L + 1) <= keke) L++;
-  const cur = kekeForLevel(L), next = kekeForLevel(L + 1);
+  while (xpForLevel(L + 1) <= xp) L++;
+  const cur = xpForLevel(L), next = xpForLevel(L + 1);
   let title = 'Novato';
   for (const [lv, name] of LEVEL_TITLES) if (L >= lv) title = name;
-  return { level: L, keke, into: keke - cur, need: next - cur, progress: (keke - cur) / (next - cur), title, special: SPECIAL_LEVELS[L] || null };
+  return { level: L, xp, into: xp - cur, need: next - cur, progress: (xp - cur) / (next - cur), title, special: SPECIAL_LEVELS[L] || null };
 }
 
-export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS].map((x) => {
+// Objetos exclusivos del Pase de Batalla (no se venden)
+export const PASS_ITEMS = SEASONS.flatMap((se) => Object.entries(se.items).map(([id, [category, rarity, name, desc]]) =>
+  ({ id, category, rarity, name, desc, unlock: `Pase de Batalla · ${se.name}`, sale: false, pass: se.id })));
+
+export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS, ...PASS_ITEMS].map((x) => {
   const sale = x.sale && !ACH_ONLY.has(x.id);
   return { ...x, sale, exclusive: !sale && !x.default, price: sale ? RARITIES[x.rarity].price : null };
 });

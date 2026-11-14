@@ -1,5 +1,5 @@
 // JUGAR ONLINE: cada jugador en su compu.
-// Menú (buscar rival por SUSI, crear sala con código, entrar con código, desafiar a un amigo), esperas,
+// Menú (buscar rival por ELO, crear sala con código, entrar con código, desafiar a un amigo), esperas,
 // presentación de cada ronda, resultados confirmados por el servidor, final de la serie y revancha.
 import { h, icon, keycap } from './dom.js';
 import { header, segGroup, toggleRow, gameIcon } from './widgets.js';
@@ -54,7 +54,7 @@ export function onlineScreen(ui, params = {}) {
       body.replaceChildren(h('div.card.ol-need',
         h('div.ol-need-ico', icon('user')),
         h('h3', 'NECESITÁS UNA CUENTA'),
-        h('p.muted', 'Para jugar online cada uno entra con su cuenta desde su compu. Así el servidor sabe quién es quién y la partida cuenta para SUSI, KEKE y PIES.'),
+        h('p.muted', 'Para jugar online cada uno entra con su cuenta desde su compu. Así el servidor sabe quién es quién y la partida cuenta para ELO, XP y PIES.'),
         h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => ui.modal(accountModal, { p: 0, onDone: render }) }, icon('user'), 'INICIAR SESIÓN O CREAR CUENTA')));
       ui.focusFirst();
       return;
@@ -70,11 +70,11 @@ export function onlineScreen(ui, params = {}) {
 
     // ---- buscar rival
     const findCard = h('div.card.ol-card', { style: { '--accent': '#3985FF' } },
-      h('div.ol-card-head', h('span.ol-ico', icon('duel')), h('div', h('h3', 'BUSCAR RIVAL'), h('p.muted', 'Te emparejamos con alguien de SUSI parecido. Mejor de 3, minijuegos al azar.'))),
+      h('div.ol-card-head', h('span.ol-ico', icon('duel')), h('div', h('h3', 'BUSCAR RIVAL'), h('p.muted', 'Te emparejamos con alguien de ELO parecido. Mejor de 3, minijuegos al azar.'))),
       h('ul.ol-points',
         h('li', icon('shield'), 'Rival de tu nivel (el rango se abre si tarda)'),
         h('li', icon('shuffle'), '3 minijuegos al azar, iguales para los dos'),
-        h('li', icon('trophy'), 'Cada minijuego da SUSI, KEKE y PIES'),
+        h('li', icon('trophy'), 'Cada minijuego da ELO, XP y PIES'),
         h('li', icon('check'), 'El resultado lo confirman las dos compus')),
       h('div.spacer'),
       h('button.btn.primary.big.wide', { nav: true, 'data-autofocus': true, onclick: () => startSearch(ui, user) }, icon('play'), 'BUSCAR PARTIDA'));
@@ -141,7 +141,7 @@ export function onlineScreen(ui, params = {}) {
   }
 
   scr.el = h('div.page.online-page',
-    header(ui, 'JUGAR ONLINE', 'Cada uno desde su compu · cuenta para SUSI, KEKE y PIES', back,
+    header(ui, 'JUGAR ONLINE', 'Cada uno desde su compu · cuenta para ELO, XP y PIES', back,
       whoSlot),
     body);
   render();
@@ -178,7 +178,7 @@ export function startSearch(ui, user) {
   let timer = null;
   const t0 = performance.now();
   const clock = h('b.ol-clock', '0:00');
-  const info = h('small.muted', 'Buscando jugadores con SUSI parecido…');
+  const info = h('small.muted', 'Buscando jugadores con ELO parecido…');
   const err = h('p.acc-error');
   const tick = setInterval(() => {
     const s = Math.floor((performance.now() - t0) / 1000);
@@ -340,7 +340,7 @@ function incomingModal(ui, user, myName, c) {
       h('small.ol-kicker', `DESAFÍO ONLINE PARA ${myName.toUpperCase()}`),
       h('div.row.center', avatar(ui, {}, lookOf(c.from), 72)),
       h('h2', `${c.from?.name} te desafía${c.rematch ? ' a la revancha' : ''}`),
-      h('p.muted', `${c.best_of > 1 ? 'Mejor de ' + c.best_of : 'Partida única'} · ${g}${c.caos ? ' · CAOS' : ''} · SUSI ${c.from?.rating ?? ''}`),
+      h('p.muted', `${c.best_of > 1 ? 'Mejor de ' + c.best_of : 'Partida única'} · ${g}${c.caos ? ' · CAOS' : ''} · ELO ${c.from?.rating ?? ''}`),
       h('div.dialog-actions',
         h('button.btn.ghost', { nav: true, onclick: decline }, 'RECHAZAR'),
         h('button.btn.green', { nav: true, 'data-autofocus': true, onclick: () => { close(); acceptChallenge(app, user, c); } }, icon('play'), 'ACEPTAR'))),
@@ -391,7 +391,7 @@ export async function runOnline(app, user, view, { rejoin = false } = {}) {
     async function askLeave() {
       if (leaving) return;
       leaving = true;
-      const ok = await ui.confirm({ title: '¿Abandonar la partida online?', text: 'Perdés la ronda en curso y la serie (cuenta para SUSI).', yes: 'Abandonar', no: 'Seguir jugando' });
+      const ok = await ui.confirm({ title: '¿Abandonar la partida online?', text: 'Perdés la ronda en curso y la serie (cuenta para ELO).', yes: 'Abandonar', no: 'Seguir jugando' });
       leaving = false;
       if (ok) await match.leave();
     }
@@ -489,7 +489,7 @@ function lobbyScreen(ui, { match, done }) {
   const iv = setInterval(update, 200);
   const unsub = match.on(update);
   scr.el = h('div.ol-lobby',
-    h('div.ol-kicker', `${v.kind === 'ranked' ? 'PARTIDA POR SUSI' : v.kind === 'challenge' ? 'DESAFÍO ONLINE' : 'SALA ' + v.code} · ${v.best_of > 1 ? 'MEJOR DE ' + v.best_of : 'PARTIDA ÚNICA'} · ${games}${v.caos ? ' · CAOS' : ''}`),
+    h('div.ol-kicker', `${v.kind === 'ranked' ? 'PARTIDA POR ELO' : v.kind === 'challenge' ? 'DESAFÍO ONLINE' : 'SALA ' + v.code} · ${v.best_of > 1 ? 'MEJOR DE ' + v.best_of : 'PARTIDA ÚNICA'} · ${games}${v.caos ? ' · CAOS' : ''}`),
     h('div.ol-vs',
       h('div.ol-side' + (match.slot === 0 ? '.me' : ''), profileCard(ui, scr, v.players[0], { compact: true }), h('span.ol-tag', match.slot === 0 ? 'VOS · J1' : 'RIVAL · J1')),
       h('div.ol-vs-mid', 'VS'),
@@ -605,7 +605,7 @@ function resultsHooks(ui, match, r, reported, applyOut, winner) {
     next: null,
     actions: (choose) => {
       contBtn = h('button.btn.primary.big', { nav: true, 'data-autofocus': true, disabled: true, onclick: () => choose('continue') }, icon('play'), 'CONTINUAR');
-      const leave = h('button.btn.ghost', { nav: true, onclick: async () => { if (await ui.confirm({ title: '¿Abandonar la serie?', text: 'Perdés la serie (cuenta para SUSI).', yes: 'Abandonar', no: 'Seguir' })) choose('leave'); } }, 'ABANDONAR');
+      const leave = h('button.btn.ghost', { nav: true, onclick: async () => { if (await ui.confirm({ title: '¿Abandonar la serie?', text: 'Perdés la serie (cuenta para ELO).', yes: 'Abandonar', no: 'Seguir' })) choose('leave'); } }, 'ABANDONAR');
       const el = h('div.res-actions', leave, contBtn);
       const created = performance.now();
       // continuar solo cuando el servidor confirmó; después arranca solo
@@ -653,13 +653,13 @@ function resultsHooks(ui, match, r, reported, applyOut, winner) {
         const out = match.outFor(r);
         if (out) applyOut(r);
         set(me, out ? [
-          h('span.res-reward.keke', `+${fmtN(out.keke)} KEKE`),
+          h('span.res-reward.xp', `+${fmtN(out.xp)} XP`),
           out.pies ? h('span.res-reward.pies', `+${fmtN(out.pies)} PIES`) : null,
-          d[me] ? h('span.res-reward' + (d[me] > 0 ? '.up' : '.down'), `${d[me] > 0 ? '+' : ''}${d[me]} SUSI`) : null,
+          d[me] ? h('span.res-reward' + (d[me] > 0 ? '.up' : '.down'), `${d[me] > 0 ? '+' : ''}${d[me]} ELO`) : null,
           out.record ? h('span.res-reward.pies', '★ RÉCORD MUNDIAL') : null,
           out.factor < 1 ? h('span.res-reward.wait', out.factor === 0 ? 'Límite diario alcanzado' : 'Recompensa reducida (muchas partidas hoy)') : null,
         ] : [h('span.res-reward.wait', 'Guardando…')]);
-        set(opp, [d[opp] ? h('span.res-reward' + (d[opp] > 0 ? '.up' : '.down'), `${d[opp] > 0 ? '+' : ''}${d[opp]} SUSI`) : h('span.res-reward.wait', 'Sin cambio de SUSI')]);
+        set(opp, [d[opp] ? h('span.res-reward' + (d[opp] > 0 ? '.up' : '.down'), `${d[opp] > 0 ? '+' : ''}${d[opp]} ELO`) : h('span.res-reward.wait', 'Sin cambio de ELO')]);
       };
       const unsub = match.on(update);
       update();
@@ -755,8 +755,8 @@ function finalScreen(ui, { match, applyOut, done }) {
         h('span.ol-fs-dash', '–'),
         h('div.ol-fs-side', { style: { '--c': pl[1 - me].color } }, h('small', 'RIVAL'), h('b', pl[1 - me].name), h('div.ol-fs-n', String(wins[1 - me])))),
       h('div.ol-final-rew',
-        myD ? h('span.res-reward' + (myD > 0 ? '.up' : '.down'), `${myD > 0 ? '+' : ''}${myD} SUSI en la serie`) : h('span.res-reward.wait', 'SUSI sin cambios'),
-        comp ? h('span.res-reward.keke', `+${fmtN(comp.keke)} KEKE por la serie`) : null,
+        myD ? h('span.res-reward' + (myD > 0 ? '.up' : '.down'), `${myD > 0 ? '+' : ''}${myD} ELO en la serie`) : h('span.res-reward.wait', 'ELO sin cambios'),
+        comp ? h('span.res-reward.xp', `+${fmtN(comp.xp)} XP por la serie`) : null,
         comp?.pies ? h('span.res-reward.pies', `+${fmtN(comp.pies)} PIES por la serie`) : null),
       rows.length ? h('div.ol-rounds', ...rows) : null);
     // revancha

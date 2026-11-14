@@ -134,7 +134,7 @@ try {
   const st = await Promise.all([ca.page, cb.page].map((p) => p.evaluate(async () => { await window.DC.accounts.refreshAll(); const m = window.DC.accounts.slotAccount(0); return { r: m.rating, op: m.stats.online_played, ach: !!m.achievements.online_1 }; })));
   check(st.every((x) => x.op >= 1 && x.ach), 'Cuentas actualizadas: minijuego online contado y logro "Conexión establecida"', JSON.stringify(st));
   const d = valid[0]?.d || [0, 0];
-  check(valid[0]?.winner === -1 ? d[0] === 0 : d[0] === -d[1] && d[0] !== 0, 'SUSI cambió de forma simétrica', JSON.stringify(d));
+  check(valid[0]?.winner === -1 ? d[0] === 0 : d[0] === -d[1] && d[0] !== 0, 'ELO cambió de forma simétrica', JSON.stringify(d));
 
   // 2) respaldo por el servidor (Supabase Realtime), forzado
   step = 'respaldo por el servidor';
@@ -169,7 +169,7 @@ try {
   check(paired.every(Boolean), 'Buscar rival: el servidor empareja a las dos cuentas');
   if (paired.every(Boolean)) {
     const kind = await ca.page.evaluate(() => `${window.DC.online.view.kind}|${window.DC.online.view.best_of}`);
-    check(kind === 'ranked|3', 'Partida por SUSI al mejor de 3', kind);
+    check(kind === 'ranked|3', 'Partida por ELO al mejor de 3', kind);
     step = 'abandono';
     await ca.page.click('.ol-lobby .btn.ghost');
     await ca.page.click('.modal .btn.danger');

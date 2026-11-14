@@ -83,7 +83,7 @@ try {
   {
     const { ctx, page, errors, news } = await openSite(browser, false);
     check(await page.title() === 'DUEL CLUB · One club. Infinite duels.', 'El sitio publicado carga (título correcto)');
-    check(await page.locator('.sn-btn').count() === 12, 'Menú con 12 secciones visible para un invitado');
+    check(await page.locator('.sn-btn').count() === 13, 'Menú con 13 secciones visible para un invitado');
     check(news, 'El cartel de novedades aparece a un visitante nuevo');
     check(await page.locator('.news-banner').count() === 1, 'Cartel fijo de novedades en Inicio');
     const online = await page.waitForSelector('.tb-status.online', { timeout: 20000 }).then(() => 1).catch(() => 0);
@@ -99,7 +99,7 @@ try {
   await register(p1, 1, B);
   ok(`Registro de J2 (${B.user}) desde la interfaz`);
   const meA0 = await p1.evaluate(() => window.DC.accounts.slotAccount(0));
-  check(meA0.pies === 300 && meA0.rating === 1000 && meA0.level === 1, 'Cuenta nueva: 300 PIES, SUSI 1000, nivel 1', JSON.stringify({ p: meA0.pies, r: meA0.rating, l: meA0.level }));
+  check(meA0.pies === 300 && meA0.rating === 1000 && meA0.level === 1, 'Cuenta nueva: 300 PIES, ELO 1000, nivel 1', JSON.stringify({ p: meA0.pies, r: meA0.rating, l: meA0.level }));
 
   // 3) se juega un minijuego real (Tower Climb, 60 s acelerados) y se envía al servidor
   await p1.evaluate(() => {
@@ -126,12 +126,12 @@ try {
     DC.runner.close();
     DC.ui.goMenu();
     const out = await DC.accounts.submitMatch(res, { mode: 'quick', difficulty: 0.5 });
-    return { winner: res.winner, dur: res.playSeconds, slots: out?.slots?.map((s) => s && { keke: s.keke, pies: s.pies, delta: s.delta, res: s.res, ach: s.achievements.length }) };
+    return { winner: res.winner, dur: res.playSeconds, slots: out?.slots?.map((s) => s && { xp: s.xp, pies: s.pies, delta: s.delta, res: s.res, ach: s.achievements.length }) };
   });
   check(sub.slots && sub.slots[0] && sub.slots[1], 'Partida real enviada y aceptada por el servidor para las dos cuentas', JSON.stringify(sub));
   if (sub.slots?.[0]) {
-    check(sub.slots[0].keke > 0 && sub.slots[1].keke > 0, 'Ambas cuentas ganaron KEKE', JSON.stringify(sub.slots));
-    check(sub.winner === -1 ? sub.slots[0].delta === 0 : sub.slots[0].delta === -sub.slots[1].delta && sub.slots[0].delta !== 0, 'SUSI cambió de forma simétrica entre las dos cuentas', JSON.stringify(sub));
+    check(sub.slots[0].xp > 0 && sub.slots[1].xp > 0, 'Ambas cuentas ganaron XP', JSON.stringify(sub.slots));
+    check(sub.winner === -1 ? sub.slots[0].delta === 0 : sub.slots[0].delta === -sub.slots[1].delta && sub.slots[0].delta !== 0, 'ELO cambió de forma simétrica entre las dos cuentas', JSON.stringify(sub));
   }
   // 4) PIE STORE: compra real desde la interfaz
   lastPage = p1;
@@ -195,7 +195,7 @@ try {
   const names = await p1.locator('.rank-row .rank-name b').allTextContents();
   check(names.some((n) => n.includes(A.name)) && names.some((n) => n.includes(B.name)), 'Las dos cuentas aparecen en el ranking mundial', names.join(', '));
   const profileA = await p1.evaluate(async (u) => (await window.DC.accounts.profile(u)), A.user);
-  check(profileA.matches.length === 1 && profileA.rating_history.length === 1, 'Perfil público con historial y evolución de SUSI', JSON.stringify({ m: profileA.matches.length, rh: profileA.rating_history.length }));
+  check(profileA.matches.length === 1 && profileA.rating_history.length === 1, 'Perfil público con historial y evolución de ELO', JSON.stringify({ m: profileA.matches.length, rh: profileA.rating_history.length }));
   const savedA = await p1.evaluate(async () => { await window.DC.accounts.refreshAll(); return window.DC.accounts.slotAccount(0); });
   check(fr.r1 && savedA.achievements?.friend_1, 'El logro "Ya no jugás solo" se otorga y se ve al instante en las dos cuentas');
   check(c1.errors.length === 0, 'Sin errores de JavaScript durante la sesión', c1.errors.join(' | '));
@@ -207,8 +207,8 @@ try {
   check(await p2.evaluate(() => !window.DC.accounts.slotAccount(0)), 'El navegador nuevo empieza sin sesión');
   await login(p2, 0, A);
   const meA2 = await p2.evaluate(() => window.DC.accounts.slotAccount(0));
-  check(meA2.keke === savedA.keke && meA2.pies === savedA.pies && meA2.rating === savedA.rating && meA2.inventory.length === savedA.inventory.length,
-    'Desde otro navegador se recupera el mismo progreso (KEKE, PIES, SUSI, inventario)', JSON.stringify({ k: [savedA.keke, meA2.keke], p: [savedA.pies, meA2.pies], r: [savedA.rating, meA2.rating] }));
+  check(meA2.xp === savedA.xp && meA2.pies === savedA.pies && meA2.rating === savedA.rating && meA2.inventory.length === savedA.inventory.length,
+    'Desde otro navegador se recupera el mismo progreso (XP, PIES, ELO, inventario)', JSON.stringify({ k: [savedA.xp, meA2.xp], p: [savedA.pies, meA2.pies], r: [savedA.rating, meA2.rating] }));
   const badLogin = await p2.evaluate(async (u) => { try { await window.DC.accounts.login(1, u, 'incorrecta'); return 'entró'; } catch (e) { return e.code; } }, B.user);
   check(badLogin === 'bad_credentials', 'Contraseña incorrecta rechazada', badLogin);
   await p2.evaluate(async (u) => window.DC.accounts.logout(u), A.user);

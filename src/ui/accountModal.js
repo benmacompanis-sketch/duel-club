@@ -133,7 +133,7 @@ export function accountModal(ui, { p, onDone }) {
     if (!me) return;
     const pass = window.prompt(`Para ELIMINAR la cuenta @${me.username} escribí tu contraseña. Se borra todo su progreso y no se puede deshacer.`);
     if (!pass) return;
-    const ok = await ui.confirm({ title: '¿Eliminar la cuenta para siempre?', text: `Se borran KEKE, PIES, SUSI, logros, inventario, amigos e historial de @${me.username}.`, yes: 'Eliminar', no: 'Cancelar' });
+    const ok = await ui.confirm({ title: '¿Eliminar la cuenta para siempre?', text: `Se borran XP, PIES, ELO, logros, inventario, amigos e historial de @${me.username}.`, yes: 'Eliminar', no: 'Cancelar' });
     if (!ok) return;
     try {
       await svc.deleteAccount(p, pass);

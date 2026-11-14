@@ -1,13 +1,13 @@
-// Perfil competitivo: tarjeta, nivel, título, KEKE, SUSI, PIES (solo el propio), cosméticos,
+// Perfil competitivo: tarjeta, nivel, título, XP, ELO, PIES (solo el propio), cosméticos,
 // estadísticas, minijuegos favoritos, récords, historial de 50 partidas, dominio, logros, colección y rivales.
 import { h, icon } from './dom.js';
-import { profileCard, tabs, loading, errorBox, empty, timeAgo, gameChip, fmtN, pies, resist, tierName, MASTERY_NAMES, MASTERY_COLORS, rarityChip, keke } from './kit.js';
+import { profileCard, tabs, loading, errorBox, empty, timeAgo, gameChip, fmtN, pies, resist, tierName, MASTERY_NAMES, MASTERY_COLORS, rarityChip, xp } from './kit.js';
 import { GAME_IDS, GAME_NAMES, GAME_COLORS, ITEM_BY_ID, ALL_ITEMS, RARITIES, CATEGORIES, MASTERY_RANKS, masteryPoints, levelInfo } from '../data/catalog.js';
 import { ACHIEVEMENTS, ACH_BY_ID, TIERS } from '../data/achievements.js';
 import { errorText } from '../net/api.js';
 import { h2hModal } from './club.js';
 
-/** Gráfico simple (SVG) de la evolución de la SUSI. */
+/** Gráfico simple (SVG) de la evolución del ELO. */
 export function ratingChart(history, w = 520, hh = 150) {
   const pts = (history || []).map((r) => r.rating);
   if (pts.length < 2) return h('div.chart-empty', 'El gráfico aparece después de jugar partidas entre cuentas.');
@@ -16,7 +16,7 @@ export function ratingChart(history, w = 520, hh = 150) {
   const y = (v) => 8 + (1 - (v - min) / (max - min || 1)) * (hh - 26);
   const d = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   const area = d + ` L${x(pts.length - 1)},${hh - 18} L${x(0)},${hh - 18} Z`;
-  const svg = `<svg viewBox="0 0 ${w} ${hh}" width="${w}" height="${hh}" role="img" aria-label="Evolución del SUSI">
+  const svg = `<svg viewBox="0 0 ${w} ${hh}" width="${w}" height="${hh}" role="img" aria-label="Evolución del ELO">
     <defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9B6CFF" stop-opacity=".45"/><stop offset="1" stop-color="#9B6CFF" stop-opacity="0"/></linearGradient></defs>
     ${[0, 0.5, 1].map((k) => `<line x1="8" x2="${w - 8}" y1="${8 + k * (hh - 26)}" y2="${8 + k * (hh - 26)}" stroke="rgba(255,255,255,.08)"/>`).join('')}
     <path d="${area}" fill="url(#rg)"/><path d="${d}" fill="none" stroke="#B49BFF" stroke-width="2.5" stroke-linejoin="round"/>
@@ -54,7 +54,7 @@ export function profileSection(ui, owner, ctx) {
   const user = ctx.params.user || mine?.username;
   if (!user) {
     return {
-      el: h('div.need-acc', icon('user'), h('h2', 'PERFIL'), h('p', 'Creá una cuenta o iniciá sesión para tener tu perfil competitivo, con nivel, KEKE, SUSI, PIES, logros y colección.'),
+      el: h('div.need-acc', icon('user'), h('h2', 'PERFIL'), h('p', 'Creá una cuenta o iniciá sesión para tener tu perfil competitivo, con nivel, XP, ELO, PIES, logros y colección.'),
         h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => ctx.login(viewer) }, 'INICIAR SESIÓN / REGISTRARSE'),
         h('button.btn', { nav: true, onclick: () => ctx.goto('ranking') }, 'VER EL RANKING MUNDIAL')),
     };
@@ -85,7 +85,7 @@ export function profileSection(ui, owner, ctx) {
     }
     side.replaceChildren(
       profileCard(ui, owner, d, { anim: 'idle' }),
-      own ? h('div.prof-wallet', pies(mine.pies, 'big'), keke(mine.keke)) : null,
+      own ? h('div.prof-wallet', pies(mine.pies, 'big'), xp(mine.xp)) : null,
       h('div.prof-meta',
         h('span', `Miembro desde ${new Date(d.created_at).toLocaleDateString('es-AR')}`),
         h('span', d.online ? 'En línea ahora' : `Última actividad: ${timeAgo(d.last_seen)}`),
@@ -105,13 +105,13 @@ export function profileSection(ui, owner, ctx) {
     const d = data;
     if (tab === 'general') {
       const fav = GAME_IDS.map((g) => [g, d.mastery?.[g]]).filter(([, m]) => m?.played).sort((a, b) => b[1].played - a[1].played).slice(0, 4);
-      const L = levelInfo(d.keke);
+      const L = levelInfo(d.xp);
       body.replaceChildren(
         h('div.prof-grid',
-          h('div.card', h('h3', 'SUSI'), h('div.res-big', resist(d.rating), h('small', `Mejor histórica: ${fmtN(d.best_rating)} · ${tierName(d.best_rating)}`)), ratingChart(d.rating_history, 520, 140)),
+          h('div.card', h('h3', 'ELO'), h('div.res-big', resist(d.rating), h('small', `Mejor histórica: ${fmtN(d.best_rating)} · ${tierName(d.best_rating)}`)), ratingChart(d.rating_history, 520, 140)),
           h('div.card', h('h3', 'Progreso'),
-            h('div.kv', h('span', 'Nivel'), h('b', `${L.level} · ${L.title}`)), h('div.kv', h('span', 'KEKE total'), h('b', fmtN(d.keke))),
-            h('div.kv', h('span', 'Para el próximo nivel'), h('b', `${fmtN(L.need - L.into)} KEKE`)),
+            h('div.kv', h('span', 'Nivel'), h('b', `${L.level} · ${L.title}`)), h('div.kv', h('span', 'XP total'), h('b', fmtN(d.xp))),
+            h('div.kv', h('span', 'Para el próximo nivel'), h('b', `${fmtN(L.need - L.into)} XP`)),
             h('div.kv', h('span', 'Competiciones ganadas'), h('b', fmtN(d.comp_wins))), h('div.kv', h('span', 'Torneos'), h('b', fmtN(d.tournaments))),
             h('div.kv', h('span', 'Logros'), h('b', `${Object.keys(d.achievements || {}).length} / ${ACHIEVEMENTS.length}`))),
           h('div.card', h('h3', 'Minijuegos favoritos'), fav.length ? h('div.fav-list', fav.map(([g, m]) => h('div.fav', gameChip(g), h('span', `${m.played} partidas · ${m.wins} victorias`), h('b', { style: { color: MASTERY_COLORS[m.rank] } }, MASTERY_NAMES[m.rank])))) : h('p.muted', 'Todavía no jugó minijuegos con esta cuenta.')),
@@ -131,7 +131,7 @@ export function profileSection(ui, owner, ctx) {
           h('div.kbar', h('div.kbar-fill', { style: { width: pct + '%' } }), h('span', next ? `${pts} / ${next.points} pts` : 'MAESTRO')),
           h('span.mast-stats', `${m.played} PJ · ${m.wins} V · ${m.losses} D · ${m.draws} E · ${m.played ? Math.round((m.wins / m.played) * 100) : 0}% · racha ${m.best_streak}`),
           h('span.mast-rec', m.best_record != null ? `Mejor: ${Math.round(m.best_record * 100) / 100}` : ''));
-      })), h('p.muted.small', 'Puntos de dominio = partidas jugadas + 2 × victorias. Cada rango da KEKE y PIES; el rango Maestro da una skin y un título exclusivos.'));
+      })), h('p.muted.small', 'Puntos de dominio = partidas jugadas + 2 × victorias. Cada rango da XP y PIES; el rango Maestro da una skin y un título exclusivos.'));
     } else if (tab === 'achievements') {
       const got = ACHIEVEMENTS.filter((a) => d.achievements?.[a.id]);
       body.replaceChildren(got.length ? h('div.ach-mini', got.map((a) => h('div.ach-chip', { style: { '--tc': TIERS[a.tier].color }, title: a.desc }, icon(a.icon), h('span', a.name))))

@@ -45,7 +45,7 @@ export function gamesSection(ui, owner, ctx) {
           me ? h('div',
             h('div.gv-rankbig', { style: { color: MASTERY_COLORS[ms.rank] } }, MASTERY_NAMES[ms.rank]),
             h('div.kbar', h('div.kbar-fill', { style: { width: pct + '%' } }), h('span', next ? `${pts} / ${next.points} pts → ${MASTERY_NAMES[ms.rank + 1]}` : 'Rango máximo')),
-            h('p.muted.small', next ? `Próximo rango: +${next.keke} KEKE y +${next.pies} PIES${ms.rank + 1 === 4 ? ', skin y título exclusivos' : ''}.` : 'Skin y título de Maestro desbloqueados.'),
+            h('p.muted.small', next ? `Próximo rango: +${next.xp} XP y +${next.pies} PIES${ms.rank + 1 === 4 ? ', skin y título exclusivos' : ''}.` : 'Skin y título de Maestro desbloqueados.'),
             h('div.kv', h('span', 'Partidas'), h('b', `${ms.played} (${ms.wins} V · ${ms.losses} D · ${ms.draws} E)`)),
             h('div.kv', h('span', '% de victorias'), h('b', ms.played ? Math.round((ms.wins / ms.played) * 100) + '%' : '—')),
             h('div.kv', h('span', 'Racha máxima'), h('b', fmtN(ms.best_streak))))

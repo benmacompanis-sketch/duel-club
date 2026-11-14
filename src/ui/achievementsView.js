@@ -26,7 +26,7 @@ export function achievementsSection(ui, owner, ctx) {
       ...Object.entries(TIERS).map(([t, T]) => {
         const n = ACHIEVEMENTS.filter((a) => a.tier === t).length;
         const d = ACHIEVEMENTS.filter((a) => a.tier === t && unlocked[a.id]).length;
-        return h('div.ach-tier', { style: { '--tc': T.color } }, h('b', `${d}/${n}`), h('small', T.name), h('span', `+${T.keke} KEKE · +${T.pies} PIES`));
+        return h('div.ach-tier', { style: { '--tc': T.color } }, h('b', `${d}/${n}`), h('small', T.name), h('span', `+${T.xp} XP · +${T.pies} PIES`));
       })));
 
   function renderFilters() {
@@ -50,7 +50,7 @@ export function achievementsSection(ui, owner, ctx) {
         prog ? h('div.ach-prog', h('div.kbar', h('div.kbar-fill', { style: { width: Math.min(100, Math.round((prog[0] / prog[1]) * 100)) + '%' } }), h('span', `${fmtN(Math.min(prog[0], prog[1]))} / ${fmtN(prog[1])}`))) : null),
       h('div.ach-rew',
         h('small', got ? `Desbloqueado ${timeAgo(unlocked[a.id])}` : 'Recompensa'),
-        h('span', `+${T.keke} KEKE · +${T.pies} PIES`),
+        h('span', `+${T.xp} XP · +${T.pies} PIES`),
         rewards.length && !hidden ? h('em', rewards.join(' · ')) : null));
   }
   function renderList() {

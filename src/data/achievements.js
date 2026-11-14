@@ -6,7 +6,7 @@
 //  stat     {k, gte}            columna de la cuenta (wins, played, best_streak, comp_wins, tournaments,
 //                               survival_best, best_rating, pies_spent, time_played, draws, draw_streak, loss_streak,
 //                               online_played, online_wins)
-//  level    {gte}               nivel de KEKE
+//  level    {gte}               nivel de XP
 //  gwins    {g, gte}            victorias en un minijuego      gstreak {g, gte} mejor racha en un minijuego
 //  grank    {g, gte}            rango de dominio en un minijuego (0..4)
 //  ranks    {gte, count}        cantidad de minijuegos con rango >= gte
@@ -20,13 +20,13 @@
 import { GAME_IDS, GAME_NAMES, ITEM_BY_ID } from './catalog.js';
 
 export const TIERS = {
-  normal: { name: 'Normal', color: '#48D597', keke: 40, pies: 25 },
-  hard: { name: 'Difícil', color: '#9B6CFF', keke: 100, pies: 60 },
-  legendary: { name: 'Legendario', color: '#FFD16B', keke: 250, pies: 150 },
+  normal: { name: 'Normal', color: '#48D597', xp: 40, pies: 25 },
+  hard: { name: 'Difícil', color: '#9B6CFF', xp: 100, pies: 60 },
+  legendary: { name: 'Legendario', color: '#FFD16B', xp: 250, pies: 150 },
 };
 
 export const ACH_CATEGORIES = {
-  general: 'Progreso', juegos: 'Minijuegos', competicion: 'Competición', resistencia: 'SUSI',
+  general: 'Progreso', juegos: 'Minijuegos', competicion: 'Competición', resistencia: 'ELO',
   social: 'Social', coleccion: 'Colección', dominio: 'Dominio', meme: 'Absurdos', secreto: 'Secretos',
 };
 
@@ -96,13 +96,13 @@ const GENERAL = [
   A('lvl_100', 'general', 'legendary', 'Inmortal', 'Llegá al nivel 100.', 'crown', { t: 'level', gte: 100 }),
   A('time10h', 'meme', 'legendary', 'Demasiado tiempo libre', 'Acumulá 10 horas de juego.', 'clock', { t: 'stat', k: 'time_played', gte: 36000 }, ['title_tiempo_libre']),
 
-  // ---------------------------------------------------------------- SUSI
-  A('res_1100', 'resistencia', 'normal', 'Subiendo', 'Llegá a 1100 de SUSI.', 'arrow', { t: 'stat', k: 'best_rating', gte: 1100 }),
-  A('res_1200', 'resistencia', 'hard', 'Avanzado', 'Llegá a 1200 de SUSI.', 'arrow', { t: 'stat', k: 'best_rating', gte: 1200 }),
-  A('res_1400', 'resistencia', 'hard', 'Experto', 'Llegá a 1400 de SUSI.', 'shield', { t: 'stat', k: 'best_rating', gte: 1400 }, ['emo_necesidad']),
-  A('res_1600', 'resistencia', 'legendary', 'Élite competitiva', 'Llegá a 1600 de SUSI.', 'shield', { t: 'stat', k: 'best_rating', gte: 1600 }),
-  A('res_1800', 'resistencia', 'legendary', 'Maestro del SUSI', 'Llegá a 1800 de SUSI.', 'crown', { t: 'stat', k: 'best_rating', gte: 1800 }, ['frame_cosmico']),
-  A('res_2000', 'resistencia', 'legendary', 'Gran Maestro', 'Llegá a 2000 de SUSI.', 'crown', { t: 'stat', k: 'best_rating', gte: 2000 }, ['emo_aura']),
+  // ---------------------------------------------------------------- ELO
+  A('res_1100', 'resistencia', 'normal', 'Subiendo', 'Llegá a 1100 de ELO.', 'arrow', { t: 'stat', k: 'best_rating', gte: 1100 }),
+  A('res_1200', 'resistencia', 'hard', 'Avanzado', 'Llegá a 1200 de ELO.', 'arrow', { t: 'stat', k: 'best_rating', gte: 1200 }),
+  A('res_1400', 'resistencia', 'hard', 'Experto', 'Llegá a 1400 de ELO.', 'shield', { t: 'stat', k: 'best_rating', gte: 1400 }, ['emo_necesidad']),
+  A('res_1600', 'resistencia', 'legendary', 'Élite competitiva', 'Llegá a 1600 de ELO.', 'shield', { t: 'stat', k: 'best_rating', gte: 1600 }),
+  A('res_1800', 'resistencia', 'legendary', 'Maestro del ELO', 'Llegá a 1800 de ELO.', 'crown', { t: 'stat', k: 'best_rating', gte: 1800 }, ['frame_cosmico']),
+  A('res_2000', 'resistencia', 'legendary', 'Gran Maestro', 'Llegá a 2000 de ELO.', 'crown', { t: 'stat', k: 'best_rating', gte: 2000 }, ['emo_aura']),
 
   // ---------------------------------------------------------------- competición (ids heredados)
   A('champion', 'competicion', 'hard', 'Campeón del club', 'Ganá una competición en DUEL MODE.', 'trophy', { t: 'comp', mode: 'duel', win: true }, ['char_rex']),

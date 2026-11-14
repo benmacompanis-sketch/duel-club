@@ -1,6 +1,6 @@
 // AccountService: cuentas reales en el servidor (Supabase) para J1 y J2.
 // - El navegador guarda solo los tokens de sesión (uno por cuenta iniciada en esta compu).
-// - KEKE, PIES, SUSI, logros, inventario, estadísticas e historial viven en la base de datos
+// - XP, PIES, ELO, logros, inventario, estadísticas e historial viven en la base de datos
 //   y los calcula el servidor. Aquí solo se muestran y se envían resultados de partidas.
 // - Los invitados juegan sin cuenta: sus partidas no dan progreso permanente.
 // - Si no hay conexión, los resultados quedan en una cola y se envían al volver la conexión.
@@ -305,6 +305,29 @@ export class AccountService {
     this.announceAchievements(out.achievements, out.me?.name);
     return out;
   }
+  // ------------------------------------------------------------------ pase de batalla y desafíos
+  async pass(p, season = null) {
+    return this._call(this.slotUser(p), 'dc_pass', { p_season: season });
+  }
+  async passBuy(p) {
+    const out = await this._call(this.slotUser(p), 'dc_pass_buy');
+    this._setMe(out.me);
+    return out;
+  }
+  async passClaim(p, level = null, track = null) {
+    const out = await this._call(this.slotUser(p), 'dc_pass_claim', { p_level: level, p_track: track });
+    this._setMe(out.me);
+    return out;
+  }
+  async challenges(p) {
+    return this._call(this.slotUser(p), 'dc_challenges');
+  }
+  async challengeClaim(p, id) {
+    const out = await this._call(this.slotUser(p), 'dc_challenge_claim', { p_id: id });
+    this._setMe(out.me);
+    this.announceLevels?.(out.levels, out.me?.name);
+    return out;
+  }
   async transactions(p) {
     return this._call(this.slotUser(p), 'dc_transactions');
   }
@@ -550,11 +573,11 @@ export class AccountService {
           title: who ? `¡Logro de ${who}!` : '¡Logro desbloqueado!',
           name: def?.name || a.id,
           text: def?.secret ? '¡Logro secreto descubierto! ' + (def?.desc || '') : def?.desc || '',
-          reward: `+${a.keke} KEKE · +${a.pies} PIES${rewards.length ? ' · ' + rewards.join(', ') : ''}`,
+          reward: `+${a.xp} XP · +${a.pies} PIES${rewards.length ? ' · ' + rewards.join(', ') : ''}`,
           tier: def?.tier,
         });
         this.app.audio.play('unlock');
-        if (TIERS[def?.tier]?.keke >= 100) this.app.renderer.overlayFx.confetti(640, 200, 50, 1.2, false);
+        if (TIERS[def?.tier]?.xp >= 100) this.app.renderer.overlayFx.confetti(640, 200, 50, 1.2, false);
       }, base + i * 650);
     });
   }

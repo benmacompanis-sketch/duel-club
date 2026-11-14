@@ -125,7 +125,7 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
   else if (session && info?.before && session.maxDeficit?.[w] >= 6) phraseKind = 'comeback';
   else if (Math.random() < 0.12) phraseKind = 'blowout';
   const phraseText = phraseKind ? phrase(phraseKind) : null;
-  // recompensas reales del servidor (KEKE, PIES, SUSI)
+  // recompensas reales del servidor (XP, PIES, ELO)
   const fillRewards = (out) => {
     for (const p of [0, 1]) {
       const box = rewardBox[p];
@@ -133,9 +133,9 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
       if (!players[p].accountId) { box.replaceChildren(h('span.res-reward.wait', 'Invitado: sin progreso')); continue; }
       if (!s) { box.replaceChildren(h('span.res-reward.wait', out === undefined ? 'Guardando…' : out?.duplicate ? 'Ya guardada' : 'Pendiente de envío')); continue; }
       box.replaceChildren(
-        h('span.res-reward.keke', `+${fmtN(s.keke)} KEKE`),
+        h('span.res-reward.xp', `+${fmtN(s.xp)} XP`),
         s.pies ? h('span.res-reward.pies', `+${fmtN(s.pies)} PIES`) : null,
-        s.delta ? h('span.res-reward' + (s.delta > 0 ? '.up' : '.down'), `${s.delta > 0 ? '+' : ''}${s.delta} SUSI`) : null,
+        s.delta ? h('span.res-reward' + (s.delta > 0 ? '.up' : '.down'), `${s.delta > 0 ? '+' : ''}${s.delta} ELO`) : null,
         s.record ? h('span.res-reward.pies', '★ RÉCORD MUNDIAL') : null,
         s.factor < 1 ? h('span.res-reward.wait', s.factor === 0 ? 'Límite diario alcanzado' : 'Recompensa reducida (muchas partidas hoy)') : null);
     }
