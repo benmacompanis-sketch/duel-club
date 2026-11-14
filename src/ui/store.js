@@ -4,6 +4,7 @@ import { h, icon } from './dom.js';
 import { STORE_ITEMS, ITEM_BY_ID, RARITIES, CATEGORIES } from '../data/catalog.js';
 import { pies, rarityChip, itemPreview, tabs, empty, lookOf, piesIcon, fmtN } from './kit.js';
 import { errorText } from '../net/api.js';
+import { accFits, CHAR_BY_ID } from '../core/characters.js';
 
 export const CAT_TABS = [
   ['all', 'Todo'], ['char', 'Personajes'], ['skin', 'Skins'], ['hat', 'Sombreros'], ['face', 'Máscaras'], ['body', 'Accesorios'],
@@ -23,6 +24,10 @@ export async function toggleEquip(ui, p, item) {
   const me = svc.slotAccount(p);
   if (!me) return;
   try {
+    if (!isEquipped(me, item) && ['hat', 'face', 'body'].includes(item.category) && !accFits(me.char, item.id)) {
+      ui.toast({ kind: 'warn', title: 'No le queda a este personaje', text: `${item.name} no se puede usar con ${CHAR_BY_ID[me.char]?.name || 'este personaje'}. Probalo con otro.` });
+      return;
+    }
     if (item.category === 'char') await svc.setLook(p, { char: item.id.replace('char_', '') });
     else await svc.equip(p, item.category, isEquipped(me, item) ? null : item.id);
     ui.app.audio.play('confirm');
@@ -49,7 +54,7 @@ export function itemModal(ui, { item, p, onChange }) {
       actions.append(h('button.btn.primary', { nav: true, onclick: () => m.close() }, 'INICIÁ SESIÓN PARA COMPRAR'));
     } else if (owned) {
       actions.append(h('button.btn.' + (equipped ? 'ghost' : 'primary'), { nav: true, 'data-autofocus': true, disabled: equipped && item.category === 'char' ? true : null, onclick: async () => { await toggleEquip(ui, p, item); render(); onChange?.(); } },
-        equipped ? (item.category === 'char' ? 'EN USO' : 'DESEQUIPAR') : 'EQUIPAR'));
+        equipped ? (item.category === 'char' ? 'EN USO' : 'DESEQUIPAR') : ['hat', 'face', 'body'].includes(item.category) && !accFits(acc.char, item.id) ? `NO LE QUEDA A ${(CHAR_BY_ID[acc.char]?.name || '').toUpperCase()}` : 'EQUIPAR'));
     } else if (item.price != null) {
       const enough = acc.pies >= item.price;
       actions.append(h('button.btn.green', { nav: true, 'data-autofocus': true, disabled: enough ? null : true, onclick: () => buy() },

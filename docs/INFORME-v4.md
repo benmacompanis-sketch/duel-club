@@ -57,13 +57,14 @@ Parte 1 publicada: 27/27 del sitio y 15/15 del online.
 
 ## 11. Pendiente
 - Aplicar `APLICAR_EN_SUPABASE.sql` en Supabase y después publicar la rama.
-- Login con Google y con email: necesita configuración externa (abajo). Recuperación con PIN: se mantiene.
+- Login con Google y con email: el código y el servidor ya están (migración 013). Falta activarlo en Supabase (punto 12).
 - Probar online entre dos compus reales con navegadores distintos (solo se probó simulado).
 
 ## 12. Dependencias externas
 - Supabase (base y Realtime) y Vercel (publicación automática desde `main`).
-- Google: crear credenciales OAuth en Google Cloud y activar el proveedor en Supabase Auth.
-- Email: configurar SMTP en Supabase para los mails de acceso.
+- Supabase → Authentication → URL Configuration: Site URL y Redirect URLs = https://duelclub.vercel.app
+- Google: crear credenciales OAuth en Google Cloud (redirect: https://fhfafgsmizuvjvqlcjor.supabase.co/auth/v1/callback) y pegarlas en Supabase → Authentication → Providers → Google.
+- Email: funciona con el correo incluido de Supabase (pocos mails por hora); para más, configurar SMTP propio.
 
 ## 13. Cómo correrlo en local
 `npm install` y `npm run dev`. Pruebas: `tests/e2e/*.mjs` con `SITE_URL`.
@@ -71,3 +72,9 @@ Parte 1 publicada: 27/27 del sitio y 15/15 del online.
 ## 14. Cómo publicar
 1. Supabase → SQL Editor → pegar `supabase/APLICAR_EN_SUPABASE.sql` → Run.
 2. Unir `gran-actualizacion` a `main`. Vercel publica solo, y las pruebas en vivo corren en GitHub Actions.
+
+## Agregado después (4.0.1)
+- Accesorios que no le quedan a un personaje no se pueden equipar ni se dibujan.
+- 8 cosméticos nuevos en la tienda (88 en total): 2 entradas, 2 victorias y 4 fondos de perfil.
+- Portada con características y versión; el perfil muestra el nivel del Pase.
+- Entrar con Google o con email (y vincularlos a una cuenta existente), probado en local simulando a Supabase Auth.

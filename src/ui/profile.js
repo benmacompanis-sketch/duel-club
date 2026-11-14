@@ -10,7 +10,7 @@ import { h2hModal } from './club.js';
 /** Gráfico simple (SVG) de la evolución del ELO. */
 export function ratingChart(history, w = 520, hh = 150) {
   const pts = (history || []).map((r) => r.rating);
-  if (pts.length < 2) return h('div.chart-empty', 'El gráfico aparece después de jugar partidas entre cuentas.');
+  if (pts.length < 2) return h('div.chart-empty', 'El gráfico aparece después de jugar partidas competitivas online.');
   const min = Math.min(...pts) - 10, max = Math.max(...pts) + 10;
   const x = (i) => 8 + (i / (pts.length - 1)) * (w - 16);
   const y = (v) => 8 + (1 - (v - min) / (max - min || 1)) * (hh - 26);
@@ -86,6 +86,9 @@ export function profileSection(ui, owner, ctx) {
     side.replaceChildren(
       profileCard(ui, owner, d, { anim: 'idle' }),
       own ? h('div.prof-wallet', pies(mine.pies, 'big'), xp(mine.xp)) : null,
+      own && mine.pass ? h('button.prof-pass' + (mine.pass.premium ? '.prem' : ''), { nav: true, onclick: () => ctx.goto('pass') },
+        h('small', mine.pass.premium ? 'PASE PREMIUM' : 'PASE DE BATALLA'), h('b', `Nivel ${mine.pass.level} / ${mine.pass.levels}`),
+        h('div.ph-bar', h('i', { style: { width: `${((mine.pass.level >= mine.pass.levels ? mine.pass.xp_per_level : mine.pass.xp % mine.pass.xp_per_level) / mine.pass.xp_per_level) * 100}%` } }))) : null,
       h('div.prof-meta',
         h('span', `Miembro desde ${new Date(d.created_at).toLocaleDateString('es-AR')}`),
         h('span', d.online ? 'En línea ahora' : `Última actividad: ${timeAgo(d.last_seen)}`),

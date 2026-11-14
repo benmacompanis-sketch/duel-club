@@ -917,6 +917,18 @@ const NECK = {
 
 // accesorios de la versión anterior -> objetos del catálogo
 export const LEGACY_ACC = { cap: 'acc_cap', bow: 'acc_bow', party: 'acc_party', headphones: 'acc_headphones', shades: 'acc_shades', helmet: 'acc_helmet', halo: 'acc_halo', horns: 'acc_horns', tophat: 'acc_tophat', crown: 'acc_crown' };
+// Accesorios que no le quedan bien a un personaje (por su forma): no se pueden equipar con ese personaje y,
+// si ya estaban puestos y se cambia de personaje, no se dibujan.
+export const ACC_BLOCK = {
+  silla: ['body_bufanda', 'body_corbata', 'body_cadena', 'body_toalla', 'body_mochila'],
+  mochi: ['body_corbata', 'body_cadena'],
+  ozzy: ['body_corbata', 'body_mochila', 'body_cadena'],
+  nimbus: ['body_corbata', 'body_mochila'],
+  frigo: ['body_toalla'],
+};
+/** ¿Este accesorio le queda a este personaje? */
+export const accFits = (charId, itemId) => !(ACC_BLOCK[charId] || []).includes(itemId);
+
 /** Normaliza el "look" de un jugador: string de la versión anterior u objeto {skin, hat, face, body}. */
 export function normLook(acc) {
   if (!acc || acc === 'none') return {};
@@ -979,7 +991,8 @@ export function drawCharacter(g, o) {
   const t = o.t ?? performance.now() / 1000;
   const st = animState(o.anim || 'idle', t, (o.seed ?? 0) + ch.id.length * 0.37);
   if (o.eyes) st.eyes = o.eyes;
-  const look = normLook(o.acc);
+  const look = { ...normLook(o.acc) };
+  for (const k of ['hat', 'face', 'body']) if (look[k] && !accFits(ch.id, look[k])) delete look[k];
   const skin = look.skin && SKINS[look.skin];
   let base0 = o.color || '#3985FF';
   if (skin?.tint) base0 = skin.tint(base0);
