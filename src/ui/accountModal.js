@@ -3,6 +3,7 @@
 import { h, icon } from './dom.js';
 import { slugify } from '../core/accountService.js';
 import { errorText } from '../net/api.js';
+import { startGoogle, startEmail } from '../net/extAuth.js';
 import { avatar, lookOf, levelBadge, resist } from './kit.js';
 
 export function accountModal(ui, { p, onDone }) {
@@ -35,19 +36,38 @@ export function accountModal(ui, { p, onDone }) {
   const saved = h('div.acc-saved');
   const tabsEl = h('div.tabs.acc-tabs');
 
+  // Google / email (Supabase Auth): entrar, crear cuenta o vincular a la cuenta actual
+  function extRow(mode) {
+    return h('div.acc-ext',
+      h('span.acc-or', mode === 'link' ? 'Vincular para entrar más fácil' : 'o entrá con'),
+      h('button.btn.small.acc-google', { nav: true, onclick: () => { app.audio.play('click'); startGoogle(p, mode); } }, h('b.g-logo', 'G'), 'GOOGLE'),
+      h('button.btn.small', { nav: true, onclick: () => emailLink(mode) }, icon('bell'), 'EMAIL'));
+  }
+  async function emailLink(mode) {
+    const email = window.prompt('Tu email: te mandamos un link para entrar (sin contraseña).');
+    if (!email) return;
+    try {
+      await startEmail(email.trim(), p, mode);
+      ui.toast({ kind: 'ok', title: 'Revisá tu email', text: `Te mandamos un link a ${email.trim()}. Abrilo en este mismo navegador.` });
+    } catch (e) {
+      err.textContent = errorText(e);
+      app.audio.play('error');
+    }
+  }
+
   function setTab(t) {
     tab = t;
     err.textContent = '';
     tabsEl.replaceChildren(...[['login', 'INICIAR SESIÓN'], ['create', 'CREAR CUENTA'], ['claim', 'CUENTA ANTERIOR']].map(([id, label]) =>
       h('button.tab' + (id === t ? '.on' : ''), { nav: true, onclick: () => { setTab(id); app.audio.play('click'); } }, label)));
     if (t === 'login') {
-      fields.replaceChildren(label('Usuario', userIn), label('Contraseña', passIn));
+      fields.replaceChildren(label('Usuario', userIn), label('Contraseña', passIn), extRow('login'));
       submitBtn.textContent = 'ENTRAR';
       hint.textContent = 'Tu cuenta funciona en cualquier computadora o celular que abra DUEL CLUB.';
     } else if (t === 'create') {
-      fields.replaceChildren(label('Nombre visible', nameIn), label('Usuario único', userIn), label('Contraseña (mín. 6)', passIn), label('Repetir', pass2In));
+      fields.replaceChildren(label('Nombre visible', nameIn), label('Usuario único', userIn), label('Contraseña (mín. 6)', passIn), label('Repetir', pass2In), extRow('login'));
       submitBtn.textContent = 'CREAR CUENTA';
-      hint.textContent = 'Solo pedimos usuario y contraseña: nada de email ni datos personales. Arrancás con 300 PIES de regalo.';
+      hint.textContent = 'Con usuario y contraseña no pedimos email ni datos personales. También podés crearla con Google o con tu email. Arrancás con 300 PIES de regalo.';
     } else {
       fields.replaceChildren(label('Usuario anterior', userIn), label('PIN anterior', pinIn), label('Nueva contraseña', passIn), label('Repetir', pass2In));
       submitBtn.textContent = 'RECUPERAR CUENTA';
@@ -185,6 +205,8 @@ export function accountModal(ui, { p, onDone }) {
       submitBtn),
     svc.slotAccount(p) ? h('div.acc-links',
       h('button.linkbtn', { nav: true, onclick: rename }, `Cambiar nombre visible (${svc.slotAccount(p).name})`),
+      h('button.linkbtn', { nav: true, onclick: () => startGoogle(p, 'link') }, 'Vincular Google'),
+      h('button.linkbtn', { nav: true, onclick: () => emailLink('link') }, 'Vincular email'),
       h('button.linkbtn.acc-delete', { nav: true, onclick: deleteAccount }, `Eliminar la cuenta @${svc.slotAccount(p).username}`)) : null);
   m.onBack = () => finish();
   m.onEnter = () => submit();

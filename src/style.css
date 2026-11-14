@@ -1536,3 +1536,26 @@ button.home-slot:focus { border-color: var(--violet); }
 .store-featured { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px 16px; border-radius: 18px; background: linear-gradient(120deg, rgba(255, 201, 60, 0.14), rgba(155, 108, 255, 0.1)); border: 1px solid rgba(255, 209, 107, 0.35); }
 .sf-head { display: flex; justify-content: space-between; align-items: baseline; } .sf-head b { font-family: var(--display); font-weight: 400; letter-spacing: 1.5px; color: var(--gold); } .sf-head small { opacity: 0.7; font-weight: 700; }
 .sf-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+/* fondos de perfil nuevos */
+.pc-card_lluvia { --bg1: #1b2a5e; --bg2: #070b1f; --edge: #25cfe6; }
+.pc-card_lluvia .pc-deco { background-image: linear-gradient(transparent 70%, rgba(37, 207, 230, 0.55) 70%); background-size: 3px 26px; animation: rain 0.9s linear infinite; opacity: 0.55; }
+@keyframes rain { to { background-position: 0 26px; } }
+.pc-card_cerezo { --bg1: #ffb3cf; --bg2: #6b2650; --edge: #ffd6e6; }
+.pc-card_cerezo .pc-deco { background-image: radial-gradient(4px 3px at 15% 25%, #fff0f6, transparent), radial-gradient(4px 3px at 60% 15%, #fff0f6, transparent), radial-gradient(4px 3px at 80% 60%, #fff0f6, transparent), radial-gradient(4px 3px at 35% 75%, #fff0f6, transparent); }
+.pc-card_lava { --bg1: #ff5a1f; --bg2: #2a0806; --edge: #ffb627; }
+.pc-card_lava .pc-deco { background: radial-gradient(ellipse at 50% 120%, rgba(255, 182, 39, 0.6), transparent 60%); animation: flick 1.2s infinite alternate; }
+.pc-card_arcade { --bg1: #2b0f45; --bg2: #0c0420; --edge: #48d597; }
+.pc-card_arcade .pc-deco { background-image: linear-gradient(rgba(72, 213, 151, 0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(72, 213, 151, 0.25) 1px, transparent 1px); background-size: 18px 18px; }
+/* portada: características y pie */
+.title-feats { display: flex; gap: 12px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
+.tf { display: flex; flex-direction: column; align-items: center; min-width: 118px; padding: 9px 16px; border-radius: 14px; background: rgba(11, 16, 32, 0.55); border: 1px solid rgba(155, 108, 255, 0.35); backdrop-filter: blur(6px); }
+.tf b { font-family: var(--display); font-weight: 400; font-size: 20px; letter-spacing: 1px; background: linear-gradient(90deg, #9fc3ff, #ffb3a6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tf small { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.7; }
+.title-foot { position: absolute; left: 0; right: 0; bottom: 18px; display: flex; justify-content: space-between; padding: 0 28px; font-size: 12px; font-weight: 700; letter-spacing: 1px; opacity: 0.55; pointer-events: none; }
+.prof-pass { display: flex; flex-direction: column; gap: 5px; padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(155, 108, 255, 0.4); background: rgba(155, 108, 255, 0.12); color: #fff; font: inherit; text-align: left; cursor: pointer; }
+.prof-pass.prem { border-color: rgba(255, 209, 107, 0.6); background: rgba(255, 201, 60, 0.12); }
+.prof-pass small { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: var(--gold); } .prof-pass b { font-family: var(--display); font-weight: 400; font-size: 18px; }
+.prof-pass:focus, .prof-pass:hover { outline: none; border-color: #fff; }
+.acc-ext { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; grid-column: 1 / -1; padding-top: 4px; }
+.acc-or { font-size: 12px; font-weight: 700; opacity: 0.7; margin-right: 4px; }
+.acc-google .g-logo { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; background: #fff; color: #4285f4; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; margin-right: 2px; }

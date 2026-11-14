@@ -215,6 +215,16 @@ export class AccountService {
   async claim(p, username, pin, password) {
     return this._afterAuth(p, await rpc('dc_claim', { p_username: username, p_pin: pin, p_password: password }));
   }
+  /** Entrar con Google o email. Devuelve la cuenta, o {needs_signup, email} si hay que elegir usuario. */
+  async extLogin(p, accessToken, username = null, name = null) {
+    const out = await rpc('dc_auth_external', { p_username: username, p_name: name }, { bearer: accessToken });
+    if (out?.needs_signup) return out;
+    return this._afterAuth(p, out);
+  }
+  async extLink(p, accessToken) {
+    const out = await rpc('dc_auth_link', { p_token: this.slotToken(p) }, { bearer: accessToken });
+    return this._setMe(out.me);
+  }
   async checkUsername(username) {
     return rpc('dc_check_username', { p_username: username });
   }

@@ -110,6 +110,8 @@ export const ITEMS = [
   it('body_aura_fuego', 'body', 'mythic', 'Aura infernal', 'Un aura de llamas que no quema nada. Solo ego.', { theme: 'Fuego' }),
 
   // ===================================================================== EFECTOS DE ENTRADA (pantalla VS)
+  it('ent_burbujas', 'entrance', 'uncommon', 'Burbujas', 'Llegás flotando entre burbujas, sin apuro.', { theme: 'Hielo' }),
+  it('ent_teletransporte', 'entrance', 'epic', 'Teletransporte', 'Anillos de energía te materializan en el lugar.', { theme: 'Cyberpunk' }),
   it('ent_humo', 'entrance', 'common', 'Nube de humo', 'Aparecés entre humo como en un recital barato.', { theme: 'Retro' }),
   it('ent_confeti', 'entrance', 'uncommon', 'Confeti', 'Llegás festejando antes de tiempo.', { theme: 'Neón' }),
   it('ent_rayo', 'entrance', 'rare', 'Rayo', 'Caés del cielo como un rayo. Dramático.', { theme: 'Cyberpunk' }),
@@ -118,6 +120,8 @@ export const ITEMS = [
   it('ent_meteorito', 'entrance', 'mythic', 'Meteorito', 'Llegás estrellándote desde el espacio.', { theme: 'Cósmico' }),
 
   // ===================================================================== EFECTOS DE VICTORIA
+  it('vic_arcoiris', 'victory', 'rare', 'Arcoíris', 'Un arcoíris se dibuja detrás del ganador.', { theme: 'Neón' }),
+  it('vic_corona', 'victory', 'epic', 'Corona del campeón', 'Una corona dorada baja del cielo y se queda brillando.', { theme: 'Oro' }),
   it('vic_aplausos', 'victory', 'common', 'Aplausos', 'Una tribuna invisible te aplaude.', { theme: 'Retro' }),
   it('vic_fuegos', 'victory', 'uncommon', 'Fuegos artificiales', 'Para festejar como año nuevo.', { theme: 'Neón' }),
   it('vic_pies', 'victory', 'rare', 'Lluvia de PIES', 'Caen piecitos dorados del cielo. No preguntes.', { theme: 'Meme', meme: true }),
@@ -147,6 +151,10 @@ export const ITEMS = [
   it('card_clasica', 'card', 'common', 'Clásica', 'La tarjeta de siempre, con tu color.', { sale: false, default: true }),
   it('card_neon', 'card', 'common', 'Neón', 'Violeta y azul eléctrico.', { sale: false, default: true }),
   it('card_atardecer', 'card', 'common', 'Atardecer', 'Naranja y rosa.', { sale: false, default: true }),
+  it('card_lluvia', 'card', 'uncommon', 'Lluvia de neón', 'Gotas de luz que caen sin parar.', { theme: 'Neón' }),
+  it('card_cerezo', 'card', 'rare', 'Cerezo', 'Rosa suave con pétalos que vuelan.', { theme: 'Bosque' }),
+  it('card_lava', 'card', 'epic', 'Río de lava', 'Lava y brasas que laten bajo tu nombre.', { theme: 'Fuego' }),
+  it('card_arcade', 'card', 'rare', 'Arcade', 'Cuadrícula retro y colores de fichín.', { theme: 'Retro' }),
   it('card_oceano', 'card', 'common', 'Océano', 'Turquesa profundo.', { theme: 'Hielo' }),
   it('card_bosque', 'card', 'common', 'Bosque', 'Verde selva.', { theme: 'Bosque' }),
   it('card_minimal', 'card', 'common', 'Minimalista', 'Gris grafito, cero distracciones.', { theme: 'Retro' }),

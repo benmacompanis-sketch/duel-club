@@ -34,6 +34,11 @@ const MESSAGES = {
   invalid_comp: 'La competición no pasó la validación del servidor.',
   network: 'Sin conexión con el servidor.',
   no_season: 'No hay ninguna temporada activa en este momento.',
+  auth_required: 'No se pudo verificar la cuenta de Google o el email. Probá de nuevo.',
+  auth_in_use: 'Ese Google o email ya está vinculado a otra cuenta de DUEL CLUB.',
+  email_rate: 'Ya mandamos un link hace poco. Esperá un minuto y probá de nuevo.',
+  email_invalid: 'Ese email no parece válido.',
+  ext_auth_off: 'Esta forma de entrar todavía no está activada en el servidor. Usá usuario y contraseña.',
   name_blocked: 'Ese nombre no está permitido. Elegí otro sin insultos ni palabras ofensivas.',
   name_taken: 'Ese nombre ya lo usa otra cuenta.',
   name_cooldown: 'Ya cambiaste el nombre hace poco: se puede cambiar una vez cada 7 días.',
@@ -52,14 +57,14 @@ const MESSAGES = {
 export const errorText = (e) => MESSAGES[e?.code] || e?.message || 'Error inesperado.';
 
 /** Llama a una función RPC. Lanza ApiError(code). Devuelve el JSON de la respuesta. */
-export async function rpc(fn, args = {}, { timeout = 15000 } = {}) {
+export async function rpc(fn, args = {}, { timeout = 15000, bearer = null } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
   let res;
   try {
     res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
       method: 'POST',
-      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Accept: 'application/json', ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}) },
       body: JSON.stringify(args),
       signal: ctrl.signal,
     });

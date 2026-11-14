@@ -657,6 +657,25 @@ export function drawEntrance(g, id, x, y, k, t, col) {
   g.save();
   const a = 1 - k;
   switch (id) {
+    case 'ent_teletransporte': {
+      // anillos de energía que se cierran sobre el jugador
+      glow(g, col, 18);
+      g.lineWidth = 4;
+      for (let i = 0; i < 4; i++) {
+        const r = (1 - k) * (60 + i * 26);
+        g.strokeStyle = rgba(col, a * (1 - i * 0.2));
+        g.beginPath(); g.ellipse(x, y - 60 + i * 6, r, r * 0.3, 0, 0, TAU); g.stroke();
+      }
+      g.fillStyle = rgba('#ffffff', 0.35 * a); g.fillRect(x - 6 - 30 * a, 0, 12 + 60 * a, y);
+      break;
+    }
+    case 'ent_burbujas':
+      for (let i = 0; i < 18; i++) {
+        const py = y - 20 - ((t * 120 + i * 40) % 200);
+        g.strokeStyle = `rgba(160,230,255,${0.8 * a})`; g.lineWidth = 2;
+        g.beginPath(); g.arc(x - 70 + ((i * 47) % 140), py, 6 + (i % 4) * 3, 0, TAU); g.stroke();
+      }
+      break;
     case 'ent_humo':
       for (let i = 0; i < 10; i++) {
         g.fillStyle = `rgba(200,205,220,${0.55 * a})`;
@@ -712,6 +731,23 @@ export function drawEntrance(g, id, x, y, k, t, col) {
 export function drawVictory(g, id, x, y, t, col) {
   g.save();
   switch (id) {
+    case 'vic_corona': {
+      // corona dorada que baja y brilla sobre el ganador
+      const yy = y - 190 + Math.min(1, t * 1.5) * 40 + Math.sin(t * 3) * 4;
+      glow(g, '#FFD16B', 24);
+      g.fillStyle = '#FFD16B';
+      g.beginPath(); g.moveTo(x - 36, yy + 22); g.lineTo(x - 36, yy - 6); g.lineTo(x - 18, yy + 8); g.lineTo(x, yy - 16); g.lineTo(x + 18, yy + 8); g.lineTo(x + 36, yy - 6); g.lineTo(x + 36, yy + 22); g.closePath(); g.fill();
+      g.fillStyle = '#FF5FA2'; g.beginPath(); g.arc(x, yy + 10, 5, 0, TAU); g.fill();
+      for (let i = 0; i < 8; i++) { const a2 = t * 2 + (i / 8) * TAU; g.globalAlpha = 0.6 + Math.sin(t * 6 + i) * 0.4; star(g, x + Math.cos(a2) * 60, yy + 4 + Math.sin(a2) * 18, 4, 4, 0.4); g.fill(); }
+      break;
+    }
+    case 'vic_arcoiris':
+      g.lineWidth = 9;
+      ['#FF5FA2', '#FF8E3C', '#FFD16B', '#48D597', '#25CFE6', '#9B6CFF'].forEach((c, i) => {
+        g.strokeStyle = c; g.globalAlpha = Math.min(1, t * 1.2);
+        g.beginPath(); g.arc(x, y - 30, 190 - i * 10, Math.PI, Math.PI + Math.PI * Math.min(1, t * 0.9)); g.stroke();
+      });
+      break;
     case 'vic_aplausos':
       g.font = '28px sans-serif'; g.textAlign = 'center';
       for (let i = 0; i < 5; i++) { const ph = (t * 0.8 + i * 0.2) % 1; g.globalAlpha = 1 - ph; g.fillText('👏', x - 120 + i * 60, y - 40 - ph * 120); }

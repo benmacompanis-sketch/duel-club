@@ -12,6 +12,7 @@ import { AchievementManager } from './achievementManager.js';
 import { EVENTS } from './events.js';
 import { keyName } from './inputManager.js';
 import { BotInput } from './bots.js';
+import { handleExtAuth } from '../ui/extAuthFlow.js';
 const keyNameShort = (c) => ({ ShiftRight: 'SHIFT', NumpadEnter: 'ENTER' }[c] || keyName(c));
 import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel } from './utils.js';
 import { UI } from '../ui/ui.js';
@@ -121,6 +122,7 @@ export class App {
     const ready = this.accounts.init().catch((e) => console.warn('cuentas', e));
     // modo online: desafíos entrantes y links de sala (?sala=CODIGO)
     ready.then(() => {
+      handleExtAuth(this);
       startChallengeWatcher(this);
       checkActiveMatch(this);
       const code = new URLSearchParams(location.search).get('sala');
