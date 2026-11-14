@@ -1758,3 +1758,55 @@ body { font-weight: 600; }
 .topbar .tb-mid { background: var(--panel); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); padding: 4px 0; }
 .title-foot span { background: var(--ink); color: var(--white); padding: 3px 8px; opacity: 1; }
 .store-brand p, .need-acc p { background: var(--ink); color: var(--white) !important; padding: 3px 9px; display: inline-block; transform: rotate(-0.5deg); }
+
+/* =====================================================================
+   VIÑETAS: menú lateral, elección de minijuegos y tipografía de historieta
+   ===================================================================== */
+:root { --display: 'Bangers', 'Lilita One', system-ui, sans-serif; }
+.page-header h1, .sec-head h2, .logo-duel, .logo-club, .btn, .tab, .side-logo, .sn-btn, .mode-card b, .solo-tab, .press-start, .tf b, .gc-name { letter-spacing: 1.5px !important; }
+.page-header h1 { font-size: 44px !important; } .sec-head h2 { font-size: 34px !important; }
+.logo-duel, .logo-club { font-size: 104% !important; letter-spacing: 3px !important; }
+
+/* menú lateral = página de historieta: bloques de color inclinados que encajan, con calle clara entre ellos */
+.hub-side { background: transparent !important; border: 0 !important; box-shadow: none !important; transform: none !important; padding: 2px 4px 8px 12px !important; }
+.sidenav { background: #fff4e0; border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); padding: 6px 6px 8px; gap: 0 !important; border-radius: 6px; transform: rotate(-0.6deg); }
+.sn-group { display: none !important; }
+.sn-btn {
+  --cp: polygon(0 0, 100% 12%, 100% 100%, 0 88%);
+  position: relative; isolation: isolate; height: 44px !important; margin: -3px 0; padding: 0 10px 0 12px !important;
+  background: var(--ink) !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; clip-path: var(--cp);
+  color: #15121f !important; font-size: 19px !important; letter-spacing: 1.2px; transform: none !important;
+}
+.sn-btn:nth-child(even) { --cp: polygon(0 12%, 100% 0, 100% 88%, 0 100%); }
+.sn-btn::before {
+  content: ''; position: absolute; inset: 3px; z-index: -1; clip-path: var(--cp);
+  background: linear-gradient(105deg, var(--accent) 38%, transparent 95%), radial-gradient(circle, rgba(10, 6, 20, 0.5) 1.6px, transparent 2px) 0 0 / 7px 7px, var(--accent);
+}
+.sn-btn .sn-ico { background: #fff4e0 !important; border: 3px solid var(--ink) !important; box-shadow: none !important; width: 28px !important; height: 28px !important; transform: rotate(-6deg) !important; }
+.sn-btn:nth-child(even) .sn-ico { transform: rotate(5deg) !important; }
+.sn-btn .sn-ico svg, .sn-btn .sn-ico .icon { color: #15121f !important; }
+.sn-btn:hover, .sn-btn:focus { background: var(--ink) !important; filter: brightness(1.12); transform: translateX(4px) !important; }
+.sn-btn.on { transform: translateX(10px) scale(1.04) !important; z-index: 2; color: #fff !important; -webkit-text-stroke: 1px var(--ink); text-shadow: 2px 2px 0 var(--ink); }
+.sn-btn.on::before { inset: 4px; }
+.sn-btn.on::after { content: '◀'; position: absolute; right: 12px; color: #fff; text-shadow: 2px 2px 0 var(--ink); font-size: 14px; }
+.side-logo { margin-bottom: 4px; }
+
+/* tarjetas de minijuegos = viñetas del color de cada juego */
+.game-card {
+  border: 4px solid var(--ink) !important; border-radius: 6px !important; box-shadow: 5px 5px 0 var(--ink) !important;
+  background: linear-gradient(160deg, var(--c) 30%, transparent 100%), radial-gradient(circle, rgba(10, 6, 20, 0.45) 1.7px, transparent 2.1px) 0 0 / 8px 8px, var(--c) !important;
+  color: #15121f;
+}
+.game-card:nth-child(odd) { transform: rotate(-1deg); } .game-card:nth-child(even) { transform: rotate(0.8deg); }
+.game-card:nth-child(3n) { transform: rotate(-0.4deg); }
+.game-card .gc-name { background: #fff4e0; color: #15121f; padding: 2px 8px; border: 3px solid var(--ink); font-size: 16px !important; transform: rotate(-2deg); box-shadow: 2px 2px 0 var(--ink); }
+.game-card .gc-cat { color: #15121f !important; font-weight: 900; opacity: 0.85; }
+.game-card .gc-num { color: #fff !important; -webkit-text-stroke: 1px var(--ink); font-size: 16px !important; opacity: 1 !important; text-shadow: 2px 2px 0 var(--ink); }
+.game-card canvas { background: rgba(255, 244, 224, 0.85); border: 3px solid var(--ink); border-radius: 50%; }
+.game-card:hover, .game-card:focus, .game-card.sel { transform: translate(-3px, -3px) rotate(-1.5deg) scale(1.04) !important; box-shadow: 8px 8px 0 var(--ink) !important; outline: 4px solid #fff4e0 !important; z-index: 2; }
+.solo-game, .solo-goal { background: linear-gradient(100deg, var(--panel) 55%, color-mix(in srgb, var(--c) 70%, var(--panel)) 100%) !important; }
+.solo-game canvas, .solo-goal canvas { border: 3px solid var(--ink); border-radius: 50%; background: #fff4e0; }
+
+/* botones en Bangers más grandes */
+.btn { font-size: 19px; } .btn.big { font-size: 26px; } .btn.small { font-size: 16px; }
+.tab { font-size: 17px; }

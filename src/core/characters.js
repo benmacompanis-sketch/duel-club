@@ -1172,13 +1172,15 @@ export function drawCharacter(g, o) {
 // LÍNEA DE HISTORIETA: mientras se dibuja el cuerpo, cada forma rellena lleva un trazo de tinta fino y cada
 // trazo grueso (brazos, piernas) lleva un borde de tinta por debajo. Así los 15 personajes quedan entintados igual.
 const INK = '#0D0B14';
+const INK_FILLS = false;
 function inkOn(g) {
   if (g.__inkFill) return;
   const fill = g.fill, stroke = g.stroke;
   g.__inkFill = fill; g.__inkStroke = stroke;
   g.fill = function (...a) {
     fill.apply(this, a);
-    if (this.globalAlpha < 0.5 || this.globalCompositeOperation !== 'source-over' || isLight(this.fillStyle)) return;
+    // (las formas rellenas no se entintan: dibujaba círculos de más en varios personajes)
+    if (!INK_FILLS || this.globalAlpha < 0.5 || this.globalCompositeOperation !== 'source-over' || isLight(this.fillStyle)) return;
     const lw = this.lineWidth, ss = this.strokeStyle, lj = this.lineJoin, sb = this.shadowBlur;
     this.lineWidth = 2.4; this.strokeStyle = INK; this.lineJoin = 'round'; this.shadowBlur = 0;
     if (a[0] instanceof Path2D) stroke.call(this, a[0]); else stroke.call(this);

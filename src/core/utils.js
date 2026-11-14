@@ -144,7 +144,7 @@ export function roundRect(g, x, y, w, h, r) {
   g.closePath();
 }
 
-export const FONT_DISPLAY = '"Lilita One", "Nunito Variable", system-ui, sans-serif';
+export const FONT_DISPLAY = '"Bangers", "Lilita One", "Nunito Variable", system-ui, sans-serif';
 export const FONT_BODY = '"Nunito Variable", "Nunito", system-ui, sans-serif';
 
 /** Texto con opciones de contorno y brillo. */

@@ -75,6 +75,9 @@ async function computer(acc, query = '?test') {
 }
 async function toOnline(p) {
   await p.evaluate(() => window.DC.ui.goMenu());
+  // el cartel de novedades puede aparecer al entrar al menú: se cierra si está
+  await p.waitForTimeout(1300);
+  await p.evaluate(() => document.querySelector('.news-dialog .btn.primary, .news-dialog .btn')?.click());
   await p.click('.sn-btn[data-id="play"]');
   await p.click('.online-card');
   await p.waitForSelector('.online-page');
