@@ -1671,3 +1671,43 @@ body { font-weight: 600; }
 .pass-col.reached .pc-lv { background: #2e7bff !important; }
 .pass-col.current .pc-lv { background: var(--yellow) !important; color: #15121f; }
 .hub-main > .section, .hub .content { position: relative; }
+
+/* ===== CÓMIC EXAGERADO ===== */
+:root { --hard: 5px 5px 0 var(--ink); }
+.btn { border-width: 4px; box-shadow: 5px 5px 0 var(--ink); }
+.btn:hover, .btn:focus, .btn:focus-visible { box-shadow: 7px 7px 0 var(--ink), 0 0 0 3px var(--white); transform: translate(-2px, -2px) rotate(-1deg); }
+.btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+.btn.primary:focus, .btn.primary:hover, .btn.gold:focus, .btn.gold:hover, .btn.green:focus, .btn.green:hover, .btn.danger:focus, .btn.danger:hover { box-shadow: 7px 7px 0 var(--ink), 0 0 0 3px var(--white); }
+.card, .dialog, .solo-side, .solo-main, .pass-head, .store-featured, .club-empty, .ch-row, .season-row, .home-card, .solo-daily, .ladder-end, .prof-pass, .solo-note, .ss, .tb-slot, .store-bal, .online-card, .pcard, .need-acc {
+  border-width: 4px !important; box-shadow: 7px 7px 0 var(--ink) !important;
+}
+.dialog { box-shadow: 10px 10px 0 var(--ink), 0 0 0 4px var(--yellow) !important; transform: rotate(-0.6deg); }
+.mode-card, .item-card, .game-card, .solo-goal, .solo-game, .pass-cell, .home-link, .solo-tab, .solo-chip { border-width: 4px !important; box-shadow: 5px 5px 0 var(--ink) !important; }
+.mode-card:hover, .mode-card:focus, .game-card:hover, .game-card:focus, .solo-goal:hover, .solo-goal:focus, .item-card:hover, .item-card:focus, .home-link:hover, .home-link:focus, .solo-game:hover, .solo-game:focus, .pass-cell:focus, .pass-cell:hover {
+  transform: translate(-3px, -3px) rotate(-0.8deg); box-shadow: 9px 9px 0 var(--ink) !important;
+}
+.tab { border-width: 4px !important; box-shadow: 4px 4px 0 var(--ink) !important; }
+.tab.on { transform: rotate(-2deg); }
+.sn-btn.on { box-shadow: 4px 4px 0 var(--ink) !important; transform: rotate(-1.5deg); }
+
+/* títulos: cartel amarillo de historieta */
+.page-header h1, .sec-head h2 {
+  display: inline-block; background: var(--yellow); color: #15121f !important; text-shadow: none !important;
+  padding: 6px 16px 4px; border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); transform: rotate(-2deg) skewX(-6deg);
+}
+.pass-head h3, .solo-side h3, .solo-main h3 { color: var(--yellow) !important; text-shadow: 3px 3px 0 var(--ink) !important; }
+.sec-sub { display: inline-block; background: var(--ink); color: var(--yellow) !important; padding: 4px 10px; transform: skewX(-8deg); letter-spacing: 2px; }
+
+/* portada: estallido tipo "¡POW!" detrás del logo */
+.title-center::before {
+  content: ''; position: absolute; left: 50%; top: 212px; width: 860px; height: 300px; transform: translate(-50%, -50%) rotate(-4deg); z-index: -1;
+  background: var(--yellow); border: 0;
+  clip-path: polygon(50% 0%, 56% 16%, 68% 4%, 69% 21%, 84% 12%, 80% 30%, 97% 28%, 87% 44%, 100% 52%, 86% 60%, 96% 75%, 79% 73%, 82% 92%, 67% 80%, 61% 100%, 52% 84%, 41% 98%, 38% 80%, 22% 92%, 25% 73%, 5% 78%, 15% 61%, 0% 50%, 15% 42%, 4% 25%, 21% 29%, 18% 10%, 33% 21%, 37% 3%, 45% 17%);
+  filter: drop-shadow(8px 8px 0 #0d0b14);
+  animation: powPulse 2.4s ease-in-out infinite;
+}
+@keyframes powPulse { 50% { transform: translate(-50%, -50%) rotate(-2deg) scale(1.03); } }
+.logo-duel, .logo-club { -webkit-text-stroke: 5px var(--ink) !important; text-shadow: 7px 7px 0 var(--ink) !important; }
+.logo-slogan { background: var(--ink); padding: 4px 14px; transform: skewX(-8deg); }
+
+.logo-bolt { color: #fff4e0 !important; }

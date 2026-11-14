@@ -85,8 +85,8 @@ class Background {
     const c = document.createElement('canvas');
     c.width = c.height = 14;
     const d = c.getContext('2d');
-    d.fillStyle = 'rgba(255,244,224,0.07)';
-    d.beginPath(); d.arc(3.5, 3.5, 1.6, 0, TAU); d.arc(10.5, 10.5, 1.6, 0, TAU); d.fill();
+    d.fillStyle = 'rgba(255,244,224,0.11)';
+    d.beginPath(); d.arc(3.5, 3.5, 2, 0, TAU); d.arc(10.5, 10.5, 2, 0, TAU); d.fill();
     this.dots = g.createPattern(c, 'repeat');
     return this.dots;
   }

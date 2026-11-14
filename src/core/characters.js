@@ -232,12 +232,6 @@ function limb(g, x, y, ang, len, width, color, handR, handColor) {
 const DRAW = {
   creador(g, s, c, t, ch) {
     const gold = '#FFD16B', goldD = '#C9962E', robe = shade(c.body, -0.25), robeD = shade(c.body, -0.5);
-    // aura
-    if (quality.glow) {
-      const grd = g.createRadialGradient(0, -60, 10, 0, -60, 80);
-      grd.addColorStop(0, 'rgba(255,209,107,0.18)'); grd.addColorStop(1, 'rgba(255,209,107,0)');
-      g.fillStyle = grd; g.beginPath(); g.arc(0, -60, 80, 0, TAU); g.fill();
-    }
     // botas
     const lp = s.leg * 6;
     g.fillStyle = '#1B1430';
@@ -1084,25 +1078,23 @@ export function drawCharacter(g, o) {
     g.fillStyle = 'rgba(0,0,0,0.28)';
     g.beginPath(); g.ellipse(0, 0, 30 * s * sh, 7 * s * sh, 0, 0, TAU); g.fill();
   }
-  // capa trasera (capa, alas, aura...)
-  if (look.body) {
-    g.save();
-    bodyTf(g, s);
-    g.translate(0, st.headY * 0.5);
-    drawBodyItem(g, look, ch.id, t, base, true);
-    g.restore();
-  }
   const tf = g.getTransform();
   const px = Math.hypot(tf.a, tf.b) * s;
   if (quality.level !== 'low' && px > 0.05 && px < 12) {
-    // cuerpo en un lienzo auxiliar + patrón con 'source-atop' (solo pinta dentro de la silueta)
+    // ESTILO CÓMIC: todo el personaje (con accesorios) se arma en un lienzo auxiliar, se le da sombra de un
+    // solo corte con tramado de puntos y un brillo duro, y después se dibuja con contorno de tinta grueso.
     const k = px;
-    const W2 = Math.ceil(180 * k), H2 = Math.ceil(180 * k);
+    const W2 = Math.ceil(180 * k), H2 = Math.ceil(190 * k);
     const off = offCanvas(offIdx++ % 6, W2, H2);
     const og = off.g;
     og.setTransform(1, 0, 0, 1, 0, 0);
     og.clearRect(0, 0, off.width, off.height);
-    og.setTransform(k, 0, 0, k, 90 * k, 160 * k);
+    og.setTransform(k, 0, 0, k, 90 * k, 170 * k);
+    if (look.body) {
+      og.save(); bodyTf(og, 1); og.translate(0, st.headY * 0.5);
+      drawBodyItem(og, look, ch.id, t, base, true);
+      og.restore();
+    }
     og.save();
     bodyTf(og, 1);
     DRAW[ch.id](og, st, c, t, ch);
@@ -1113,37 +1105,79 @@ export function drawCharacter(g, o) {
       skin.overlay(og, t, base);
       og.restore();
     }
-    // volumen ("3D"): luz desde arriba a la izquierda, sombra abajo a la derecha y borde de luz
-    const lg = og.createLinearGradient(-70, -150, 60, 10);
-    lg.addColorStop(0, 'rgba(255,255,255,0.3)');
-    lg.addColorStop(0.42, 'rgba(255,255,255,0.03)');
-    lg.addColorStop(0.7, 'rgba(10,8,40,0.08)');
-    lg.addColorStop(1, 'rgba(10,8,40,0.4)');
-    og.fillStyle = lg;
-    og.fillRect(-90, -160, 180, 180);
-    const rg = og.createRadialGradient(-22, -100, 4, -22, -100, 46);
-    rg.addColorStop(0, 'rgba(255,255,255,0.18)');
-    rg.addColorStop(1, 'rgba(255,255,255,0)');
-    og.fillStyle = rg;
-    og.fillRect(-90, -160, 180, 180);
+    // sombra de un corte (lado derecho-abajo) con puntos de historieta
+    og.save();
+    og.beginPath(); og.moveTo(18, -170); og.lineTo(95, -170); og.lineTo(95, 25); og.lineTo(4, 25); og.closePath();
+    og.fillStyle = 'rgba(20,10,45,0.22)';
+    og.fill();
+    og.clip();
+    og.fillStyle = halftone(og);
+    og.fillRect(-95, -170, 190, 195);
+    og.restore();
+    // brillo duro arriba a la izquierda
+    og.fillStyle = 'rgba(255,255,255,0.22)';
+    og.beginPath(); og.ellipse(-20, -96, 10, 18, -0.6, 0, TAU); og.fill();
     og.globalCompositeOperation = 'source-over';
     og.shadowBlur = 0;
-    g.drawImage(off, 0, 0, W2 - 1, H2 - 1, -90 * s, -160 * s, 180 * s * (W2 - 1) / W2, 180 * s * (H2 - 1) / H2);
+    // accesorios del frente (se contornean junto con el personaje)
+    if (look.hat || look.face || look.body) {
+      og.save(); bodyTf(og, 1); og.translate(0, st.headY);
+      drawBodyItem(og, look, ch.id, t, o.color || base, false);
+      drawHead(og, look, ch.id, t, o.color || base);
+      og.restore();
+    }
+    og.shadowBlur = 0;
+    // silueta de tinta para el contorno
+    const sil = offCanvas(6 + (offIdx % 2), W2, H2);
+    const sg = sil.g;
+    sg.setTransform(1, 0, 0, 1, 0, 0);
+    sg.globalCompositeOperation = 'source-over';
+    sg.clearRect(0, 0, sil.width, sil.height);
+    sg.drawImage(off, 0, 0);
+    sg.globalCompositeOperation = 'source-in';
+    sg.fillStyle = '#0D0B14';
+    sg.fillRect(0, 0, W2, H2);
+    sg.globalCompositeOperation = 'source-over';
+    const dx = -90 * s, dy = -170 * s, dw = 180 * s * (W2 - 1) / W2, dh = 190 * s * (H2 - 1) / H2;
+    const ow = 3.2 * s;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU;
+      g.drawImage(sil, 0, 0, W2 - 1, H2 - 1, dx + Math.cos(a) * ow, dy + Math.sin(a) * ow, dw, dh);
+    }
+    g.drawImage(off, 0, 0, W2 - 1, H2 - 1, dx, dy, dw, dh);
   } else {
+    if (look.body) {
+      g.save(); bodyTf(g, s); g.translate(0, st.headY * 0.5);
+      drawBodyItem(g, look, ch.id, t, base, true);
+      g.restore();
+    }
     g.save();
     bodyTf(g, s);
     DRAW[ch.id](g, st, c, t, ch);
     g.restore();
-  }
-  if (look.hat || look.face || look.body) {
-    g.save();
-    bodyTf(g, s);
-    g.translate(0, st.headY);
-    drawBodyItem(g, look, ch.id, t, o.color || base, false);
-    drawHead(g, look, ch.id, t, o.color || base);
-    g.restore();
+    if (look.hat || look.face || look.body) {
+      g.save();
+      bodyTf(g, s);
+      g.translate(0, st.headY);
+      drawBodyItem(g, look, ch.id, t, o.color || base, false);
+      drawHead(g, look, ch.id, t, o.color || base);
+      g.restore();
+    }
   }
   g.restore();
+}
+
+// tramado de puntos (para las sombras estilo cómic)
+let HALFTONE = null;
+function halftone(g) {
+  if (HALFTONE) return HALFTONE;
+  const c = document.createElement('canvas');
+  c.width = c.height = 10;
+  const d = c.getContext('2d');
+  d.fillStyle = 'rgba(15,8,35,0.3)';
+  d.beginPath(); d.arc(2.5, 2.5, 1.5, 0, TAU); d.arc(7.5, 7.5, 1.5, 0, TAU); d.fill();
+  HALFTONE = g.createPattern(c, 'repeat');
+  return HALFTONE;
 }
 
 /** Retrato circular (para HUD y marcadores). */
