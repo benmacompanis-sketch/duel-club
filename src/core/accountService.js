@@ -1,6 +1,6 @@
 // AccountService: cuentas reales en el servidor (Supabase) para J1 y J2.
 // - El navegador guarda solo los tokens de sesión (uno por cuenta iniciada en esta compu).
-// - KEKE, PIES, SUSI, logros, inventario, estadísticas e historial viven en la base de datos
+// - XP, PIES, ELO, logros, inventario, estadísticas e historial viven en la base de datos
 //   y los calcula el servidor. Aquí solo se muestran y se envían resultados de partidas.
 // - Los invitados juegan sin cuenta: sus partidas no dan progreso permanente.
 // - Si no hay conexión, los resultados quedan en una cola y se envían al volver la conexión.
@@ -218,6 +218,28 @@ export class AccountService {
   async checkUsername(username) {
     return rpc('dc_check_username', { p_username: username });
   }
+  async rename(p, name) {
+    const out = await rpc('dc_rename', { p_token: this.slotToken(p), p_name: name });
+    return this._setMe(out.me);
+  }
+  // ------------------------------------------------------------------ presencia (usuarios en línea de verdad)
+  startPresence() {
+    if (this._presT) return;
+    let cid = null;
+    try { cid = localStorage.getItem('dc_client'); } catch {}
+    if (!cid) { cid = 'c' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36); try { localStorage.setItem('dc_client', cid); } catch {} }
+    const beat = async () => {
+      if (document.hidden) return;
+      const place = this.app.online?.active || this.app.online?.view ? 'online' : this.app.runner?.active ? 'match' : 'menu';
+      try {
+        this.presence = await rpc('dc_presence', { p_client: cid, p_token: this.slotToken(0) || this.slotToken(1) || null, p_place: place });
+        this.emit();
+      } catch {}
+    };
+    beat();
+    this._presT = setInterval(beat, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+  }
   async changePassword(p, oldPass, newPass) {
     return rpc('dc_change_password', { p_token: this.slotToken(p), p_old: oldPass, p_new: newPass });
   }
@@ -305,6 +327,29 @@ export class AccountService {
     this.announceAchievements(out.achievements, out.me?.name);
     return out;
   }
+  // ------------------------------------------------------------------ pase de batalla y desafíos
+  async pass(p, season = null) {
+    return this._call(this.slotUser(p), 'dc_pass', { p_season: season });
+  }
+  async passBuy(p) {
+    const out = await this._call(this.slotUser(p), 'dc_pass_buy');
+    this._setMe(out.me);
+    return out;
+  }
+  async passClaim(p, level = null, track = null) {
+    const out = await this._call(this.slotUser(p), 'dc_pass_claim', { p_level: level, p_track: track });
+    this._setMe(out.me);
+    return out;
+  }
+  async challenges(p) {
+    return this._call(this.slotUser(p), 'dc_challenges');
+  }
+  async challengeClaim(p, id) {
+    const out = await this._call(this.slotUser(p), 'dc_challenge_claim', { p_id: id });
+    this._setMe(out.me);
+    this.announceLevels?.(out.levels, out.me?.name);
+    return out;
+  }
   async transactions(p) {
     return this._call(this.slotUser(p), 'dc_transactions');
   }
@@ -376,13 +421,15 @@ export class AccountService {
    * Envía el resultado de un minijuego. Solo cuenta para los jugadores con cuenta.
    * Devuelve una promesa con la respuesta del servidor (o null si nadie tiene cuenta).
    */
-  submitMatch(res, { mode = 'quick', compId = null, difficulty = 0.5, caos = false } = {}) {
-    const users = [this.slotUser(0), this.slotUser(1)];
+  submitMatch(res, { mode = 'quick', compId = null, difficulty = 0.5, caos = false, bot = null } = {}) {
+    // contra un bot solo cuenta la cuenta de J1 (el servidor da XP y PIES reducidos, nunca ELO)
+    const users = mode === 'bot' ? [this.slotUser(0), null] : [this.slotUser(0), this.slotUser(1)];
     if (!users[0] && !users[1]) return Promise.resolve(null);
     const payload = {
       client_id: uid('m'),
       comp_id: compId,
       mode,
+      bot,
       difficulty: caos ? 'caos' : DIFF_NAMES[difficulty] || 'normal',
       ...this.matchPayload(res),
     };
@@ -550,11 +597,11 @@ export class AccountService {
           title: who ? `¡Logro de ${who}!` : '¡Logro desbloqueado!',
           name: def?.name || a.id,
           text: def?.secret ? '¡Logro secreto descubierto! ' + (def?.desc || '') : def?.desc || '',
-          reward: `+${a.keke} KEKE · +${a.pies} PIES${rewards.length ? ' · ' + rewards.join(', ') : ''}`,
+          reward: `+${a.xp} XP · +${a.pies} PIES${rewards.length ? ' · ' + rewards.join(', ') : ''}`,
           tier: def?.tier,
         });
         this.app.audio.play('unlock');
-        if (TIERS[def?.tier]?.keke >= 100) this.app.renderer.overlayFx.confetti(640, 200, 50, 1.2, false);
+        if (TIERS[def?.tier]?.xp >= 100) this.app.renderer.overlayFx.confetti(640, 200, 50, 1.2, false);
       }, base + i * 650);
     });
   }

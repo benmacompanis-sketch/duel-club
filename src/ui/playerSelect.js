@@ -161,7 +161,7 @@ export function playerSelectScreen(ui, params) {
       P.nameIn = null;
       P.account.className = 'ps-account on';
       P.account.replaceChildren(
-        h('div.ps-acc-main', h('b', acc.name), h('span', `Nivel ${acc.level} · ${acc.rating} SUSI · ${acc.played} partidas`)),
+        h('div.ps-acc-main', h('b', acc.name), h('span', `Nivel ${acc.level} · ${acc.rating} ELO · ${acc.played} partidas`)),
         h('button.btn.small.ghost', { nav: true, title: 'Dejar el puesto (la sesión queda guardada en esta compu)', onclick: () => { if (state[p].ready) return; svc.detach(p); app.audio.play('back'); normalize(); rebuildLocks(); refreshAll(); } }, 'SALIR'));
     } else {
       const nameIn = h('input.ps-name', { type: 'text', maxlength: 12, value: prof.name, nav: true, spellcheck: 'false', 'aria-label': `Nombre del jugador ${p + 1}` });

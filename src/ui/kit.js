@@ -8,7 +8,7 @@ import { TAU, rgba } from '../core/utils.js';
 
 // ------------------------------------------------------------------ monedas y medidores
 const PIE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="15" rx="6.4" ry="7.6" fill="currentColor"/><circle cx="6.6" cy="5.6" r="2.4" fill="currentColor"/><circle cx="9.6" cy="4.2" r="1.8" fill="currentColor"/><circle cx="12.6" cy="4" r="1.7" fill="currentColor"/><circle cx="15.4" cy="4.8" r="1.6" fill="currentColor"/><circle cx="17.8" cy="6.4" r="1.4" fill="currentColor"/><ellipse cx="10" cy="13" rx="1.5" ry="3" fill="rgba(255,255,255,.45)"/></svg>';
-const KEKE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.6 6.4L21 9l-5 4.4L17.4 20 12 16.6 6.6 20 8 13.4 3 9l6.4-.6z" fill="currentColor"/></svg>';
+const XP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.6 6.4L21 9l-5 4.4L17.4 20 12 16.6 6.6 20 8 13.4 3 9l6.4-.6z" fill="currentColor"/></svg>';
 const RES_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z" fill="currentColor"/><path d="M8 12l3 3 5-6" fill="none" stroke="#0B1020" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const svgSpan = (cls, svg) => {
   const s = h('span.' + cls);
@@ -24,13 +24,13 @@ export function pies(n, cls = '') {
 export function piesIcon() {
   return svgSpan('pies-ico', PIE_SVG);
 }
-export function keke(n) {
-  return h('span.keke', svgSpan('keke-ico', KEKE_SVG), h('b', fmtN(n)), h('small', 'KEKE'));
+export function xp(n) {
+  return h('span.xp', svgSpan('xp-ico', XP_SVG), h('b', fmtN(n)), h('small', 'XP'));
 }
-/** SUSI con su rango competitivo. */
+/** ELO con su rango competitivo. */
 export function resist(rating, opts = {}) {
   const tier = resistTier(rating || 1000);
-  return h('span.resist', { style: { '--rc': tier.color }, title: `SUSI · ${tier.name}` },
+  return h('span.resist', { style: { '--rc': tier.color }, title: `ELO · ${tier.name}` },
     svgSpan('res-ico', RES_SVG), h('b', fmtN(rating)), opts.short ? null : h('small', tier.name));
 }
 export function tierName(rating) {
@@ -39,10 +39,10 @@ export function tierName(rating) {
 export function levelBadge(level) {
   return h('span.lvl' + (level === 67 ? '.lvl67' : level >= 100 ? '.lvl100' : level >= 50 ? '.lvl50' : ''), { title: `Nivel ${level}` }, h('small', 'NV'), String(level));
 }
-/** Barra de progreso de nivel (KEKE del nivel actual / necesario para el siguiente). */
-export function kekeBar(kekeTotal) {
-  const L = levelInfo(kekeTotal || 0);
-  return h('div.kbar', { title: `${fmtN(L.into)} / ${fmtN(L.need)} KEKE para el nivel ${L.level + 1}` },
+/** Barra de progreso de nivel (XP del nivel actual / necesario para el siguiente). */
+export function xpBar(xpTotal) {
+  const L = levelInfo(xpTotal || 0);
+  return h('div.kbar', { title: `${fmtN(L.into)} / ${fmtN(L.need)} XP para el nivel ${L.level + 1}` },
     h('div.kbar-fill', { style: { width: Math.round(L.progress * 100) + '%' } }),
     h('span', `${fmtN(L.into)} / ${fmtN(L.need)}`));
 }
@@ -55,7 +55,7 @@ export function rarityChip(r) {
 export function titleOf(me) {
   const id = me?.equipped?.title;
   if (id && ITEM_BY_ID[id]) return ITEM_BY_ID[id].name;
-  return levelInfo(me?.keke || 0).title;
+  return levelInfo(me?.xp || 0).title;
 }
 export function titleRarity(me) {
   const id = me?.equipped?.title;
@@ -92,7 +92,7 @@ export function avatar(ui, owner, look, size = 64, opts = {}) {
  */
 export function profileCard(ui, owner, me, opts = {}) {
   const card = me?.equipped?.card || 'card_clasica';
-  const L = levelInfo(me?.keke || 0);
+  const L = levelInfo(me?.xp || 0);
   const look = lookOf(me);
   const games = me?.played ? Math.round(((me.wins || 0) / me.played) * 100) + '%' : '—';
   const el = h('div.pcard.pc-' + card + (opts.compact ? '.compact' : '') + (L.level === 67 ? '.chosen' : ''),
@@ -105,7 +105,7 @@ export function profileCard(ui, owner, me, opts = {}) {
         h('div.pc-title.tr-' + titleRarity(me), titleOf(me)),
         h('div.pc-user', '@' + (me?.username || '')),
         h('div.pc-badges', levelBadge(L.level), resist(me?.rating || 1000)))),
-    opts.compact ? null : h('div.pc-bar', kekeBar(me?.keke || 0)),
+    opts.compact ? null : h('div.pc-bar', xpBar(me?.xp || 0)),
     opts.compact ? null : h('div.pc-stats',
       stat(fmtN(me?.played), 'Partidas'), stat(fmtN(me?.wins), 'Victorias'), stat(games, '% victorias'),
       stat(fmtN(me?.best_streak), 'Mejor racha'), stat(fmtN(me?.achievements_count ?? (typeof me?.achievements === 'number' ? me.achievements : Object.keys(me?.achievements || {}).length)), 'Logros')),
@@ -165,6 +165,7 @@ export function emoteBubble(id) {
   const txt = {
     emo_gg: 'GG', emo_jaja: 'JAJA', emo_vacio: '…', emo_signo: '¿?', emo_cine: 'CINE ABSOLUTO', emo_contrato: 'ESTO NO ESTABA EN EL CONTRATO',
     emo_necesidad: 'QUÉ NECESIDAD', emo_aura: '+1000 AURA', emo_serio: '😐', emo_empate: 'NADIE QUISO HACERSE CARGO',
+    emo_creador: 'EL CREADOR', emo_s1_vamos: '¡VAMOS!', emo_s1_lag: 'FUE EL LAG', emo_s1_otra: 'OTRA', emo_s1_tilt: 'MODO TILT', emo_s1_ez: 'FÁCIL',
   }[id] || it?.name || '';
   return h('div.emote.em-' + (it?.rarity || 'common'), txt);
 }

@@ -1,5 +1,5 @@
 // Cliente mínimo de la API (Supabase PostgREST → funciones dc_* en la base de datos).
-// Todas las operaciones que tocan KEKE, PIES, SUSI, logros o inventario se ejecutan en el servidor.
+// Todas las operaciones que tocan XP, PIES, ELO, logros o inventario se ejecutan en el servidor.
 import { SUPABASE_URL, SUPABASE_KEY } from '../config.js';
 
 export class ApiError extends Error {
@@ -33,6 +33,13 @@ const MESSAGES = {
   invalid_match: 'La partida no pasó la validación del servidor.',
   invalid_comp: 'La competición no pasó la validación del servidor.',
   network: 'Sin conexión con el servidor.',
+  no_season: 'No hay ninguna temporada activa en este momento.',
+  name_blocked: 'Ese nombre no está permitido. Elegí otro sin insultos ni palabras ofensivas.',
+  name_taken: 'Ese nombre ya lo usa otra cuenta.',
+  name_cooldown: 'Ya cambiaste el nombre hace poco: se puede cambiar una vez cada 7 días.',
+  premium_required: 'Esa recompensa es del Pase Premium.',
+  not_ready: 'Todavía no completaste ese desafío.',
+  already_claimed: 'Ya reclamaste esa recompensa.',
   invalid: 'Operación no válida.',
   not_friends: 'Solo podés desafiar a tus amigos del CLUB (o pasale el código de una sala).',
   room_not_found: 'No hay ninguna sala abierta con ese código.',

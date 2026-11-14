@@ -122,7 +122,7 @@ export function storeSection(ui, owner, ctx) {
   function renderHead() {
     const me = svc.slotAccount(p);
     head.replaceChildren(
-      h('div.store-brand', h('span.store-logo', piesIcon()), h('div', h('h2', 'PIE STORE'), h('p', '80 objetos · solo cosméticos · se paga con PIES ganados jugando'))),
+      h('div.store-brand', h('span.store-logo', piesIcon()), h('div', h('h2', 'PIE STORE'), h('p', `${STORE_ITEMS.length} objetos · solo cosméticos · se paga con PIES ganados jugando, nunca con dinero real`))),
       me ? h('div.store-bal', h('small', `SALDO DE ${me.name.toUpperCase()}`), pies(me.pies, 'big'), h('button.btn.small.ghost', { nav: true, onclick: () => ctx.goto('stats', { tab: 'pies' }) }, 'HISTORIAL DE PIES'))
         : h('div.store-bal', h('small', 'SIN CUENTA'), h('button.btn.small.primary', { nav: true, onclick: () => ctx.login(p) }, 'INICIÁ SESIÓN PARA COMPRAR')));
   }
@@ -134,7 +134,29 @@ export function storeSection(ui, owner, ctx) {
         ...RAR_ORDER.map((r) => h('button.rf' + (rar === r ? '.on' : ''), { nav: true, style: { '--rr': RARITIES[r].color }, onclick: () => { rar = r; renderFilters(); renderGrid(); } }, RARITIES[r].name)),
         h('button.rf' + (hideOwned ? '.on' : ''), { nav: true, onclick: () => { hideOwned = !hideOwned; renderFilters(); renderGrid(); } }, hideOwned ? '✓ Ocultar lo que tengo' : 'Ocultar lo que tengo')));
   }
+  // destacados del día: 4 objetos que cambian cada día (iguales para todos)
+  const featured = h('div.store-featured');
+  function renderFeatured() {
+    const day = Math.floor(Date.now() / 86400000);
+    let x = day * 2654435761 % 4294967296;
+    const rnd = () => { x = (x * 1664525 + 1013904223) % 4294967296; return x / 4294967296; };
+    const pool = STORE_ITEMS.filter((it) => it.category !== 'title');
+    const pick = [];
+    const want = ['legendary', 'epic', 'rare', null];
+    for (const r of want) {
+      const cand = pool.filter((it) => (r ? it.rarity === r : true) && !pick.includes(it));
+      if (cand.length) pick.push(cand[Math.floor(rnd() * cand.length)]);
+    }
+    const show = cat === 'all' && rar === 'all' && !hideOwned;
+    featured.style.display = show ? '' : 'none';
+    if (!show) return;
+    const hrs = 24 - new Date().getUTCHours();
+    featured.replaceChildren(
+      h('div.sf-head', h('b', 'DESTACADOS DE HOY'), h('small', `Cambian en ${hrs} h`)),
+      h('div.sf-grid', pick.map((it) => itemCard(ui, owner, it, p, open))));
+  }
   function renderGrid() {
+    renderFeatured();
     const list = STORE_ITEMS
       .filter((it) => (cat === 'all' || it.category === cat) && (rar === 'all' || it.rarity === rar) && (!hideOwned || !svc.owns(p, it.id)))
       .sort((a, b) => RARITIES[a.rarity].order - RARITIES[b.rarity].order || a.price - b.price);
@@ -147,7 +169,7 @@ export function storeSection(ui, owner, ctx) {
   renderHead();
   renderFilters();
   renderGrid();
-  const el = h('div.store', head, filters, grid);
+  const el = h('div.store', head, featured, filters, grid);
   const unsub = svc.on(() => { if (!owner.disposed) renderHead(); });
   return { el, destroy: unsub };
 }

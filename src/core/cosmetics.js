@@ -218,6 +218,69 @@ export const SKINS = {
       g.globalAlpha = 1;
     },
   },
+  // ---- set del creador
+  skin_creador: {
+    tint: () => '#3B1C7A',
+    overlay: (g, t) => {
+      g.strokeStyle = 'rgba(255,209,107,0.85)';
+      g.lineWidth = 2.2;
+      for (let i = 0; i < 6; i++) {
+        const y = -130 + i * 26;
+        g.beginPath(); g.moveTo(-80, y); g.lineTo(-30 + i * 6, y); g.lineTo(-20 + i * 6, y + 12); g.lineTo(80, y + 12); g.stroke();
+      }
+      g.fillStyle = '#FFD16B';
+      for (let i = 0; i < 6; i++) { g.globalAlpha = 0.5 + Math.sin(t * 4 + i) * 0.5; g.beginPath(); g.arc(-20 + i * 6, -118 + i * 26, 3, 0, TAU); g.fill(); }
+      g.globalAlpha = 1;
+    },
+  },
+  // ---- Pase de Batalla · Temporada 1
+  skin_s1_holo: {
+    tint: (b) => mix(b, '#D9E4FF', 0.55),
+    overlay: (g, t) => {
+      const x = Math.sin(t * 0.9) * 40;
+      const grd = g.createLinearGradient(-90 + x, -140, 90 + x, 20);
+      ['rgba(255,95,162,0.35)', 'rgba(255,201,60,0.3)', 'rgba(72,213,151,0.3)', 'rgba(37,207,230,0.35)', 'rgba(155,108,255,0.35)'].forEach((c, i) => grd.addColorStop(i / 4, c));
+      g.fillStyle = grd;
+      g.fillRect(-80, -140, 160, 160);
+    },
+  },
+  skin_s1_tigre: {
+    tint: () => '#F28A2E',
+    overlay: (g) => {
+      g.fillStyle = 'rgba(25,14,6,0.8)';
+      for (let i = 0; i < 7; i++) {
+        const y = -130 + i * 22;
+        g.beginPath(); g.moveTo(-80, y); g.quadraticCurveTo(-40, y + 9, -18, y + 2); g.quadraticCurveTo(-40, y + 15, -80, y + 11); g.fill();
+        g.beginPath(); g.moveTo(80, y + 8); g.quadraticCurveTo(40, y + 17, 18, y + 10); g.quadraticCurveTo(40, y + 23, 80, y + 19); g.fill();
+      }
+    },
+  },
+  skin_s1_carbono: {
+    tint: () => '#1E2026',
+    overlay: (g, t) => {
+      for (let y = -140; y < 20; y += 8) for (let x = -80; x < 80; x += 8) {
+        g.fillStyle = ((x + y) / 8) % 2 ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.25)';
+        g.fillRect(x, y, 8, 4); g.fillRect(x + 4, y + 4, 4, 4);
+      }
+      g.fillStyle = 'rgba(255,209,107,0.85)';
+      g.fillRect(-80, -66, 160, 2.5);
+      const x = -120 + ((t * 70) % 260);
+      g.fillStyle = 'rgba(255,240,200,0.22)'; g.save(); g.rotate(-0.5); g.fillRect(x, -220, 18, 440); g.restore();
+    },
+  },
+  skin_s1_prisma: {
+    tint: () => '#F4F6FF',
+    overlay: (g, t) => {
+      for (let i = 0; i < 6; i++) {
+        const a = t * 0.8 + i;
+        g.fillStyle = `hsla(${(t * 60 + i * 60) % 360}, 90%, 60%, 0.35)`;
+        g.beginPath(); g.moveTo(0, -60); g.lineTo(Math.cos(a) * 140, -60 + Math.sin(a) * 140); g.lineTo(Math.cos(a + 0.5) * 140, -60 + Math.sin(a + 0.5) * 140); g.fill();
+      }
+      g.fillStyle = '#fff';
+      for (let i = 0; i < 10; i++) { g.globalAlpha = 0.4 + Math.sin(t * 4 + i * 1.7) * 0.4; star(g, -65 + ((i * 41) % 130), -130 + ((i * 29) % 140), 3, 4, 0.3); g.fill(); }
+      g.globalAlpha = 1;
+    },
+  },
 };
 // skins de Maestría: dorado con franjas del color del minijuego
 const MASTERY_COL = { reaction: '#FFC93C', race: '#25CFE6', pong: '#9B6CFF', platform: '#48D597', hoop: '#FF8E3C', memory: '#FF5FA2', color: '#48D597', arena: '#FF654F', target: '#FFC93C', beat: '#FF5FA2', fish: '#25CFE6', blocks: '#9B6CFF', sneak: '#6F7CFF', tennis: '#C6F04A', tower: '#FF9E5E', blast: '#FF4D6D' };

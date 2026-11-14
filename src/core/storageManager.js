@@ -46,6 +46,8 @@ export function defaultSave() {
     history: [],
     gameOptions: {},
     lastDuel: null,
+    // modos de un jugador (contra bots): historial y récords propios, separados de las estadísticas competitivas
+    solo: { level: 'normal', game: '', best: 0, bestTime: 0, runs: 0, wins: 0, history: [], vs: {} },
   };
 }
 

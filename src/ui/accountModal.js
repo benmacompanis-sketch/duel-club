@@ -128,12 +128,28 @@ export function accountModal(ui, { p, onDone }) {
     }
   }
 
+  async function rename() {
+    const me = svc.slotAccount(p);
+    if (!me) return;
+    const name = window.prompt('Nuevo nombre visible (3 a 16 caracteres). Se puede cambiar una vez cada 7 días.', me.name);
+    if (!name || name.trim() === me.name) return;
+    try {
+      await svc.rename(p, name.trim());
+      app.audio.play('confirm');
+      ui.toast({ kind: 'ok', title: 'Nombre cambiado', text: `Ahora te llamás ${svc.slotAccount(p).name}.` });
+      finish();
+    } catch (e) {
+      err.textContent = errorText(e);
+      app.audio.play('error');
+    }
+  }
+
   async function deleteAccount() {
     const me = svc.slotAccount(p);
     if (!me) return;
     const pass = window.prompt(`Para ELIMINAR la cuenta @${me.username} escribí tu contraseña. Se borra todo su progreso y no se puede deshacer.`);
     if (!pass) return;
-    const ok = await ui.confirm({ title: '¿Eliminar la cuenta para siempre?', text: `Se borran KEKE, PIES, SUSI, logros, inventario, amigos e historial de @${me.username}.`, yes: 'Eliminar', no: 'Cancelar' });
+    const ok = await ui.confirm({ title: '¿Eliminar la cuenta para siempre?', text: `Se borran XP, PIES, ELO, logros, inventario, amigos e historial de @${me.username}.`, yes: 'Eliminar', no: 'Cancelar' });
     if (!ok) return;
     try {
       await svc.deleteAccount(p, pass);
@@ -167,7 +183,9 @@ export function accountModal(ui, { p, onDone }) {
     h('div.dialog-actions',
       h('button.btn.ghost', { nav: true, onclick: guest }, app.profiles[p].accountId ? 'JUGAR COMO INVITADO' : 'SEGUIR COMO INVITADO'),
       submitBtn),
-    svc.slotAccount(p) ? h('button.linkbtn.acc-delete', { nav: true, onclick: deleteAccount }, `Eliminar la cuenta @${svc.slotAccount(p).username}`) : null);
+    svc.slotAccount(p) ? h('div.acc-links',
+      h('button.linkbtn', { nav: true, onclick: rename }, `Cambiar nombre visible (${svc.slotAccount(p).name})`),
+      h('button.linkbtn.acc-delete', { nav: true, onclick: deleteAccount }, `Eliminar la cuenta @${svc.slotAccount(p).username}`)) : null);
   m.onBack = () => finish();
   m.onEnter = () => submit();
   return m;

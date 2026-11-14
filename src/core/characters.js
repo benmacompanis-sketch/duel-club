@@ -33,7 +33,7 @@ export const CHARACTERS = [
     bio: 'Cuando algo le sale bien, salta una tostada. Cuando sale mal, también.' },
   { id: 'silla', name: 'La Silla', title: 'Leyenda de plástico', accent: '#F5F7FC', accent2: '#B8C0D6', unlock: 'secret', meme: true,
     bio: 'Sobrevivió a mil asados. Símbolo universal de la neutralidad. Personaje secreto.' },
-  { id: 'tuntun', name: 'Tun-Tun Tronco', title: 'El ritmo del bosque', accent: '#8B5A2B', accent2: '#E8C99A', unlock: 'store', meme: true,
+  { id: 'tuntun', name: 'Tung Tung Tung Sahur', title: 'El ritmo del bosque', accent: '#8B5A2B', accent2: '#E8C99A', unlock: 'store', meme: true,
     bio: 'Un tronco con palillo de tambor que marca el ritmo del duelo. Tun. Tun. Tun.' },
 ];
 export const CHAR_BY_ID = Object.fromEntries(CHARACTERS.map((c) => [c.id, c]));
@@ -903,16 +903,16 @@ const DRAW = {
 
 // Anclajes de cabeza para accesorios: [x, y superior, ancho, y de ojos]
 const HEAD = {
-  volt: [0, -96, 54, -76], mochi: [2, -74, 56, -40], pico: [6, -70, 40, -56], brik: [2, -92, 40, -78],
+  volt: [0, -90, 54, -76], mochi: [2, -74, 56, -40], pico: [6, -70, 40, -56], brik: [2, -92, 40, -78],
   nimbus: [2, -96, 56, -60], fang: [2, -84, 46, -68], ozzy: [2, -84, 58, -58], rex: [10, -86, 42, -72],
   npc: [0, -100, 40, -80], formal: [0, -102, 40, -82], frigo: [0, -104, 48, -88], toasty: [2, -94, 46, -74],
   silla: [0, -104, 50, -86], tuntun: [0, -106, 42, -82],
 };
 // Anclaje del cuello para accesorios de cuerpo: [x, y, ancho del torso]
 const NECK = {
-  volt: [0, -54, 46], mochi: [0, -30, 58], pico: [2, -44, 34], brik: [0, -56, 44], nimbus: [0, -36, 52], fang: [0, -46, 38],
-  ozzy: [0, -46, 46], rex: [2, -46, 40], npc: [0, -60, 36], formal: [0, -62, 38], frigo: [0, -66, 46], toasty: [0, -54, 32],
-  silla: [0, -52, 48], tuntun: [0, -62, 40],
+  volt: [0, -54, 46], mochi: [0, -30, 58], pico: [2, -44, 34], brik: [0, -56, 44], nimbus: [0, -36, 52], fang: [0, -40, 38],
+  ozzy: [0, -36, 46], rex: [2, -46, 40], npc: [0, -60, 36], formal: [0, -62, 38], frigo: [0, -66, 46], toasty: [0, -46, 32],
+  silla: [0, -52, 48], tuntun: [0, -54, 40],
 };
 
 // accesorios de la versión anterior -> objetos del catálogo

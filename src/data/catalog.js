@@ -2,6 +2,8 @@
 // El servidor recibe precios, rarezas y desbloqueos desde este archivo (scripts/gen-seed.mjs).
 // Ningún cosmético da ventajas: solo cambian el aspecto.
 
+import { SEASONS } from './pass.js';
+
 export const RARITIES = {
   common: { name: 'Común', color: '#A7B0C8', price: 100, order: 0 },
   uncommon: { name: 'Poco común', color: '#48D597', price: 250, order: 1 },
@@ -47,7 +49,7 @@ export const ITEMS = [
   it('char_frigo', 'char', 'epic', 'Frigo-Bot', 'Un robot heladera. Mantiene la calma a 4 °C.', { meme: true, theme: 'Robot' }),
   it('char_toasty', 'char', 'legendary', 'Tostadín', 'Cabeza de tostadora. Salta cada vez que algo le sale bien.', { meme: true, theme: 'Meme' }),
   it('char_silla', 'char', 'legendary', 'La Silla', 'La silla de plástico que sobrevivió a mil asados. Ahora compite.', { meme: true, theme: 'Absurdo' }),
-  it('char_tuntun', 'char', 'mythic', 'Tun-Tun Tronco', 'Un tronco con palillo de tambor que marca el ritmo del duelo. Tun. Tun. Tun.', { meme: true, theme: 'Meme' }),
+  it('char_tuntun', 'char', 'mythic', 'Tung Tung Tung Sahur', 'El tronco con bate más famoso de internet. Tung. Tung. Tung. Sahur.', { meme: true, theme: 'Meme' }),
 
   // ===================================================================== SKINS (diseño sobre el cuerpo)
   it('skin_rayas', 'skin', 'common', 'Rayas', 'Rayas diagonales. Clásico que nunca falla.', { theme: 'Retro' }),
@@ -95,7 +97,7 @@ export const ITEMS = [
   it('face_visor', 'face', 'rare', 'Visor cyberpunk', 'Muestra datos que nadie pidió.', { theme: 'Cyberpunk' }),
   it('face_menpo', 'face', 'rare', 'Máscara samurái', 'Media máscara de guerrero. Muy seria.', { theme: 'Samurai' }),
   it('face_fantasma', 'face', 'epic', 'Máscara espectral', 'Sonríe aunque pierdas.', { theme: 'Fantasma' }),
-  it('face_aura', 'face', 'legendary', 'Lentes de aura', 'Lentes pixelados que bajan solos cuando ganás.', { theme: 'Meme', meme: true }),
+  it('face_aura', 'face', 'legendary', 'Lentes Deal With It', 'Los lentes pixelados del meme: bajan solos cuando ganás.', { theme: 'Meme', meme: true }),
 
   // ===================================================================== ACCESORIOS DE CUERPO
   it('body_bufanda', 'body', 'common', 'Bufanda', 'Para los duelos de invierno.', { theme: 'Hielo' }),
@@ -126,7 +128,7 @@ export const ITEMS = [
   // ===================================================================== EMOTES (aparecen en los resultados)
   it('emo_gg', 'emote', 'common', '"GG"', 'Buen juego. A veces es sincero.', { theme: 'Retro' }),
   it('emo_jaja', 'emote', 'common', '"JAJA"', 'Se ríe en tu cara, con respeto.', { theme: 'Meme' }),
-  it('emo_vacio', 'emote', 'uncommon', 'Mirada al vacío', 'Tu personaje mira al horizonte procesando lo que pasó.', { theme: 'Meme', meme: true }),
+  it('emo_vacio', 'emote', 'uncommon', 'Mirada de los mil metros', 'Tu personaje mira al horizonte procesando lo que pasó.', { theme: 'Meme', meme: true }),
   it('emo_signo', 'emote', 'uncommon', '"¿?"', 'Ni vos entendés cómo ganaste.', { theme: 'Meme' }),
   it('emo_cine', 'emote', 'rare', '"CINE ABSOLUTO"', 'Para las remontadas de película.', { theme: 'Meme', meme: true }),
   it('emo_contrato', 'emote', 'epic', 'Cartel del contrato', '"ESTO NO ESTABA EN EL CONTRATO".', { theme: 'Meme', meme: true }),
@@ -228,7 +230,7 @@ export const TITLES = [
   tt('cine', 'Cine absoluto', 'rare', 'Logro: Remontada épica'),
   tt('coleccionista', 'El coleccionista', 'epic', 'Logro: El coleccionista'),
   tt('social', 'Alma del club', 'uncommon', 'Logro: Jugar con cinco amigos'),
-  tt('aura', 'Aura cuestionable', 'epic', 'PIE STORE', { sale: true, meme: true }),
+  tt('aura', 'Main Character', 'epic', 'PIE STORE', { sale: true, meme: true }),
   tt('protagonista', 'Protagonista sin guion', 'rare', 'PIE STORE', { sale: true, meme: true }),
   tt('ceo_teclado', 'CEO del teclado', 'uncommon', 'PIE STORE', { sale: true, meme: true }),
   tt('cero_estres', 'Cero estrés (mentira)', 'common', 'PIE STORE', { sale: true, meme: true }),
@@ -251,11 +253,11 @@ export const MASTERY_ITEMS = GAME_IDS.flatMap((g) => [
 ]);
 
 export const MASTERY_RANKS = [
-  { id: 0, name: 'Principiante', points: 0, keke: 0, pies: 0 },
-  { id: 1, name: 'Aficionado', points: 12, keke: 50, pies: 40 },
-  { id: 2, name: 'Competente', points: 35, keke: 100, pies: 80 },
-  { id: 3, name: 'Experto', points: 80, keke: 200, pies: 150 },
-  { id: 4, name: 'Maestro', points: 160, keke: 400, pies: 300 },
+  { id: 0, name: 'Principiante', points: 0, xp: 0, pies: 0 },
+  { id: 1, name: 'Aficionado', points: 12, xp: 50, pies: 40 },
+  { id: 2, name: 'Competente', points: 35, xp: 100, pies: 80 },
+  { id: 3, name: 'Experto', points: 80, xp: 200, pies: 150 },
+  { id: 4, name: 'Maestro', points: 160, xp: 400, pies: 300 },
 ];
 export const masteryPoints = (m) => (m ? m.played + m.wins * 2 : 0);
 export function masteryRank(m) {
@@ -289,7 +291,7 @@ export const SPECIAL_LEVELS = {
   6: 'Sos sospechoso', 21: 'Modo serio', 42: 'La respuesta', 67: 'EL ELEGIDO', 69: 'No preguntes', 100: 'Leyenda absoluta', 150: '¿Tenés vida?',
 };
 
-// Rangos de SUSI (rating competitivo)
+// Rangos de ELO (rating competitivo)
 export const RESIST_TIERS = [
   { min: -Infinity, name: 'Principiante', color: '#8C96B8' },
   { min: 800, name: 'Aspirante', color: '#A7B0C8' },
@@ -308,18 +310,31 @@ export const resistTier = (r) => {
   return { ...t, index: i };
 };
 
-// Niveles: hace falta 25·(L−1)·(L+2) KEKE para llegar al nivel L
-export const kekeForLevel = (L) => 25 * (L - 1) * (L + 2);
-export function levelInfo(keke) {
+// Niveles: hace falta 25·(L−1)·(L+2) XP para llegar al nivel L
+export const xpForLevel = (L) => 25 * (L - 1) * (L + 2);
+export function levelInfo(xp) {
   let L = 1;
-  while (kekeForLevel(L + 1) <= keke) L++;
-  const cur = kekeForLevel(L), next = kekeForLevel(L + 1);
+  while (xpForLevel(L + 1) <= xp) L++;
+  const cur = xpForLevel(L), next = xpForLevel(L + 1);
   let title = 'Novato';
   for (const [lv, name] of LEVEL_TITLES) if (L >= lv) title = name;
-  return { level: L, keke, into: keke - cur, need: next - cur, progress: (keke - cur) / (next - cur), title, special: SPECIAL_LEVELS[L] || null };
+  return { level: L, xp, into: xp - cur, need: next - cur, progress: (xp - cur) / (next - cur), title, special: SPECIAL_LEVELS[L] || null };
 }
 
-export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS].map((x) => {
+// Set exclusivo del creador de DUEL CLUB (benuchinb2): no se vende, no se puede conseguir y no da ventajas
+export const CREATOR_ITEMS = [
+  ['title_creador', 'title', 'mythic', 'Creador de DUEL CLUB', 'El que hizo el club.'],
+  ['card_creador', 'card', 'mythic', 'Tarjeta del Creador', 'Violeta profundo, oro y la firma del club.'],
+  ['frame_creador', 'frame', 'mythic', 'Marco del Creador', 'Oro y violeta que giran sin parar.'],
+  ['emo_creador', 'emote', 'mythic', '"EL CREADOR"', 'Solo hay uno.'],
+  ['skin_creador', 'skin', 'mythic', 'Skin del Creador', 'Violeta con circuitos dorados que laten.'],
+].map(([id, category, rarity, name, desc]) => ({ id, category, rarity, name, desc, unlock: 'Exclusivo del creador de DUEL CLUB · no se vende', sale: false, creator: true }));
+
+// Objetos exclusivos del Pase de Batalla (no se venden)
+export const PASS_ITEMS = SEASONS.flatMap((se) => Object.entries(se.items).map(([id, [category, rarity, name, desc]]) =>
+  ({ id, category, rarity, name, desc, unlock: `Pase de Batalla · ${se.name}`, sale: false, pass: se.id })));
+
+export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS, ...PASS_ITEMS, ...CREATOR_ITEMS].map((x) => {
   const sale = x.sale && !ACH_ONLY.has(x.id);
   return { ...x, sale, exclusive: !sale && !x.default, price: sale ? RARITIES[x.rarity].price : null };
 });

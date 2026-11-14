@@ -1,8 +1,8 @@
-// Menú principal de la plataforma: barra superior (J1/J2, nivel, KEKE, PIES, SUSI, notificaciones),
+// Menú principal de la plataforma: barra superior (J1/J2, nivel, XP, PIES, ELO, notificaciones),
 // barra lateral con todas las secciones y área de contenido. Todo se puede usar con teclado o mouse.
 import { h, icon, toggleFullscreen } from './dom.js';
 import { duoStage } from './menu.js';
-import { pies, resist, levelBadge, kekeBar, avatar, lookOf, titleOf, timeAgo, gameChip, errorBox, loading, fmtN } from './kit.js';
+import { pies, resist, levelBadge, xpBar, avatar, lookOf, titleOf, timeAgo, gameChip, errorBox, loading, fmtN } from './kit.js';
 import { levelInfo, GAME_NAMES } from '../data/catalog.js';
 import { accountModal } from './accountModal.js';
 import { notificationsModal } from './notifications.js';
@@ -19,6 +19,8 @@ import { rankingSection } from './ranking.js';
 import { statsSection } from './statsView.js';
 import { gamesSection } from './gamesView.js';
 import { onlineScreen } from './online.js';
+import { soloScreen } from './solo.js';
+import { passSection } from './pass.js';
 import { newsSection, newsBanner, newsUnseen, maybeShowNews } from './news.js';
 
 export const SECTIONS = [
@@ -28,6 +30,7 @@ export const SECTIONS = [
   { id: 'profile', name: 'Perfil', icon: 'user', color: '#25CFE6' },
   { id: 'club', name: 'CLUB', icon: 'heart', color: '#FF5FA2' },
   { id: 'ranking', name: 'Ranking', icon: 'records', color: '#FFC93C' },
+  { id: 'pass', name: 'Pase', icon: 'crown', color: '#FFC93C' },
   { id: 'store', name: 'PIE STORE', icon: 'pie', color: '#FFD16B' },
   { id: 'inventory', name: 'Inventario', icon: 'card', color: '#9B6CFF' },
   { id: 'achievements', name: 'Logros', icon: 'trophy', color: '#FF8E3C' },
@@ -37,7 +40,7 @@ export const SECTIONS = [
 ];
 const RENDER = {
   home: homeSection, play: playSection, games: gamesSection, profile: profileSection, club: clubSection, ranking: rankingSection,
-  store: storeSection, inventory: inventorySection, achievements: achievementsSection, stats: statsSection, news: newsSection,
+  pass: passSection, store: storeSection, inventory: inventorySection, achievements: achievementsSection, stats: statsSection, news: newsSection,
 };
 
 /** Jugador que está "mirando" las secciones personales (J1 o J2). */
@@ -83,7 +86,7 @@ export function hubScreen(ui, params = {}) {
         avatar(ui, scr, { char: prof.char, color: prof.color, acc: prof.acc }, 44, { seed: p }),
         h('div.tb-info', h('small', `J${p + 1} · INVITADO`), h('b', prof.name), h('em', 'Iniciá sesión para guardar tu progreso')));
     }
-    const L = levelInfo(me.keke);
+    const L = levelInfo(me.xp);
     return h('button.tb-slot' + (p ? '.right' : '') + (sel ? '.sel' : ''), {
       nav: true, style: { '--c': me.color }, title: `Ver como ${me.name}`,
       onclick: () => { if (ctx.viewer !== p) ctx.setViewer(p); else openAccount(p); },
@@ -92,7 +95,7 @@ export function hubScreen(ui, params = {}) {
     h('div.tb-info',
       h('small', `J${p + 1} · ${titleOf(me)}`),
       h('b', me.name, me.unread ? h('span.tb-dot', String(me.unread > 9 ? '9+' : me.unread)) : null),
-      h('div.tb-line', levelBadge(L.level), kekeBar(me.keke))),
+      h('div.tb-line', levelBadge(L.level), xpBar(me.xp))),
     h('div.tb-cur', pies(me.pies), resist(me.rating, { short: true })));
   }
   function renderTop() {
@@ -103,7 +106,8 @@ export function hubScreen(ui, params = {}) {
       h('div.tb-mid',
         h('button.icon-btn.tb-bell' + (unread ? '.has' : ''), { nav: true, title: 'Notificaciones', onclick: () => anyAcc ? ui.modal(notificationsModal, { onChange: renderTop }) : openAccount(0) },
           icon('bell'), unread ? h('span.tb-badge', String(unread > 99 ? '99+' : unread)) : null),
-        h('div.tb-status.' + svc.status, h('span.tb-led'), svc.status === 'online' ? 'EN LÍNEA' : svc.status === 'offline' ? 'SIN CONEXIÓN' : 'CONECTANDO')),
+        h('div.tb-status.' + svc.status, { title: svc.presence ? `${svc.presence.online} conectados ahora · ${svc.presence.playing} jugando` : '' }, h('span.tb-led'),
+          svc.status === 'online' ? (svc.presence ? `${svc.presence.online} EN LÍNEA` : 'EN LÍNEA') : svc.status === 'offline' ? 'SIN CONEXIÓN' : 'CONECTANDO')),
       slotBox(1));
   }
   function openAccount(p) {
@@ -164,6 +168,7 @@ export function hubScreen(ui, params = {}) {
   open(section, params.sectionParams || {}, true);
   // cartel de novedades (una vez por actualización)
   setTimeout(() => { if (!scr.disposed) maybeShowNews(ui, (tab) => open('news', { tab })); }, 900);
+  svc.startPresence();
   const unsub = svc.on(() => { if (!scr.disposed) renderTop(); });
   scr.destroy = () => {
     unsub();
@@ -179,7 +184,7 @@ export function hubScreen(ui, params = {}) {
 function homeSection(ui, owner, ctx) {
   const app = ui.app;
   const svc = app.accounts;
-  const feedBox = h('div.home-feed', loading());
+  const passBox = h('div.home-pass', passSummary());
   const el = h('div.home',
     newsBanner(ui, ctx),
     h('div.home-hero',
@@ -197,32 +202,31 @@ function homeSection(ui, owner, ctx) {
             : h('button.home-slot.guest', { nav: true, onclick: () => ctx.login(p) }, h('b', `J${p + 1} · Invitado`), h('span', 'Iniciar sesión / Registrarse'));
         })))),
     h('div.home-grid',
-      h('div.card.home-card', h('h3', icon('records'), 'Actividad del club'), feedBox),
+      h('div.card.home-card', h('h3', icon('crown'), 'Pase y desafíos'), passBox),
       h('div.card.home-card', h('h3', icon('trophy'), 'Atajos'),
         h('div.home-links',
           link('PIE STORE', 'Cosméticos con PIES', 'store', '#FFD16B'),
-          link('Ranking mundial', 'SUSI, nivel y récords', 'ranking', '#FFC93C'),
+          link('Ranking mundial', 'ELO, nivel y récords', 'ranking', '#FFC93C'),
           link('CLUB', 'Amigos, solicitudes y cara a cara', 'club', '#FF5FA2'),
           link('Logros', '152 logros, algunos secretos', 'achievements', '#FF8E3C')))));
   function link(t, s, id, c) {
     return h('button.home-link', { nav: true, style: { '--accent': c }, onclick: () => ctx.goto(id) }, h('b', t), h('span', s));
   }
-  svc.feed().then((rows) => {
-    if (owner.disposed) return;
-    if (!rows?.length) {
-      feedBox.replaceChildren(h('p.muted', 'Todavía no hay partidas entre cuentas. ¡La primera puede ser la tuya!'));
-      return;
-    }
-    feedBox.replaceChildren(...rows.slice(0, 7).map((m) => {
-      const w = m.winner;
-      return h('div.feed-row',
-        gameChip(m.game_id),
-        h('span.feed-p' + (w === 0 ? '.w' : ''), { style: { '--c': m.p1_color || '#3985FF' } }, m.p1_name),
-        h('b', `${m.score1 ?? ''} – ${m.score2 ?? ''}`),
-        h('span.feed-p' + (w === 1 ? '.w' : ''), { style: { '--c': m.p2_color || '#FF654F' } }, m.p2_name),
-        h('small', timeAgo(m.created_at)));
-    }));
-  }).catch(() => !owner.disposed && feedBox.replaceChildren(h('p.muted', 'Sin conexión: la actividad del club no está disponible.')));
+  function passSummary() {
+    const me = svc.slotAccount(ctx.viewer);
+    if (!me) return [h('p.muted', 'Con una cuenta subís el Pase de Batalla y completás desafíos diarios y semanales.'), h('button.btn', { nav: true, onclick: () => ctx.login(ctx.viewer) }, 'INICIAR SESIÓN')];
+    const P = me.pass;
+    const out = [];
+    if (P) {
+      const into = P.level >= P.levels ? P.xp_per_level : P.xp % P.xp_per_level;
+      out.push(h('div.hp-row', h('b', P.name), h('span', `Nivel ${P.level} / ${P.levels}${P.premium ? ' · PREMIUM' : ''}`)),
+        h('div.ph-bar', h('i', { style: { width: `${(into / P.xp_per_level) * 100}%` } })));
+    } else out.push(h('p.muted', 'No hay una temporada activa en este momento.'));
+    const ready = (P?.ready || 0) + (me.challenges_ready || 0);
+    out.push(h('button.btn' + (ready ? '.primary' : ''), { nav: true, onclick: () => ctx.goto('pass', { tab: P?.ready || !me.challenges_ready ? 'pass' : 'challenges' }) },
+      ready ? `TENÉS ${ready} RECOMPENSA${ready > 1 ? 'S' : ''} PARA RECLAMAR` : 'VER PASE Y DESAFÍOS'));
+    return out;
+  }
   return { el };
 }
 
@@ -236,11 +240,18 @@ function playSection(ui, owner, ctx) {
     { id: 'survival', title: 'SURVIVAL', sub: 'Vidas, etapas y dificultad que no para de subir.', color: '#FF654F', icon: 'survival', go: () => ui.show(survivalSetupScreen) },
   ];
   const el = h('div.play',
-    h('div.sec-head', h('h2', 'JUGAR'), h('p', 'Las partidas entre cuentas dan KEKE, PIES y SUSI. Contra invitados se gana KEKE y PIES, pero el SUSI no cambia.')),
+    h('div.sec-head', h('h2', 'JUGAR'), h('p', 'Todas las partidas con cuenta dan XP y PIES. El ELO solo se gana o se pierde online, en Buscar rival (competitivo).')),
     h('button.online-card', { nav: true, 'data-autofocus': true, onclick: () => { app.audio.play('confirm'); ui.show(onlineScreen); } },
       h('span.oc-ico', icon('bolt')),
-      h('div.oc-main', h('small', 'NUEVO'), h('b', 'JUGAR ONLINE'), h('span', 'Vos en tu compu, tu amigo en la suya. Buscá rival por SUSI, creá una sala con código o desafiá a un amigo del CLUB.')),
+      h('div.oc-main', h('small', 'NUEVO'), h('b', 'JUGAR ONLINE'), h('span', 'Vos en tu compu, tu amigo en la suya. Buscá rival por ELO, creá una sala con código o desafiá a un amigo del CLUB.')),
       h('span.oc-go', icon('play'))),
+    h('div.sec-sub', 'UN JUGADOR · CONTRA BOTS'),
+    h('div.mode-grid.solo-modes', [
+      { tab: 'vs', title: 'VS BOT', sub: 'Un minijuego contra un bot: Fácil, Normal, Difícil o Experto.', color: '#FF8E3C', icon: 'duel' },
+      { tab: 'ladder', title: 'ESCALERA', sub: 'Singleplayer: los 16 minijuegos seguidos, bots cada vez más duros y 3 vidas.', color: '#9B6CFF', icon: 'trophy' },
+      { tab: 'practice', title: 'PRÁCTICA', sub: 'Entrená cualquier minijuego sin presión. No da recompensas.', color: '#25CFE6', icon: 'target' },
+    ].map((m) => h('button.mode-card', { nav: true, style: { '--accent': m.color }, onclick: () => { app.audio.play('confirm'); ui.show(soloScreen, { tab: m.tab }); } },
+      h('span.mode-ico', icon(m.icon)), h('b', m.title), h('span', m.sub)))),
     h('div.sec-sub', 'EN ESTA COMPU · DOS JUGADORES, UN TECLADO'),
     h('div.mode-grid', MODES.map((m) =>
       h('button.mode-card', { nav: true, style: { '--accent': m.color }, onclick: () => { app.audio.play('confirm'); m.go(); } },

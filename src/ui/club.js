@@ -123,7 +123,13 @@ export function clubSection(ui, owner, ctx) {
             h('button.btn.small', { nav: true, onclick: () => vs(a.username) }, icon('duel')),
             h('button.btn.small', { nav: true, onclick: () => viewProfile(a.username) }, icon('user')),
             h('button.btn.small.ghost', { nav: true, title: 'Quitar amigo', onclick: async () => { if (await ui.confirm({ title: `¿Quitar a ${a.name}?`, text: 'Se elimina de tu lista de amigos.', yes: 'Quitar', no: 'Cancelar' })) act(() => svc.friendRemove(p, a.username), 'Amigo quitado'); } }, icon('close'))])))
-          : h('div', empty('Todavía no tenés amigos en el CLUB. Buscá jugadores y mandales solicitud.', 'heart'), h('button.btn', { nav: true, onclick: () => { tab = 'search'; render(); } }, 'BUSCAR JUGADORES')));
+          : h('div.club-empty',
+            h('div.ce-hero', h('span.ce-ico', icon('heart')), h('div', h('h3', 'Tu CLUB todavía está vacío'), h('p', 'Sumá amigos para desafiarlos online al instante, ver cuándo están conectados y comparar el cara a cara.'))),
+            h('div.ce-steps',
+              h('div.ce-step', h('b', '1'), h('span', 'Buscá a tu amigo por su usuario o nombre.')),
+              h('div.ce-step', h('b', '2'), h('span', 'Mandale una solicitud: le llega como notificación.')),
+              h('div.ce-step', h('b', '3'), h('span', 'Cuando acepte, desafialo online desde acá.'))),
+            h('div.row', h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => { tab = 'search'; render(); } }, icon('user'), 'BUSCAR JUGADORES'))));
       } else if (tab === 'requests') {
         body.replaceChildren(
           h('h4', `RECIBIDAS · ${f.incoming.length}`),

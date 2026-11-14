@@ -38,6 +38,7 @@ export function newsCard(ui, n, { onAction } = {}) {
 
 function runAction(ui, a) {
   if (a?.go === 'online') import('./online.js').then((m) => ui.show(m.onlineScreen));
+  if (a?.go === 'solo') import('./solo.js').then((m) => ui.show(m.soloScreen, { tab: a.tab || 'vs' }));
 }
 
 /** Cartel emergente con la última novedad (una vez por actualización). */

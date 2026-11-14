@@ -124,7 +124,21 @@ export default class ColorControl extends BaseGame {
     const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), min = a.r + b.r;
     if (d < min && d > 0) {
       const nx = dx / d, ny = dy / d, push = (min - d) / 2;
-      a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push;
+      // el empujón nunca mete a nadie adentro de un muro (antes un jugador podía quedar encerrado para siempre)
+      const free = (bd, x, y) => {
+        const r = bd.r * 0.92;
+        for (const [cx, cy] of [[x - r, y - r], [x + r, y - r], [x - r, y + r], [x + r, y + r]]) {
+          const cell = this.cellAt(cx, cy);
+          if (!cell || cell.wall) return false;
+        }
+        return true;
+      };
+      const shove = (bd, sx, sy) => {
+        if (free(bd, bd.x + sx, bd.y)) bd.x += sx;
+        if (free(bd, bd.x, bd.y + sy)) bd.y += sy;
+      };
+      shove(a, -nx * push, -ny * push);
+      shove(b, nx * push, ny * push);
       if (Math.random() < 0.1) this.sfx('bounce', { gap: 200 });
     }
     // potenciadores

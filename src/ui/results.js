@@ -106,6 +106,7 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
   }
   const online = info?.online || null;
   const actions = online ? online.actions(choose)
+    : info?.actions ? info.actions(choose)
     : quick
     ? h('div.res-actions',
       h('button.btn', { nav: true, onclick: () => choose('menu') }, 'MENÚ'),
@@ -125,19 +126,21 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
   else if (session && info?.before && session.maxDeficit?.[w] >= 6) phraseKind = 'comeback';
   else if (Math.random() < 0.12) phraseKind = 'blowout';
   const phraseText = phraseKind ? phrase(phraseKind) : null;
-  // recompensas reales del servidor (KEKE, PIES, SUSI)
+  // recompensas reales del servidor (XP, PIES, ELO)
   const fillRewards = (out) => {
     for (const p of [0, 1]) {
       const box = rewardBox[p];
       const s = out?.slots?.[p];
+      if (players[p].bot) { box.replaceChildren(h('span.res-reward.wait', players[p].bot === 'idle' ? 'Muñeco de práctica' : 'Bot · no suma ELO')); continue; }
+      if (info?.practice) { box.replaceChildren(h('span.res-reward.wait', 'Práctica: sin recompensas')); continue; }
       if (!players[p].accountId) { box.replaceChildren(h('span.res-reward.wait', 'Invitado: sin progreso')); continue; }
       if (!s) { box.replaceChildren(h('span.res-reward.wait', out === undefined ? 'Guardando…' : out?.duplicate ? 'Ya guardada' : 'Pendiente de envío')); continue; }
-      box.replaceChildren(
-        h('span.res-reward.keke', `+${fmtN(s.keke)} KEKE`),
+      box.replaceChildren(...[
+        h('span.res-reward.xp', `+${fmtN(s.xp)} XP`),
         s.pies ? h('span.res-reward.pies', `+${fmtN(s.pies)} PIES`) : null,
-        s.delta ? h('span.res-reward' + (s.delta > 0 ? '.up' : '.down'), `${s.delta > 0 ? '+' : ''}${s.delta} SUSI`) : null,
+        s.delta ? h('span.res-reward' + (s.delta > 0 ? '.up' : '.down'), `${s.delta > 0 ? '+' : ''}${s.delta} ELO`) : null,
         s.record ? h('span.res-reward.pies', '★ RÉCORD MUNDIAL') : null,
-        s.factor < 1 ? h('span.res-reward.wait', s.factor === 0 ? 'Límite diario alcanzado' : 'Recompensa reducida (muchas partidas hoy)') : null);
+        s.factor < 1 ? h('span.res-reward.wait', s.factor === 0 ? 'Límite diario alcanzado' : 'Recompensa reducida (muchas partidas hoy)') : null].filter(Boolean));
     }
   };
   if (online) online.rewards((p, nodes) => { if (!scr.disposed) rewardBox[p].replaceChildren(...nodes.filter(Boolean)); }, scr);
@@ -146,7 +149,7 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
     rec?.server?.then((out) => { if (!scr.disposed) fillRewards(out); });
   }
   scr.el = h('div.results', { style: { '--c': w >= 0 ? players[w].color : '#9B6CFF' } },
-    h('div.res-kicker', online ? `${online.kicker} · ${meta.name}` : `${quick ? 'QUICK PLAY' : info.label || ''} · ${meta.name}${event ? ' · ' + event.short.toUpperCase() : ''}`),
+    h('div.res-kicker', online ? `${online.kicker} · ${meta.name}` : `${info?.label || (quick ? 'QUICK PLAY' : '')} · ${meta.name}${event ? ' · ' + event.short.toUpperCase() : ''}`),
     h('div.res-banner', online?.banner || banner),
     phraseText ? h('div.res-phrase', phraseText) : null,
     h('div.res-cols', col(0), h('div.res-stats', h('h4', 'ESTADÍSTICAS'), ...statRows), col(1)),

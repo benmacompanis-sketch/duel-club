@@ -11,6 +11,7 @@ import { AccountService } from './accountService.js';
 import { AchievementManager } from './achievementManager.js';
 import { EVENTS } from './events.js';
 import { keyName } from './inputManager.js';
+import { BotInput } from './bots.js';
 const keyNameShort = (c) => ({ ShiftRight: 'SHIFT', NumpadEnter: 'ENTER' }[c] || keyName(c));
 import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel } from './utils.js';
 import { UI } from '../ui/ui.js';
@@ -196,8 +197,19 @@ export class MinigameRunner {
     if (this.game) {
       try { this.game.destroy(); } catch (e) { console.error(e); }
     }
+    // VS BOT / Singleplayer / Práctica: un jugador lo maneja la compu (mismas teclas y reglas que una persona)
+    this.bot = null;
+    this.bots = [];
+    if (this.opts.bot && !this.opts.online) {
+      // bot0: solo para pruebas automáticas (bot contra bot)
+      const base = this.opts.bot0 ? new BotInput(this.app.input, 0, this.opts.bot0, this.Game.meta.id) : this.app.input;
+      this.bot = new BotInput(base, this.opts.botSlot ?? 1, this.opts.bot, this.Game.meta.id);
+      this.bots = base === this.app.input ? [this.bot] : [base, this.bot];
+      this.opts.input = this.bot;
+    }
     this.game = new this.Game(this.app, this.opts);
     this.game.init();
+    for (const b of this.bots) b.attach(this.game);
     this.t = 0;
     this.endT = 0;
     this.invert = { next: rand(6, 9), phase: 'off', t: 0 };
@@ -338,6 +350,7 @@ export class MinigameRunner {
       if (game.event === 'invert') this.updateInvert(dt);
       if (this.caos) this.updateCaos(dt);
       if (this.goFlash > 0) this.goFlash -= dt;
+      for (const b of this.bots) b.tick(sdt);
       game.update(sdt);
       if (game.done) {
         this.state = 'ending';
@@ -466,6 +479,7 @@ export class MinigameRunner {
     const inp = this.app.input;
     const meta = this.Game.meta;
     for (const p of [0, 1]) {
+      if (this.bot && p === this.bot.slot) continue;
       const b = inp.bindings[p];
       const parts = meta.controls.map((c) => {
         const keys = c.actions.length === 4 && c.actions.includes('up') ? (p ? '← ↑ ↓ →' : c.actions.map((x) => keyNameShort(b[x][0])).join(' '))
