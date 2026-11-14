@@ -1810,3 +1810,36 @@ body { font-weight: 600; }
 /* botones en Bangers más grandes */
 .btn { font-size: 19px; } .btn.big { font-size: 26px; } .btn.small { font-size: 16px; }
 .tab { font-size: 17px; }
+.results.solo-res .res-col.right { visibility: hidden; }
+
+/* ===== FRAGMENTOS DE HISTORIETA en todo el juego ===== */
+/* tarjetas de modos (Jugar): viñetas de color con tramado, bordes inclinados */
+.mode-card {
+  background: linear-gradient(125deg, var(--accent) 40%, transparent 100%), radial-gradient(circle, rgba(10, 6, 20, 0.42) 1.8px, transparent 2.2px) 0 0 / 9px 9px, var(--accent) !important;
+  color: #15121f !important; border-top-width: 4px !important;
+  clip-path: polygon(0 3%, 100% 0, 98% 100%, 2% 96%);
+}
+.mode-card:nth-child(even) { clip-path: polygon(2% 0, 100% 4%, 100% 97%, 0 100%); }
+.mode-card b { color: #fff !important; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 3px 3px 0 var(--ink); font-size: 32px !important; }
+.mode-card span { color: #15121f !important; font-weight: 800; }
+.mode-card .mode-ico { background: #fff4e0 !important; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.mode-card .mode-ico svg, .mode-card .mode-ico .icon { color: #15121f !important; }
+.mode-card::after { display: none; }
+/* atajos del inicio y pestañas de secciones como fragmentos */
+.home-link { --accent: var(--yellow); clip-path: polygon(0 0, 100% 8%, 99% 100%, 1% 92%); background: linear-gradient(110deg, color-mix(in srgb, var(--accent) 85%, white) 45%, transparent), radial-gradient(circle, rgba(10, 6, 20, 0.4) 1.5px, transparent 1.9px) 0 0 / 7px 7px, var(--accent) !important; }
+.home-link:nth-child(even) { clip-path: polygon(1% 8%, 100% 0, 100% 92%, 0 100%); }
+.home-link b, .home-link span { color: #15121f !important; }
+.tab, .solo-tab { clip-path: polygon(0 6%, 100% 0, 97% 100%, 3% 94%); }
+.tab:nth-child(even), .solo-tab:nth-child(even) { clip-path: polygon(3% 0, 100% 8%, 100% 94%, 0 100%); }
+.tab.on, .solo-tab.on { background: linear-gradient(110deg, var(--yellow) 50%, transparent), radial-gradient(circle, rgba(10, 6, 20, 0.35) 1.4px, transparent 1.8px) 0 0 / 6px 6px, var(--yellow) !important; }
+.online-card { clip-path: polygon(0 0, 100% 5%, 99% 100%, 1% 95%); background: linear-gradient(100deg, #1e9be0 30%, transparent 85%), radial-gradient(circle, rgba(10, 6, 20, 0.45) 1.8px, transparent 2.2px) 0 0 / 9px 9px, #1e9be0 !important; }
+.online-card b { color: #fff !important; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 3px 3px 0 var(--ink); }
+.online-card span, .online-card small { color: #15121f !important; font-weight: 800; }
+.solo-goal:nth-child(odd) { clip-path: polygon(0 0, 100% 6%, 100% 100%, 0 94%); } .solo-goal:nth-child(even) { clip-path: polygon(0 6%, 100% 0, 100% 94%, 0 100%); }
+
+/* intro del modo solo: un único panel de controles, centrado */
+.intro-controls.solo { justify-content: center; }
+.intro-controls.solo .ctrl-box { flex: 0 0 auto; height: auto; align-self: center; width: 100%; }
+.ctrl-box.bot-box .ctrl-row { opacity: .8; }
+.set-body .lang-card { grid-column: 1 / -1; }
+.set-body .lang-card .opt { margin: 0; }

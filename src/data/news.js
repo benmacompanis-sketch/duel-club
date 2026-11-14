@@ -4,6 +4,28 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-15-idiomas-48',
+    date: '2026-11-15',
+    version: '4.8',
+    title: 'DUEL CLUB en inglés y Singleplayer sin rival',
+    tag: 'v4.8',
+    color: '#25CFE6',
+    intro: 'Ahora podés jugar en español o en inglés, y el modo solo ya no te pone ningún rival.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        'Idioma: español o inglés (en Configuración). Se elige solo según tu navegador la primera vez.',
+      ] },
+      { kind: 'mejora', items: [
+        'Desafíos solo: no aparece ningún rival en la partida, la intro ni los resultados; se muestra tu meta.',
+        'VS BOT y Escalera: el bot ya está listo, solo apretás tu tecla para empezar.',
+        'Más menús con viñetas de historieta de colores.',
+      ] },
+      { kind: 'arreglo', items: [
+        'Se corrigió la viñeta violeta del fondo que se veía como un cuadrado raro.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-15-identidad-comic-47',
     date: '2026-11-15',
     version: '4.7',

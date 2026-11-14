@@ -11,8 +11,18 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
   let started = false;
   const chips = [];
 
+  // modos contra bot: el lugar del bot ya está listo; en el modo solo directamente no hay rival
+  const botSlot = opts.bot && !opts.online ? (opts.botSlot ?? 1) : -1;
+  if (botSlot >= 0) ready[botSlot] = true;
   const ctrlBox = (p) => {
     const prof = opts.players[p];
+    if (p === botSlot) {
+      if (opts.solo) return null;
+      chips[p] = h('div.ready-chip.on', '¡LISTO!');
+      return h('div.ctrl-box.bot-box', { style: { '--c': prof.color } },
+        h('div.ctrl-head', h('b', prof.name), h('small', 'BOT')),
+        h('div.ctrl-row', h('span.muted', 'Juega la compu.')), chips[p]);
+    }
     const b = app.input.bindings[p];
     const chip = h('div.ready-chip', 'Pulsá ', keycap(b.a[0]), ' cuando estés listo');
     chips[p] = chip;
@@ -78,9 +88,9 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
         h('div.intro-top', gameIcon(ui, scr, meta, 130),
           h('div', h('div.intro-kicker', `${opts.label || 'MINIJUEGO'} · ${meta.category.toUpperCase()}`), h('h1.intro-title', meta.name), h('div.muted', meta.tagline))),
         h('p.intro-desc', meta.description),
-        h('div.intro-goal', icon('trophy'), h('span', meta.goal)),
+        h('div.intro-goal', icon(opts.solo ? 'star' : 'trophy'), h('span', opts.goal || meta.goal)),
         evBox),
-      h('div.intro-controls', ctrlBox(0), ctrlBox(1)),
+      h('div.intro-controls' + (opts.solo ? '.solo' : ''), ctrlBox(0), ctrlBox(1)),
       h('div.intro-actions',
         h('button.btn.ghost', { nav: true, onclick: back }, icon('back'), opts.mode === 'quick' ? 'VOLVER' : 'SALIR'),
         h('span.tip', 'Durante la partida: ', keycap('Escape'), ' o ', keycap('KeyP'), ' para pausar'),
@@ -89,7 +99,7 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
   scr.onKey = (e) => {
     if (e.repeat) return true;
     if (e.code === 'Escape') { back(); return true; }
-    if (e.player >= 0 && e.action === 'a') { setReady(e.player); return true; }
+    if (e.player >= 0 && e.player !== botSlot && e.action === 'a') { setReady(e.player); return true; }
     return e.player >= 0;
   };
   return scr;

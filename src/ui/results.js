@@ -116,7 +116,7 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
       h('button.btn.ghost', { nav: true, onclick: async () => { if (await ui.confirm({ title: '¿Abandonar la competición?', text: 'Se perderá el progreso de esta competición.', yes: 'Abandonar', no: 'Seguir' })) choose('quit'); } }, 'SALIR'),
       h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => choose('continue') }, icon('play'), 'CONTINUAR'));
 
-  const banner = w === -1 ? '¡EMPATE!' : `¡GANA ${players[w].name.toUpperCase()}!`;
+  const banner = players[1]?.hidden ? '¡DESAFÍO TERMINADO!' : w === -1 ? '¡EMPATE!' : `¡GANA ${players[w].name.toUpperCase()}!`;
   // frase contextual (no siempre: el humor es una sorpresa)
   let phraseKind = null;
   const sc = res.scores || [];
@@ -148,7 +148,7 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
     fillRewards(undefined);
     rec?.server?.then((out) => { if (!scr.disposed) fillRewards(out); });
   }
-  scr.el = h('div.results', { style: { '--c': w >= 0 ? players[w].color : '#9B6CFF' } },
+  scr.el = h('div.results' + (players[1]?.hidden ? '.solo-res' : ''), { style: { '--c': w >= 0 ? players[w].color : '#9B6CFF' } },
     h('div.res-kicker', online ? `${online.kicker} · ${meta.name}` : `${info?.label || (quick ? 'QUICK PLAY' : '')} · ${meta.name}${event ? ' · ' + event.short.toUpperCase() : ''}`),
     h('div.res-banner', online?.banner || banner),
     phraseText ? h('div.res-phrase', phraseText) : null,

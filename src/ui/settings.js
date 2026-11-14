@@ -1,6 +1,7 @@
 // SETTINGS: audio, video, controles reasignables y gestión de datos.
 import { h, icon, keycap, toggleFullscreen } from './dom.js';
 import { header, segGroup, toggleRow, rangeRow } from './widgets.js';
+import { LANG, LANGS, setLang } from '../i18n.js';
 import { ACTIONS, ACTION_LABELS, keyName } from '../core/inputManager.js';
 
 export function settingsScreen(ui, params = {}) {
@@ -65,6 +66,8 @@ export function settingsScreen(ui, params = {}) {
   scr.el = h('div.page',
     header(ui, 'CONFIGURACIÓN', 'Los cambios se guardan automáticamente en este navegador.', () => goBack()),
     h('div.set-body',
+      h('div.card.lang-card', h('h3', 'IDIOMA'),
+        segGroup('Idioma', 'Español · English', LANGS.map(([v, n]) => [v, n]), () => LANG, (v) => setLang(v), ui)),
       h('div.card', h('h3', 'SONIDO'),
         rangeRow('Volumen general', null, 0, 1, 0.05, () => s.master, (v) => { s.master = v; apply(); }),
         rangeRow('Música', null, 0, 1, 0.05, () => s.music, (v) => { s.music = v; apply(); }),
