@@ -241,7 +241,12 @@ insert into public.catalog_items(id, category, rarity, price, min_level, is_defa
 ('skin_s1_holo', 'skin', 'epic', null, 1, false),
 ('skin_s1_tigre', 'skin', 'epic', null, 1, false),
 ('skin_s1_carbono', 'skin', 'legendary', null, 1, false),
-('skin_s1_prisma', 'skin', 'mythic', null, 1, false)
+('skin_s1_prisma', 'skin', 'mythic', null, 1, false),
+('title_creador', 'title', 'mythic', null, 1, false),
+('card_creador', 'card', 'mythic', null, 1, false),
+('frame_creador', 'frame', 'mythic', null, 1, false),
+('emo_creador', 'emote', 'mythic', null, 1, false),
+('skin_creador', 'skin', 'mythic', null, 1, false)
 on conflict (id) do update set category = excluded.category, rarity = excluded.rarity, price = excluded.price, min_level = excluded.min_level, is_default = excluded.is_default;
 insert into public.catalog_achievements(id, tier, cond, rewards, secret) values
 ('first_win', 'normal', '{"t":"stat","k":"wins","gte":1}'::jsonb, array['char_nimbus']::text[], false),

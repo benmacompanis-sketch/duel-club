@@ -218,6 +218,21 @@ export const SKINS = {
       g.globalAlpha = 1;
     },
   },
+  // ---- set del creador
+  skin_creador: {
+    tint: () => '#3B1C7A',
+    overlay: (g, t) => {
+      g.strokeStyle = 'rgba(255,209,107,0.85)';
+      g.lineWidth = 2.2;
+      for (let i = 0; i < 6; i++) {
+        const y = -130 + i * 26;
+        g.beginPath(); g.moveTo(-80, y); g.lineTo(-30 + i * 6, y); g.lineTo(-20 + i * 6, y + 12); g.lineTo(80, y + 12); g.stroke();
+      }
+      g.fillStyle = '#FFD16B';
+      for (let i = 0; i < 6; i++) { g.globalAlpha = 0.5 + Math.sin(t * 4 + i) * 0.5; g.beginPath(); g.arc(-20 + i * 6, -118 + i * 26, 3, 0, TAU); g.fill(); }
+      g.globalAlpha = 1;
+    },
+  },
   // ---- Pase de Batalla · Temporada 1
   skin_s1_holo: {
     tint: (b) => mix(b, '#D9E4FF', 0.55),

@@ -49,7 +49,7 @@ export const ITEMS = [
   it('char_frigo', 'char', 'epic', 'Frigo-Bot', 'Un robot heladera. Mantiene la calma a 4 °C.', { meme: true, theme: 'Robot' }),
   it('char_toasty', 'char', 'legendary', 'Tostadín', 'Cabeza de tostadora. Salta cada vez que algo le sale bien.', { meme: true, theme: 'Meme' }),
   it('char_silla', 'char', 'legendary', 'La Silla', 'La silla de plástico que sobrevivió a mil asados. Ahora compite.', { meme: true, theme: 'Absurdo' }),
-  it('char_tuntun', 'char', 'mythic', 'Tun-Tun Tronco', 'Un tronco con palillo de tambor que marca el ritmo del duelo. Tun. Tun. Tun.', { meme: true, theme: 'Meme' }),
+  it('char_tuntun', 'char', 'mythic', 'Tung Tung Tung Sahur', 'El tronco con bate más famoso de internet. Tung. Tung. Tung. Sahur.', { meme: true, theme: 'Meme' }),
 
   // ===================================================================== SKINS (diseño sobre el cuerpo)
   it('skin_rayas', 'skin', 'common', 'Rayas', 'Rayas diagonales. Clásico que nunca falla.', { theme: 'Retro' }),
@@ -97,7 +97,7 @@ export const ITEMS = [
   it('face_visor', 'face', 'rare', 'Visor cyberpunk', 'Muestra datos que nadie pidió.', { theme: 'Cyberpunk' }),
   it('face_menpo', 'face', 'rare', 'Máscara samurái', 'Media máscara de guerrero. Muy seria.', { theme: 'Samurai' }),
   it('face_fantasma', 'face', 'epic', 'Máscara espectral', 'Sonríe aunque pierdas.', { theme: 'Fantasma' }),
-  it('face_aura', 'face', 'legendary', 'Lentes de aura', 'Lentes pixelados que bajan solos cuando ganás.', { theme: 'Meme', meme: true }),
+  it('face_aura', 'face', 'legendary', 'Lentes Deal With It', 'Los lentes pixelados del meme: bajan solos cuando ganás.', { theme: 'Meme', meme: true }),
 
   // ===================================================================== ACCESORIOS DE CUERPO
   it('body_bufanda', 'body', 'common', 'Bufanda', 'Para los duelos de invierno.', { theme: 'Hielo' }),
@@ -128,7 +128,7 @@ export const ITEMS = [
   // ===================================================================== EMOTES (aparecen en los resultados)
   it('emo_gg', 'emote', 'common', '"GG"', 'Buen juego. A veces es sincero.', { theme: 'Retro' }),
   it('emo_jaja', 'emote', 'common', '"JAJA"', 'Se ríe en tu cara, con respeto.', { theme: 'Meme' }),
-  it('emo_vacio', 'emote', 'uncommon', 'Mirada al vacío', 'Tu personaje mira al horizonte procesando lo que pasó.', { theme: 'Meme', meme: true }),
+  it('emo_vacio', 'emote', 'uncommon', 'Mirada de los mil metros', 'Tu personaje mira al horizonte procesando lo que pasó.', { theme: 'Meme', meme: true }),
   it('emo_signo', 'emote', 'uncommon', '"¿?"', 'Ni vos entendés cómo ganaste.', { theme: 'Meme' }),
   it('emo_cine', 'emote', 'rare', '"CINE ABSOLUTO"', 'Para las remontadas de película.', { theme: 'Meme', meme: true }),
   it('emo_contrato', 'emote', 'epic', 'Cartel del contrato', '"ESTO NO ESTABA EN EL CONTRATO".', { theme: 'Meme', meme: true }),
@@ -230,7 +230,7 @@ export const TITLES = [
   tt('cine', 'Cine absoluto', 'rare', 'Logro: Remontada épica'),
   tt('coleccionista', 'El coleccionista', 'epic', 'Logro: El coleccionista'),
   tt('social', 'Alma del club', 'uncommon', 'Logro: Jugar con cinco amigos'),
-  tt('aura', 'Aura cuestionable', 'epic', 'PIE STORE', { sale: true, meme: true }),
+  tt('aura', 'Main Character', 'epic', 'PIE STORE', { sale: true, meme: true }),
   tt('protagonista', 'Protagonista sin guion', 'rare', 'PIE STORE', { sale: true, meme: true }),
   tt('ceo_teclado', 'CEO del teclado', 'uncommon', 'PIE STORE', { sale: true, meme: true }),
   tt('cero_estres', 'Cero estrés (mentira)', 'common', 'PIE STORE', { sale: true, meme: true }),
@@ -321,11 +321,20 @@ export function levelInfo(xp) {
   return { level: L, xp, into: xp - cur, need: next - cur, progress: (xp - cur) / (next - cur), title, special: SPECIAL_LEVELS[L] || null };
 }
 
+// Set exclusivo del creador de DUEL CLUB (benuchinb2): no se vende, no se puede conseguir y no da ventajas
+export const CREATOR_ITEMS = [
+  ['title_creador', 'title', 'mythic', 'Creador de DUEL CLUB', 'El que hizo el club.'],
+  ['card_creador', 'card', 'mythic', 'Tarjeta del Creador', 'Violeta profundo, oro y la firma del club.'],
+  ['frame_creador', 'frame', 'mythic', 'Marco del Creador', 'Oro y violeta que giran sin parar.'],
+  ['emo_creador', 'emote', 'mythic', '"EL CREADOR"', 'Solo hay uno.'],
+  ['skin_creador', 'skin', 'mythic', 'Skin del Creador', 'Violeta con circuitos dorados que laten.'],
+].map(([id, category, rarity, name, desc]) => ({ id, category, rarity, name, desc, unlock: 'Exclusivo del creador de DUEL CLUB · no se vende', sale: false, creator: true }));
+
 // Objetos exclusivos del Pase de Batalla (no se venden)
 export const PASS_ITEMS = SEASONS.flatMap((se) => Object.entries(se.items).map(([id, [category, rarity, name, desc]]) =>
   ({ id, category, rarity, name, desc, unlock: `Pase de Batalla · ${se.name}`, sale: false, pass: se.id })));
 
-export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS, ...PASS_ITEMS].map((x) => {
+export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS, ...PASS_ITEMS, ...CREATOR_ITEMS].map((x) => {
   const sale = x.sale && !ACH_ONLY.has(x.id);
   return { ...x, sale, exclusive: !sale && !x.default, price: sale ? RARITIES[x.rarity].price : null };
 });
