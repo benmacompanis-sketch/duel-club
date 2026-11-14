@@ -18,6 +18,7 @@ export default class ReactionRush extends BaseGame {
     goal: 'Ganá la mayoría de las rondas.',
     controls: [{ actions: ['a'], label: 'Reaccionar' }],
     events: ['speed', 'obstacles', 'mirror'],
+    caos: ['turbo', 'lento', 'niebla', 'temblor', 'mirror'],
     options: [{ key: 'rounds', label: 'Rondas', choices: [[3, '3'], [5, '5'], [7, '7']], def: 5 }],
     record: { label: 'Mejor reacción', better: 'lower', format: (v) => `${Math.round(v)} ms` },
     drawIcon(g, t) {

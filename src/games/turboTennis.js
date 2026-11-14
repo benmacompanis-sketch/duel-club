@@ -6,6 +6,7 @@ import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
 import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, glowCircle, quality, shade } from '../core/utils.js';
 
+const SERVE_LIMIT = 5; // segundos máximos para sacar
 const GROUND = 612, NET_X = W / 2, NET_TOP = 528, COURT_L = 110, COURT_R = W - 110, BR = 11;
 const REACH = 86;
 
@@ -60,7 +61,8 @@ export default class TurboTennis extends BaseGame {
     const s = this.pl[this.server];
     s.x = this.server ? COURT_R - 60 : COURT_L + 60;
     this.pl[1 - this.server].x = this.server ? COURT_L + 160 : COURT_R - 160;
-    this.ball = { x: s.x + (this.server ? -26 : 26), y: GROUND - 150, vx: 0, vy: -380, toss: true, spin: 0 };
+    this.ball = { x: s.x + (this.server ? -26 : 26), y: GROUND - 150, vx: 0, vy: -380, toss: true, spin: 0, tossT: 0 };
+    this.rallyT = 0;
     this.lastHit = -1;
     this.bounces = 0;
     this.rally = 0;
@@ -88,9 +90,15 @@ export default class TurboTennis extends BaseGame {
       b.vy += this.g * 0.55 * dt;
       b.y += b.vy * dt;
       if (b.y > GROUND - 70) { b.y = GROUND - 70; b.vy = -380; }
+      b.tossT += dt;
       this.tryHit(this.pl[this.server], true);
+      // el saque no puede quedar esperando para siempre: a los 5 s se saca solo (un saque suave al centro)
+      if (b.toss && b.tossT >= SERVE_LIMIT) this.autoServe();
       return;
     }
+    // ninguna jugada dura para siempre: a los 30 s se repite el punto (sin sumar para nadie)
+    this.rallyT += dt;
+    if (this.rallyT > 30 && !this.ballDead) return this.letPoint();
     const steps = 3;
     for (let i = 0; i < steps; i++) this.stepBall(b, dt / steps);
     this.trail.push({ x: b.x, y: b.y });
@@ -180,6 +188,23 @@ export default class TurboTennis extends BaseGame {
     this.fx.burst(b.x, b.y, smash ? '#FFC93C' : '#C6F04A', smash ? 20 : 10, { speed: 220 });
     if (q > 0.82 && !serve) this.fx.float(hx, hy - 50, '¡PERFECTO!', this.color(pl.p), 20);
     if (smash) this.fx.shake(8);
+  }
+  autoServe() {
+    const pl = this.pl[this.server];
+    const b = this.ball;
+    // la pelota baja hasta la raqueta del que saca y sale un golpe correcto
+    b.x = pl.x + (pl.p ? -22 : 22);
+    b.y = pl.y - 62;
+    pl.swing = 0.22;
+    pl.lob = false;
+    this.tryHit(pl, true);
+    this.fx.float(pl.x, pl.y - 120, 'SAQUE AUTOMÁTICO', this.color(pl.p), 18);
+  }
+  letPoint() {
+    this.ballDead = true;
+    this.msg = { text: 'SE REPITE', sub: 'La jugada se hizo eterna: nuevo saque', col: '#8C96B8', t: 1.4 };
+    this.state = 'point';
+    this.stateT = 1.4;
   }
   stepBall(b, dt) {
     b.vy += this.g * dt;
@@ -302,7 +327,8 @@ export default class TurboTennis extends BaseGame {
     if (b) {
       this.trail.forEach((p, i) => { g.fillStyle = rgba('#C6F04A', (i / this.trail.length) * 0.35); g.beginPath(); g.arc(p.x, p.y, BR * (i / this.trail.length), 0, TAU); g.fill(); });
       g.fillStyle = 'rgba(0,0,0,0.3)';
-      g.beginPath(); g.ellipse(b.x, GROUND + 4, BR * (1 - (GROUND - b.y) / 900), 4, 0, 0, TAU); g.fill();
+      // sombra: se achica con la altura de la pelota (nunca con radio negativo, aunque suba mucho)
+      g.beginPath(); g.ellipse(b.x, GROUND + 4, Math.max(2, BR * (1 - (GROUND - b.y) / 900)), 4, 0, 0, TAU); g.fill();
       glowCircle(g, b.x, b.y, 26 * this.turbo, '#C6F04A', 0.4);
       g.fillStyle = '#D8FF5A'; g.beginPath(); g.arc(b.x, b.y, BR, 0, TAU); g.fill();
       g.strokeStyle = '#FFFFFF'; g.lineWidth = 2; g.beginPath(); g.arc(b.x, b.y, BR - 3, 0.3 + t * 8 * (b.spin || 0.5), 1.8 + t * 8 * (b.spin || 0.5)); g.stroke();
@@ -319,7 +345,8 @@ export default class TurboTennis extends BaseGame {
     }
     if (this.ball?.toss) {
       panel(g, W / 2 - 190, H - 42, 380, 30, { r: 15, fill: 'rgba(11,16,32,0.8)', stroke: this.color(this.server) });
-      text(g, `Saca ${this.name(this.server)}: ACCIÓN cuando baje la pelota`, W / 2, H - 27, { size: 14, color: '#fff', body: true, weight: 700 });
+      const left = this.ball?.toss ? Math.max(0, Math.ceil(SERVE_LIMIT - this.ball.tossT)) : null;
+      text(g, `Saca ${this.name(this.server)}: ACCIÓN cuando baje la pelota${left != null && left <= 3 ? ` · saque automático en ${left}` : ''}`, W / 2, H - 27, { size: 14, color: '#fff', body: true, weight: 700 });
     }
   }
 }

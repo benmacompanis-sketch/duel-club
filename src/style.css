@@ -1391,3 +1391,26 @@ button.home-slot:focus { border-color: var(--violet); }
 .bug-filters { flex-wrap: wrap; margin-bottom: 4px; }
 .news-dialog .dialog-actions .btn { min-width: 0; padding: 0 18px; white-space: nowrap; }
 .bug-card .opt-label { flex: 1; }
+
+/* =====================================================================
+   ARREGLOS DE INTERFAZ (auditoría)
+   ===================================================================== */
+/* el contorno de foco del navegador sobre la pantalla entera dibujaba dos líneas oscuras en los bordes */
+.screen, .screen:focus, .screen:focus-visible, #ui:focus, #stage:focus { outline: none; }
+/* Quick Play: todo entra en pantalla (4 filas de minijuegos y el botón JUGAR siempre visibles) */
+.qp-page { height: 100%; padding-top: 22px; padding-bottom: 18px; gap: 12px; }
+.qp-page .page-header h1 { font-size: 34px; }
+.qp-page .qp-body { grid-template-columns: 1fr 420px; gap: 18px; }
+.qp-page .game-grid { grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 10px; min-height: 0; }
+.qp-page .game-card { min-height: 0; padding: 6px 6px 8px; gap: 2px; justify-content: center; }
+.qp-page .game-card canvas { width: 78px; height: 78px; flex: 0 1 auto; min-height: 0; }
+.qp-page .game-card .gc-name { font-size: 14px; }
+.qp-page .game-card .gc-cat { font-size: 10px; }
+.qp-page .game-card.sel { box-shadow: 0 0 0 2px var(--c), 0 0 22px color-mix(in srgb, var(--c) 45%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--c) 34%, rgba(18, 26, 51, 0.9)), rgba(11, 16, 32, 0.9)); }
+.qp-page .game-card.sel::after { content: '✓'; position: absolute; top: 6px; right: 8px; width: 20px; height: 20px; border-radius: 50%; background: var(--c); color: #0b1020; font-size: 13px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+/* el foco/hover resalta pero no se confunde con el elegido */
+.qp-page .game-card:focus:not(.sel), .qp-page .game-card:hover:not(.sel) { box-shadow: 0 8px 22px color-mix(in srgb, var(--c) 30%, transparent); border-color: color-mix(in srgb, var(--c) 70%, transparent); }
+.qp-page .qp-detail { gap: 10px; }
+.qp-page .qp-detail .card { padding: 14px 18px; }
+.qp-page .qp-detail .play-btn { min-height: 56px; }
+.logo.big .logo-slogan { letter-spacing: 10px; }

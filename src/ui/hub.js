@@ -185,7 +185,7 @@ function homeSection(ui, owner, ctx) {
     h('div.home-hero',
       h('div.home-stage', duoStage(ui, owner, 600, 330, { scale: 1.45 })),
       h('div.home-cta',
-        h('div.home-slogan', 'ONE CLUB. INFINITE DUELS.', h('br'), h('span', 'QUESTIONABLE AURA.')),
+        h('div.home-slogan', 'ONE CLUB.', h('br'), h('span', 'INFINITE DUELS.')),
         h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => { app.audio.play('confirm'); ui.show(duelSetupScreen); } }, icon('duel'), 'DUEL MODE'),
         h('div.row',
           h('button.btn', { nav: true, onclick: () => { app.audio.play('click'); ui.show(quickPlayScreen); } }, icon('quick'), 'QUICK PLAY'),

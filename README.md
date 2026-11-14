@@ -1,6 +1,6 @@
 # DUEL CLUB
 
-**ONE CLUB. INFINITE DUELS. QUESTIONABLE AURA.**
+**ONE CLUB. INFINITE DUELS.**
 
 Arcade competitivo 1v1 en el navegador: **dos jugadores en el mismo teclado** o **cada uno en su compu (online)**.
 16 minijuegos, cuentas online, nivel con **KEKE**, rating competitivo **SUSI**, moneda **PIES** y la **PIE STORE**,

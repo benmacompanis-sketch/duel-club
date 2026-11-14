@@ -6,7 +6,7 @@ export const EVENTS = {
   invert: { id: 'invert', name: 'CONTROLES INVERTIDOS', short: 'Controles invertidos', desc: 'Cada tanto, los controles se invierten durante unos segundos. Se avisa antes.', color: '#FF5FA2' },
   double: { id: 'double', name: 'PUNTUACIÓN DOBLE', short: 'Puntos dobles', desc: 'En el último tercio de la partida, todos los puntos valen el doble.', color: '#48D597' },
   obstacles: { id: 'obstacles', name: 'OBSTÁCULOS EXTRA', short: 'Más obstáculos', desc: 'Aparecen más obstáculos y peligros en la arena.', color: '#9B6CFF' },
-  mirror: { id: 'mirror', name: 'MODO ESPEJO', short: 'Espejo', desc: 'La arena se refleja horizontalmente. Los controles no cambian... tu cerebro sí.', color: '#3985FF' },
+  mirror: { id: 'mirror', name: 'MODO ESPEJO', short: 'Espejo', desc: 'La arena se da vuelta: cada uno juega desde el lado contrario. Las teclas siguen lo que ves en pantalla.', color: '#3985FF' },
 };
 
 export function pickEvent(meta, chance = 0.55) {

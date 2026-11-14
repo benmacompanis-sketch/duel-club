@@ -45,7 +45,9 @@ export function drawSymbol(g, id, color, x, y, s) {
   g.restore();
 }
 
-const SIZES = { small: [5, 4], medium: [6, 5], large: [6, 6] };
+// menos tarjetas: partidas más ágiles sin perder el desafío (fácil 6 pares, normal 8, difícil 10)
+const SIZES = { small: [4, 3], medium: [4, 4], large: [5, 4] };
+const TIMES = { small: 70, medium: 95, large: 120 };
 
 export default class MemoryWar extends BaseGame {
   static meta = {
@@ -55,7 +57,7 @@ export default class MemoryWar extends BaseGame {
     goal: 'Encontrá más parejas que tu rival (desempata el puntaje).',
     controls: [{ actions: ['up', 'down', 'left', 'right'], label: 'Mover cursor' }, { actions: ['a'], label: 'Dar vuelta carta' }],
     events: ['short', 'double'],
-    options: [{ key: 'size', label: 'Tablero', choices: [['small', '5×4'], ['medium', '6×5'], ['large', '6×6']], def: 'medium' }],
+    options: [{ key: 'size', label: 'Tablero', choices: [['auto', 'Según dificultad'], ['small', '4×3'], ['medium', '4×4'], ['large', '5×4']], def: 'auto' }],
     record: { label: 'Puntos en una partida', better: 'higher', format: (v) => `${v} pts` },
     drawIcon(g, t) {
       const flip = (Math.sin(t * 2) + 1) / 2;
@@ -72,7 +74,10 @@ export default class MemoryWar extends BaseGame {
   };
 
   init() {
-    const [cols, rows] = SIZES[this.options.size ?? 'medium'] || SIZES.medium;
+    // tamaño: el elegido en las opciones del minijuego o, si no, según la dificultad
+    const size = SIZES[this.options.size] ? this.options.size : this.diff <= 0.2 ? 'small' : this.diff >= 0.9 ? 'large' : 'medium';
+    this.size = size;
+    const [cols, rows] = SIZES[size];
     this.cols = cols;
     this.rows = rows;
     const n = (cols * rows) / 2;
@@ -105,7 +110,7 @@ export default class MemoryWar extends BaseGame {
     this.msg = null;
     this.repeat = [{}, {}];
     // límite global para que la partida no se eternice
-    this.duration = this.timed({ small: 100, medium: 150, large: 190 }[this.options.size ?? 'medium'] || 150);
+    this.duration = this.timed(TIMES[size]);
   }
 
   at(c, r) {

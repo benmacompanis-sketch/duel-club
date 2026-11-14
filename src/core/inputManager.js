@@ -186,6 +186,9 @@ export class PlayerInput {
     this.game = game;
   }
   map(a) {
+    // MODO ESPEJO: la pantalla se da vuelta, así que izquierda/derecha se cruzan para que la tecla siga
+    // moviendo hacia el lado que se ve en pantalla (antes parecía que el movimiento estaba invertido)
+    if (this.game.mirrored) a = a === 'left' ? 'right' : a === 'right' ? 'left' : a;
     if (!this.game.inverted) return a;
     return a === 'left' ? 'right' : a === 'right' ? 'left' : a === 'up' ? 'down' : a === 'down' ? 'up' : a;
   }

@@ -2,7 +2,7 @@
 // Se encarga de: conectar con el rival (Link), avisar al servidor que seguimos acá, jugar cada ronda
 // sincronizada (NetRound), informar el resultado y seguir el estado que decide el servidor.
 import { rpc, ApiError } from './api.js';
-import { Link, NetRound, delayFor } from './netplay.js';
+import { Link, NetRound, delayFor, PROTO } from './netplay.js';
 import { PLAYER_COLORS } from '../core/characters.js';
 
 const params = new URLSearchParams(location.search);
@@ -31,6 +31,8 @@ export class OnlineMatch {
     this.early = [];
     this.round = null;
     this.rtt = null;
+    this.pings = []; // últimas mediciones de ida y vuelta (ms)
+    this.versionMismatch = false;
     this.closed = false;
     this.fast = true;
     this.errors = 0;
@@ -66,7 +68,17 @@ export class OnlineMatch {
     }
   }
 
-  start() {
+  /** rejoin: esta compu vuelve a entrar a una partida en curso (recargó la página). */
+  async start({ rejoin = false } = {}) {
+    this.rejoined = rejoin;
+    if (rejoin) {
+      // le avisa al rival que rearme la conexión; las señales viejas (anteriores a este aviso) se ignoran
+      try {
+        const o = await this.call('dc_online_signal', { p_match: this.view.id, p_payload: { type: 'renew' } });
+        if (o?.id) this.sigAfter = o.id;
+      } catch {}
+      if (this.closed) return;
+    }
     this.link = new Link({
       slot: this.slot,
       secret: this.view.secret,
@@ -75,12 +87,18 @@ export class OnlineMatch {
       onChange: () => this.emit(),
       relayOnly: this.app.testMode && params.has('relay'),
       noRelay: this.app.testMode && params.has('norelay'),
+      // solo pruebas: ?netsim=demora,altibajos,pérdida%,pico simula una mala conexión
+      netSim: this.app.testMode && params.has('netsim') ? (([lag, jitter, loss, spike]) => ({ lag, jitter, loss, spike }))(params.get('netsim').split(',').map(Number)) : null,
     });
     this.link.start();
     this.poll();
+    // mide la conexión entre rondas (rápido al principio, para tener varias muestras antes de jugar)
+    let n = 0;
     this.pinger = setInterval(() => {
-      if (!this.round?.running && this.link.connected) this.link.send({ t: 'p', ts: Math.round(performance.now()) });
-    }, 600);
+      if (this.round?.running || !this.link.connected) return;
+      if (this.pings.length >= 8 && n++ % 3) return;
+      this.link.send({ t: 'p', ts: Math.round(performance.now() * 10) / 10, v: PROTO });
+    }, 200);
   }
 
   async poll() {
@@ -117,13 +135,34 @@ export class OnlineMatch {
   onMessage(m, via) {
     if (!m || typeof m !== 'object') return;
     if (m.t === 'p') {
-      this.link.send({ t: 'q', ts: m.ts });
+      // versiones distintas del juego no pueden jugar entre sí (una de las dos tiene la página vieja abierta)
+      if (m.v !== PROTO && !this.versionMismatch) { this.versionMismatch = true; this.emit(); }
+      this.link.send({ t: 'q', ts: m.ts, v: PROTO });
       return;
     }
     if (m.t === 'q') {
+      if (m.v !== PROTO && !this.versionMismatch) this.versionMismatch = true;
       const r = performance.now() - m.ts;
-      if (r >= 0 && r < 8000) this.rtt = this.rtt == null ? r : this.rtt * 0.7 + r * 0.3;
+      if (r >= 0 && r < 8000) {
+        this.pings.push(r);
+        if (this.pings.length > 16) this.pings.shift();
+        const sorted = [...this.pings].sort((a, b) => a - b);
+        this.rtt = sorted[Math.floor(sorted.length / 2)]; // mediana
+        this.jitter = sorted[Math.max(0, Math.ceil(sorted.length * 0.9) - 1)] - sorted[0];
+      }
       this.emit();
+      return;
+    }
+    // "volví a entrar": ¿la ronda r ya había arrancado en tu compu?
+    if (m.t === 'rj') {
+      const rd = this.round;
+      const started = !!(rd && rd.r === m.r && rd.started);
+      this.link.send({ t: 'rk', r: m.r, started });
+      if (started && !rd.ended) this.onPeerRejoin?.(m.r);
+      return;
+    }
+    if (m.t === 'rk') {
+      this.rejoinAnswer?.(m);
       return;
     }
     if (typeof m.r !== 'number') return;
@@ -141,6 +180,25 @@ export class OnlineMatch {
   }
   get linkMode() {
     return this.link?.mode || 'connecting';
+  }
+
+  /** Después de volver a entrar: le pregunta al rival si la ronda r ya estaba en juego (espera hasta 8 s). */
+  askRoundState(r) {
+    return new Promise((resolve) => {
+      let n = 0;
+      const done = (v) => {
+        clearInterval(iv);
+        this.rejoinAnswer = null;
+        resolve(v);
+      };
+      this.rejoinAnswer = (m) => { if (m.r === r) done(!!m.started); };
+      const iv = setInterval(() => {
+        if (this.closed || this.view.round !== r || this.view.status !== 'playing') return done(false);
+        if (++n > 16) return done(false);
+        this.link.send({ t: 'rj', r });
+      }, 500);
+      this.link.send({ t: 'rj', r });
+    });
   }
 
   /**
@@ -163,6 +221,7 @@ export class OnlineMatch {
       const round = (this.round = new NetRound({
         app, link: this.link, slot: this.slot, round: r, seed,
         speed: app.testMode && app.netSpeed ? app.netSpeed : 1,
+        net: () => ({ rtt: this.rtt ?? 120, jitter: this.jitter ?? 20 }),
         onEnd: (x) => { if (x.reason !== 'done') end({ reason: x.reason }); },
       }));
       const early = this.early.filter((m) => m.r === r);
@@ -174,6 +233,12 @@ export class OnlineMatch {
         onEscape: () => hooks.onEscape?.(),
         netOverlay: (g, runner) => hooks.overlay?.(g, runner, round),
       }).then((result) => end({ reason: 'done', result }), () => end({ reason: 'cancelled' }));
+      // el rival recargó la página con la ronda en juego: la ronda termina acá (el servidor se la da a esta compu)
+      this.onPeerRejoin = (rr) => {
+        if (rr !== r || settled) return;
+        round.dispose();
+        end({ reason: 'peer_rejoin' });
+      };
       // la serie terminó en el servidor (abandono del rival) o el rival dejó de mandar teclas
       const watch = setInterval(() => {
         if (this.view.status !== 'playing') {
@@ -182,47 +247,61 @@ export class OnlineMatch {
         } else if (round.running && round.stall > 20) {
           round.dispose();
           end({ reason: 'stall' });
+        } else if (!round.started && round.ready && performance.now() - readyAt > 45000) {
+          // los dos listos pero la ronda nunca arrancó (no llegan los mensajes del rival)
+          round.dispose();
+          end({ reason: 'stall' });
         }
       }, 250);
+      let readyAt = Infinity;
       hooks.showIntro?.(round, () => {
+        readyAt = Math.min(readyAt, performance.now());
         const relay = this.link.mode === 'relay';
-        round.setReady(this.slot === 0 ? delayFor(this.ping ?? (relay ? 160 : 80), relay) : 0);
+        round.setReady(delayFor(this.rtt ?? (relay ? 160 : 80), relay, this.jitter ?? 20));
       });
     });
   }
 
-  /** Envía el resultado de la ronda (con reintentos si se corta la conexión). */
+  /**
+   * Envía el resultado de la ronda. Es idempotente en el servidor (una fila por partida, ronda y jugador), así que
+   * se reintenta sin riesgo hasta que el servidor lo tenga o la ronda se resuelva.
+   */
   async report(r, out) {
+    if (out.reason === 'peer_rejoin') return true; // lo resuelve el servidor con el aviso del rival
     const payload = out.reason === 'done' && out.result
       ? this.app.accounts.matchPayload(out.result)
       : { desync: true, reason: out.reason, game: this.view.games[r] };
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 20 && !this.closed; i++) {
+      if (this.view.round > r || this.view.status !== 'playing') return true;
       try {
         const v = await this.call('dc_online_report', { p_match: this.view.id, p_round: r, p_report: payload });
         this.setView(v);
         return true;
       } catch (e) {
-        if (e.code !== 'network') return false;
-        await new Promise((res) => setTimeout(res, 1500));
+        if (e.code === 'session_invalid' || e.code === 'not_found') return false;
+        await new Promise((res) => setTimeout(res, 1500 + i * 250));
       }
     }
     return false;
   }
 
-  /** Espera a que el servidor resuelva la ronda r (los dos informaron, o venció el plazo). */
-  waitResolved(r, timeoutMs = 75000) {
+  /**
+   * Espera a que el servidor resuelva la ronda r (los dos informaron, o venció el plazo del servidor).
+   * Una ronda ya jugada nunca se vuelve a jugar: se espera la resolución (el servidor siempre resuelve).
+   */
+  waitResolved(r, timeoutMs = 120000) {
     this.waitingRound = true;
     return new Promise((resolve) => {
       const t0 = performance.now();
-      const check = () => {
-        if (this.closed) return finish(false);
-        if (this.view.round > r || this.view.status !== 'playing') return finish(true);
-        if (performance.now() - t0 > timeoutMs) return finish(false);
-      };
       const finish = (ok) => {
         clearInterval(iv);
         this.waitingRound = false;
         resolve(ok);
+      };
+      const check = () => {
+        if (this.closed || this.lost) return finish(false);
+        if (this.view.round > r || this.view.status !== 'playing') return finish(true);
+        if (performance.now() - t0 > timeoutMs) return finish(false);
       };
       const iv = setInterval(check, 200);
       check();

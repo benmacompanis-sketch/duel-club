@@ -350,12 +350,12 @@ function incomingModal(ui, user, myName, c) {
 
 // ===================================================================================== PARTIDA
 /** Juega una serie online completa. */
-export async function runOnline(app, user, view) {
+export async function runOnline(app, user, view, { rejoin = false } = {}) {
   const ui = app.ui;
   if (app.online) app.online.close();
   ui.closeAllModals();
   const match = (app.online = new OnlineMatch(app, { user, view }));
-  match.start();
+  const starting = match.start({ rejoin });
   const applied = new Set();
   const applyOut = (r) => {
     const out = match.outFor(r);
@@ -366,9 +366,22 @@ export async function runOnline(app, user, view) {
   let rematchView = null;
   try {
     app.audio.playMusic('menu');
+    await starting;
     const go = await ui.ask(lobbyScreen, { match });
     match.fast = false;
     if (go === 'leave') await match.leave();
+    const playedRounds = new Set();
+    // volví a entrar (recargué la página): si la ronda ya estaba en juego en la compu del rival, esa ronda es suya
+    if (rejoin && go !== 'leave' && match.view.status === 'playing') {
+      const r = match.view.round;
+      const started = await match.askRoundState(r);
+      if (started && match.view.round === r && match.view.status === 'playing') {
+        playedRounds.add(r);
+        match.report(r, { reason: 'rejoin' });
+        await ui.ask(voidScreen, { match, r, reason: 'rejoin' });
+        applyOut(r);
+      }
+    }
     let leaving = false;
     const hooks = {
       showIntro: (round, ready) => ui.show(roundIntroScreen, { match, round, ready, onLeave: () => askLeave() }),
@@ -382,8 +395,16 @@ export async function runOnline(app, user, view) {
       leaving = false;
       if (ok) await match.leave();
     }
+    // Estados de la serie: SALA → (PRESENTACIÓN → CUENTA REGRESIVA → JUGANDO → RESULTADO DE RONDA)* → RESULTADO FINAL.
+    // El número de ronda lo lleva el servidor y cada ronda se juega una sola vez en cada compu.
     while (match.view.status === 'playing' && !match.lost) {
       const r = match.view.round;
+      if (playedRounds.has(r)) {
+        // ya jugada y todavía sin resolver: se espera al servidor (nunca se repite ni se saltea)
+        if (!(await match.waitResolved(r))) break;
+        continue;
+      }
+      playedRounds.add(r);
       const out = await match.playRound(r, hooks);
       if (out.reason === 'gone') break;
       if (out.reason === 'cancelled' && match.view.status !== 'playing') break;
@@ -396,7 +417,7 @@ export async function runOnline(app, user, view) {
         app.runner.close();
         await ui.ask(voidScreen, { match, r, reason: out.reason });
       }
-      await match.waitResolved(r, 8000);
+      if (!(await match.waitResolved(r))) break;
       applyOut(r);
     }
     if (app.runner.active) app.runner.close();
@@ -446,6 +467,10 @@ function lobbyScreen(ui, { match, done }) {
     if (match.view.status !== 'playing') return finish('gone');
     const mode = match.linkMode;
     const ping = match.ping;
+    if (match.versionMismatch) {
+      put(status, h('span.ol-led.bad'), h('b', 'VERSIONES DISTINTAS'), h('span.muted', ' · uno de los dos tiene una versión vieja abierta: recarguen la página (F5) los dos y vuelvan a entrar'));
+      return;
+    }
     if (mode === 'p2p' || mode === 'relay') {
       connectedAt ??= performance.now();
       // si primero conecta el respaldo por el servidor, se esperan unos segundos a la conexión directa (menos retardo)
@@ -502,6 +527,7 @@ function roundIntroScreen(ui, { match, round, ready, onLeave }) {
   };
   const iv = setInterval(() => {
     if (scr.disposed) return clearInterval(iv);
+    if (round.protoMismatch) oppChip.textContent = `${opp.name} tiene una versión vieja del juego: que recargue la página (F5)`;
     if (round.remoteReady && !oppChip.classList.contains('on')) {
       oppChip.classList.add('on');
       oppChip.textContent = `¡${opp.name} está listo!`;
@@ -604,13 +630,20 @@ function resultsHooks(ui, match, r, reported, applyOut, winner) {
       set(opp, [h('span.res-reward.wait', 'Esperando…')]);
       set(me, [h('span.res-reward.wait', 'Guardando…')]);
       reported.then((ok) => { if (!ok && !scr.disposed) statusLine.replaceChildren(h('span.ol-led.bad'), 'No se pudo enviar el resultado (reintentando con el estado del servidor).'); });
+      let lastSig = null;
       const update = () => {
         if (scr.disposed) return unsub();
+        // solo se redibuja cuando cambia algo (si no, las animaciones se repetirían en cada consulta al servidor)
+        const sig = JSON.stringify([match.roundInfo(r), !!match.outFor(r), match.view.wins, match.view.status]);
+        if (sig === lastSig) return;
+        lastSig = sig;
         renderSeries();
         const info = match.roundInfo(r);
         if (!info) return;
         if (info.void) {
-          statusLine.replaceChildren(h('span.ol-led.bad'), 'Ronda anulada: las dos compus no vieron el mismo resultado. Se juega otra.');
+          statusLine.replaceChildren(h('span.ol-led.bad'), info.reason === 'too_short'
+            ? 'Ronda anulada: duró demasiado poco para contar. Se juega otra.'
+            : 'Ronda anulada: las dos compus no vieron el mismo resultado. Se juega otra.');
           set(me, [h('span.res-reward.wait', 'Ronda anulada')]);
           set(opp, [h('span.res-reward.wait', 'Ronda anulada')]);
           return;
@@ -636,20 +669,48 @@ function resultsHooks(ui, match, r, reported, applyOut, winner) {
 
 function voidScreen(ui, { match, r, reason, done }) {
   const scr = {};
-  const why = reason === 'desync' ? 'Las dos compus dejaron de ver exactamente lo mismo.'
-    : reason === 'stall' ? 'Se cortó la comunicación con tu rival durante la ronda.'
-      : reason === 'error' ? 'El minijuego tuvo un error.'
-        : 'La ronda no se pudo completar.';
+  const T = {
+    desync: ['RONDA ANULADA', 'Las dos compus dejaron de ver exactamente lo mismo.', 'No cuenta para nadie: se juega otra ronda.'],
+    stall: ['RONDA ANULADA', 'Se perdió la comunicación con tu rival por más de 20 segundos.', 'No cuenta para nadie: se juega otra ronda.'],
+    error: ['RONDA ANULADA', 'El minijuego tuvo un error.', 'No cuenta para nadie: se juega otra ronda.'],
+    rejoin: ['VOLVISTE A LA PARTIDA', 'La ronda que estaba en juego se la lleva tu rival.', 'La serie sigue: preparate para la próxima ronda.'],
+    peer_rejoin: ['TU RIVAL SE RECONECTÓ', 'Recargó la página en medio de la ronda: la ronda es tuya.', 'La serie sigue: preparate para la próxima ronda.'],
+  }[reason] || ['RONDA ANULADA', 'La ronda no se pudo completar.', 'No cuenta para nadie: se juega otra ronda.'];
   const msg = h('p.muted', 'Esperando al servidor…');
-  scr.el = h('div.page.ol-void', h('div.card.ol-need', h('div.ol-need-ico', icon('bolt')), h('h3', 'RONDA ANULADA'), h('p', why), h('p.muted', 'No cuenta para nadie: se juega otra ronda.'), msg));
-  match.waitResolved(r, 45000).then(() => {
+  scr.el = h('div.page.ol-void', h('div.card.ol-need', h('div.ol-need-ico', icon('bolt')), h('h3', T[0]), h('p', T[1]), h('p.muted', T[2]), msg));
+  match.waitResolved(r).then(() => {
     if (scr.disposed) return;
-    msg.textContent = match.view.status === 'playing' ? 'Seguimos…' : 'La serie terminó.';
-    setTimeout(() => done(), 1400);
+    const info = match.roundInfo(r);
+    msg.textContent = match.view.status !== 'playing' ? 'La serie terminó.'
+      : info?.forfeit ? (info.winner === match.slot ? 'Ronda para vos. Seguimos…' : 'Ronda para tu rival. Seguimos…') : 'Seguimos…';
+    setTimeout(() => done(), 1600);
   });
   scr.onBack = () => {};
-  ui.app.audio.play('error');
+  ui.app.audio.play(reason === 'peer_rejoin' ? 'point' : 'error');
   return scr;
+}
+
+/** Al abrir el juego: si una cuenta de esta compu tiene una partida online en curso, ofrece volver a entrar. */
+export async function checkActiveMatch(app) {
+  if (app.online || app.runner.active) return;
+  for (const { me } of localAccounts(app)) {
+    let out;
+    try {
+      out = await call(app, me.username, 'dc_online_active');
+    } catch {
+      continue;
+    }
+    if (!out?.active || app.online) continue;
+    const v = out.match;
+    const opp = v.players[1 - v.slot];
+    const ok = await app.ui.confirm({
+      title: 'Tenés una partida online en curso',
+      text: `${me.name} estaba jugando contra ${opp?.name || 'un rival'} (${(v.wins || [0, 0])[v.slot]}–${(v.wins || [0, 0])[1 - v.slot]}). Si la ronda ya había empezado, esa ronda es para tu rival, pero la serie sigue.`,
+      yes: 'Volver a la partida', no: 'Abandonar', danger: false,
+    });
+    if (ok) return runOnline(app, me.username, v, { rejoin: true });
+    await call(app, me.username, 'dc_online_leave', { p_match: v.id }).catch(() => {});
+  }
 }
 
 // ---------------------------------------------------------------------------------- final de la serie
@@ -662,9 +723,13 @@ function finalScreen(ui, { match, applyOut, done }) {
   const actions = h('div.res-actions');
   let busy = false;
   let waiting = null;
-  const render = () => {
+  let lastSig = null;
+  const render = (force = false) => {
     if (scr.disposed) return;
     const v = match.view;
+    const sig = JSON.stringify([v.status, v.winner, v.wins, v.end_reason, (v.rounds || []).length, v.rematch, !!match.outFor(-1), !!waiting]);
+    if (!force && sig === lastSig) return;
+    lastSig = sig;
     const wins = v.wins || [0, 0];
     const w = v.winner;
     const abandon = v.end_reason === 'abandon' || v.end_reason === 'left';
@@ -711,7 +776,7 @@ function finalScreen(ui, { match, applyOut, done }) {
       const nv = await match.call('dc_online_rematch', { p_match: match.view.id });
       if (nv.status === 'playing') return done({ rematch: nv });
       waiting = nv;
-      render();
+      render(true);
       pollNew();
     } catch (e) {
       ui.toast({ kind: 'warn', title: 'Revancha', text: errorText(e) });
@@ -725,7 +790,7 @@ function finalScreen(ui, { match, applyOut, done }) {
     try {
       const nv = await match.call('dc_online_state', { p_match: waiting.id });
       if (nv.status === 'playing') return done({ rematch: nv });
-      if (nv.status !== 'waiting') { waiting = null; render(); return; }
+      if (nv.status !== 'waiting') { waiting = null; render(true); return; }
     } catch {}
     pollT = setTimeout(pollNew, 1500);
   }
@@ -733,7 +798,7 @@ function finalScreen(ui, { match, applyOut, done }) {
     clearTimeout(pollT);
     if (waiting) match.call('dc_online_cancel').catch(() => {});
     waiting = null;
-    if (rerender) render();
+    if (rerender) render(true);
   }
   const unsub = match.on(() => { if (scr.disposed) unsub(); else render(); });
   scr.el = h('div.results.ol-final', { style: { '--c': match.view.winner >= 0 ? pl[match.view.winner].color : '#9B6CFF' } }, body, h('div.res-footer', h('div'), actions));
@@ -774,6 +839,6 @@ function drawNetOverlay(g, match, round, runner) {
     const s = round.stall;
     panel(g, W / 2 - 230, 120, 460, 64, { r: 24, fill: 'rgba(11,16,32,0.88)', stroke: '#FFC93C' });
     text(g, `Esperando a ${opp.name}…`, W / 2, 144, { size: 22, color: '#fff' });
-    text(g, s > 6 ? `Su conexión no responde (${Math.floor(s)} s). Si se desconectó, ganás por abandono.` : 'Conexión lenta', W / 2, 168, { size: 13, body: true, color: '#FFE3A0' });
+    text(g, s > 6 ? `Sin señal hace ${Math.floor(s)} s. Si vuelve, la partida sigue sola; si no, ganás por abandono.` : 'Recuperando la conexión… la partida sigue en cuanto lleguen sus teclas', W / 2, 168, { size: 13, body: true, color: '#FFE3A0' });
   }
 }

@@ -10,19 +10,21 @@ import { StatsManager } from './statsManager.js';
 import { AccountService } from './accountService.js';
 import { AchievementManager } from './achievementManager.js';
 import { EVENTS } from './events.js';
+import { keyName } from './inputManager.js';
+const keyNameShort = (c) => ({ ShiftRight: 'SHIFT', NumpadEnter: 'ENTER' }[c] || keyName(c));
 import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel } from './utils.js';
 import { UI } from '../ui/ui.js';
 import { introScreen } from '../ui/intro.js';
 import { pauseModal } from '../ui/pause.js';
 import { GAMES, GAME_BY_ID } from '../games/index.js';
-import { onlineScreen, startChallengeWatcher } from '../ui/online.js';
+import { onlineScreen, startChallengeWatcher, checkActiveMatch } from '../ui/online.js';
 
 // Modificadores de la dificultad CAOS (afectan a los dos jugadores por igual)
 const CAOS_MODS = {
   turbo: { name: 'TURBO', desc: 'Todo va un 40% más rápido durante unos segundos.', dur: 5, scale: 1.4 },
   lento: { name: 'CÁMARA LENTA', desc: 'El tiempo se arrastra. Aprovechá para pensar.', dur: 4.5, scale: 0.65 },
   invert: { name: 'CONTROLES INVERTIDOS', desc: 'Izquierda es derecha. Arriba es abajo. Para los dos.', dur: 4 },
-  mirror: { name: 'ESPEJO', desc: 'La pantalla se da vuelta. Los controles no.', dur: 5 },
+  mirror: { name: 'ESPEJO', desc: 'La pantalla se da vuelta: jugás del otro lado. Tus teclas siguen lo que ves.', dur: 5 },
   niebla: { name: 'APAGÓN', desc: 'Se cortó la luz del club. Se ve solo el centro.', dur: 5 },
   temblor: { name: 'TERREMOTO', desc: 'La pantalla tiembla. Nadie sabe por qué.', dur: 4 },
 };
@@ -119,6 +121,7 @@ export class App {
     // modo online: desafíos entrantes y links de sala (?sala=CODIGO)
     ready.then(() => {
       startChallengeWatcher(this);
+      checkActiveMatch(this);
       const code = new URLSearchParams(location.search).get('sala');
       if (code && /^[A-Za-z0-9]{5}$/.test(code)) {
         history.replaceState(null, '', location.pathname + location.search.replace(/[?&]sala=[^&]*/, '').replace(/^&/, '?'));
@@ -340,6 +343,7 @@ export class MinigameRunner {
         this.state = 'ending';
         this.endT = 0;
         game.inverted = false;
+        game.mirrored = game.event === 'mirror';
         if (this.caos) this.caos.kind = null;
         this.app.audio.play('bell');
       }
@@ -388,9 +392,11 @@ export class MinigameRunner {
     const game = this.game;
     c.t += dt;
     if (c.phase === 'off' && game.time >= c.next) {
-      if (!c.bag.length) c.bag = shuffleArr(Object.keys(CAOS_MODS));
+      // cada minijuego declara qué modificadores tienen sentido (p. ej. Beat Battle no usa espejo ni invertidos)
+      const allowed = this.Game.meta.caos || Object.keys(CAOS_MODS);
+      if (!c.bag.length) c.bag = shuffleArr(allowed.slice());
       c.kind = c.bag.pop();
-      if (c.kind === 'invert' && game.event === 'invert') c.kind = 'turbo';
+      if (c.kind === 'invert' && game.event === 'invert') c.kind = allowed.includes('turbo') ? 'turbo' : allowed[0];
       c.phase = 'warn';
       c.t = 0;
       this.app.audio.play('alarm');
@@ -401,6 +407,7 @@ export class MinigameRunner {
       const m = CAOS_MODS[c.kind];
       if (m.scale) game.timeScale = this.baseTimeScale * m.scale;
       if (c.kind === 'invert') game.inverted = true;
+      if (c.kind === 'mirror') game.mirrored = game.event !== 'mirror';
     } else if (c.phase === 'on') {
       if (c.kind === 'temblor') game.fx.shake?.(4);
       if (c.t >= CAOS_MODS[c.kind].dur) {
@@ -408,6 +415,7 @@ export class MinigameRunner {
         c.t = 0;
         game.timeScale = this.baseTimeScale;
         if (c.kind === 'invert') game.inverted = false;
+        if (c.kind === 'mirror') game.mirrored = game.event === 'mirror';
         c.kind = null;
         c.next = game.time + rand(8, 12);
         this.app.audio.play('resume');
@@ -416,14 +424,29 @@ export class MinigameRunner {
   }
 
   render() {
+    // un error al DIBUJAR un cuadro no debe cerrar la partida (el estado del juego sigue intacto)
+    try {
+      this.renderFrame();
+    } catch (e) {
+      if (!this._renderErr) console.error('DUEL CLUB: error al dibujar (se sigue jugando)', e);
+      this._renderErr = (this._renderErr || 0) + 1;
+      if (this._renderErr < 4) this.app.logError?.(`dibujo: ${e?.message}`);
+      // deshacer save()/clip() que quedaron abiertos por el error
+      try {
+        const g = this.app.renderer.g;
+        if (g.reset) g.reset();
+        else for (let i = 0; i < 32; i++) g.restore();
+      } catch {}
+    }
+  }
+  renderFrame() {
     const r = this.app.renderer;
     r.clearGame();
     const g = r.beginGame();
     const game = this.game;
     g.save();
     g.translate(game.fx.shakeX, game.fx.shakeY);
-    const caosMirror = this.caos?.phase === 'on' && this.caos.kind === 'mirror';
-    if ((game.event === 'mirror') !== caosMirror) {
+    if (game.mirrored) {
       g.translate(W, 0);
       g.scale(-1, 1);
     }
@@ -433,6 +456,31 @@ export class MinigameRunner {
     game.renderHUD(g);
     game.fx.renderFlash(g);
     this.renderOverlays(g);
+  }
+
+  renderControls(g) {
+    const st = this.state;
+    const play = st === 'playing' ? this.game.time : 99;
+    let a = st === 'countdown' || st === 'paused' ? 1 : play < 3 ? 1 : play < 4 ? 4 - play : 0;
+    if (a <= 0 || !this.Game?.meta?.controls) return;
+    const inp = this.app.input;
+    const meta = this.Game.meta;
+    for (const p of [0, 1]) {
+      const b = inp.bindings[p];
+      const parts = meta.controls.map((c) => {
+        const keys = c.actions.length === 4 && c.actions.includes('up') ? (p ? '← ↑ ↓ →' : c.actions.map((x) => keyNameShort(b[x][0])).join(' '))
+          : c.actions.map((x) => keyNameShort(b[x][0])).join('/');
+        return `${keys} ${c.label.toLowerCase()}`;
+      });
+      const txt = `J${p + 1}: ${parts.join(' · ')}`;
+      const w = Math.min(600, 24 + txt.length * 7.4);
+      const x = p ? W - 16 - w : 16;
+      g.save();
+      g.globalAlpha = a;
+      panel(g, x, H - 40, w, 28, { r: 14, fill: 'rgba(11,16,32,0.82)', stroke: this.opts.players?.[p]?.color || '#9B6CFF' });
+      text(g, txt, x + w / 2, H - 26, { size: 12.5, body: true, weight: 700, color: '#fff' });
+      g.restore();
+    }
   }
 
   renderOverlays(g) {
@@ -502,6 +550,8 @@ export class MinigameRunner {
       g.fillStyle = 'rgba(11,16,32,0.55)';
       g.fillRect(0, 0, W, H);
     }
+    // controles de cada jugador: durante la cuenta regresiva y los primeros segundos (y en pausa)
+    if (!this.opts?.online) this.renderControls(g);
     // partidas online: quién sos, conexión y avisos de espera
     this.opts?.netOverlay?.(g, this);
   }
