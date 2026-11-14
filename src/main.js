@@ -1,4 +1,5 @@
 // Punto de entrada de DUEL CLUB.
+import '@fontsource/bangers/400.css';
 import '@fontsource/lilita-one/400.css';
 import '@fontsource-variable/nunito';
 import './style.css';
@@ -37,6 +38,7 @@ async function boot() {
   try {
     await Promise.race([
       Promise.all([
+        document.fonts.load('400 32px "Bangers"'),
         document.fonts.load('400 32px "Lilita One"'),
         document.fonts.load('600 16px "Nunito Variable"'),
         document.fonts.load('800 16px "Nunito Variable"'),

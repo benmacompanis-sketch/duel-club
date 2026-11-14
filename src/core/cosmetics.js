@@ -500,7 +500,7 @@ export const HATS = {
     const y = -16 + Math.sin(t * 3) * 2;
     g.beginPath(); g.ellipse(0, y, hw * 0.4, 7, 0, 0, TAU); g.stroke();
     g.restore();
-    g.font = '900 11px "Lilita One", sans-serif'; g.textAlign = 'center'; g.fillStyle = '#FFF4CF';
+    g.font = '900 11px "Bangers", sans-serif'; g.textAlign = 'center'; g.fillStyle = '#FFF4CF';
     g.fillText('67', 0, y - 9);
   },
 };
@@ -643,7 +643,7 @@ export const BODIES = {
     g.save(); glow(g, '#FFD16B', 6);
     g.strokeStyle = '#FFD16B'; g.lineWidth = 3;
     g.beginPath(); g.arc(0, -4, bw * 0.38, 0.35, Math.PI - 0.35); g.stroke();
-    g.fillStyle = '#FFD16B'; g.font = '900 14px "Lilita One", sans-serif'; g.textAlign = 'center';
+    g.fillStyle = '#FFD16B'; g.font = '900 14px "Bangers", sans-serif'; g.textAlign = 'center';
     g.fillText('$', 0, bw * 0.38 + 6);
     g.restore();
   } },
@@ -679,7 +679,7 @@ export const BODIES = {
     g.fillStyle = '#48D597';
     g.beginPath(); g.moveTo(-bw * 0.5, -4); g.lineTo(bw * 0.1, -6); g.lineTo(bw * 0.2, 2); g.lineTo(-bw * 0.35, 30 + Math.sin(t * 3) * 2); g.lineTo(-bw * 0.55, 26); g.closePath(); g.fill();
     g.fillStyle = '#FFD16B'; g.fillRect(-bw * 0.48, 22, bw * 0.18, 3);
-    g.fillStyle = '#0B1020'; g.font = '900 8px "Lilita One", sans-serif'; g.fillText('42', -bw * 0.2, 12);
+    g.fillStyle = '#0B1020'; g.font = '900 8px "Bangers", sans-serif'; g.fillText('42', -bw * 0.2, 12);
   } },
 };
 
@@ -754,7 +754,7 @@ export function drawEntrance(g, id, x, y, k, t, col) {
       g.beginPath(); g.moveTo(x, -10); g.lineTo(x, y); g.stroke();
       g.lineWidth = 3; g.strokeStyle = `rgba(185,140,255,${a})`;
       for (let i = 0; i < 3; i++) { g.beginPath(); g.ellipse(x, y - 4, 40 + i * 30 + k * 60, 10 + i * 6, 0, 0, TAU); g.stroke(); }
-      g.globalAlpha = a; g.fillStyle = '#FFF4CF'; g.font = '900 22px "Lilita One", sans-serif'; g.textAlign = 'center';
+      g.globalAlpha = a; g.fillStyle = '#FFF4CF'; g.font = '900 22px "Bangers", sans-serif'; g.textAlign = 'center';
       g.fillText('EL CREADOR', x, y - 170 - k * 30);
       break;
     }
@@ -762,7 +762,7 @@ export function drawEntrance(g, id, x, y, k, t, col) {
       glow(g, '#FFD16B', 30);
       g.fillStyle = `rgba(255,209,107,${0.35 * a})`;
       g.beginPath(); g.moveTo(x - 30, -20); g.lineTo(x + 30, -20); g.lineTo(x + 90, y + 10); g.lineTo(x - 90, y + 10); g.fill();
-      g.font = `900 ${60 + k * 20}px "Lilita One", sans-serif`; g.textAlign = 'center';
+      g.font = `900 ${60 + k * 20}px "Bangers", sans-serif`; g.textAlign = 'center';
       g.fillStyle = `rgba(255,244,207,${a})`; g.fillText('67', x, y - 210);
       break;
   }
@@ -791,7 +791,7 @@ export function drawVictory(g, id, x, y, t, col) {
       });
       break;
     case 'vic_aplausos':
-      g.font = '900 22px "Lilita One", sans-serif'; g.textAlign = 'center';
+      g.font = '900 22px "Bangers", sans-serif'; g.textAlign = 'center';
       for (let i = 0; i < 5; i++) {
         const ph = (t * 0.8 + i * 0.2) % 1;
         g.globalAlpha = 1 - ph; g.fillStyle = ['#FFD16B', '#FF5FA2', '#25CFE6', '#48D597', '#B98CFF'][i];
@@ -848,7 +848,7 @@ export function drawVictory(g, id, x, y, t, col) {
     case 'vic_icono':
       g.fillStyle = 'rgba(11,16,32,0.6)'; roundRect(g, x - 120, y - 330, 240, 70, 14); g.fill();
       glow(g, col, 20); g.strokeStyle = col; g.lineWidth = 4; roundRect(g, x - 120, y - 330, 240, 70, 14); g.stroke();
-      g.font = '900 34px "Lilita One", sans-serif'; g.textAlign = 'center'; g.fillStyle = Math.sin(t * 10) > -0.8 ? '#fff' : col;
+      g.font = '900 34px "Bangers", sans-serif'; g.textAlign = 'center'; g.fillStyle = Math.sin(t * 10) > -0.8 ? '#fff' : col;
       g.fillText('ÍCONO', x, y - 283);
       break;
   }
