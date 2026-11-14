@@ -3,7 +3,8 @@
 --  · Toda la XP que se gana durante una temporada suma también al pase (un solo nivel para las dos filas).
 --  · El Premium se compra UNA vez por temporada con PIES (nunca con dinero real). Al comprarlo, las recompensas
 --    Premium de los niveles ya alcanzados quedan para reclamar (retroactivo). Cada recompensa se reclama una sola vez.
---  · Partidas locales entre dos cuentas: dan XP y PIES pero ya NO cambian el ELO (pueden ser la misma persona).
+--  · El ELO solo cambia en partidas COMPETITIVAS online (Buscar rival). Partidas locales, salas con código,
+--    desafíos a amigos, bots y práctica dan XP y PIES pero no ELO.
 --  · Partidas contra bots (mode = 'bot'): XP y PIES reducidos, sin ELO, sin récords, sin dominio, sin estadísticas
 --    competitivas (van a bot_stats aparte).
 -- Requiere 008. Los datos (temporadas, recompensas, desafíos) se cargan con supabase/seed/pass.sql.
@@ -294,6 +295,13 @@ $a$);
     n := replace(d, 'v_out1 := dc.apply_minigame(a1, 0, p_m, a2, d1, g);', 'v_out1 := dc.apply_minigame(a1, 0, p_m || ''{"mode":"online"}'', a2, d1, g);');
     n := replace(n, 'v_out2 := dc.apply_minigame(a2, 1, p_m, a1, d2, g);', 'v_out2 := dc.apply_minigame(a2, 1, p_m || ''{"mode":"online"}'', a1, d2, g);');
     if n = d then raise exception 'online_record: no se encontró el texto'; end if;
+    execute n;
+  end if;
+  -- ELO solo en partidas competitivas (Buscar rival). Salas con código y desafíos a amigos: amistosas, sin ELO.
+  d := pg_get_functiondef('dc.online_record(uuid,jsonb)'::regprocedure);
+  if position('m.kind <> ''ranked''' in d) = 0 then
+    n := replace(d, '  if v_pair >= 12 then d1 := 0; d2 := 0;', '  if m.kind <> ''ranked'' or v_pair >= 12 then d1 := 0; d2 := 0;');
+    if n = d then raise exception 'online_record (ELO): no se encontró el texto'; end if;
     execute n;
   end if;
   d := pg_get_functiondef('dc.online_finish(uuid,integer,text)'::regprocedure);

@@ -134,7 +134,7 @@ try {
   const st = await Promise.all([ca.page, cb.page].map((p) => p.evaluate(async () => { await window.DC.accounts.refreshAll(); const m = window.DC.accounts.slotAccount(0); return { r: m.rating, op: m.stats.online_played, ach: !!m.achievements.online_1 }; })));
   check(st.every((x) => x.op >= 1 && x.ach), 'Cuentas actualizadas: minijuego online contado y logro "Conexión establecida"', JSON.stringify(st));
   const d = valid[0]?.d || [0, 0];
-  check(valid[0]?.winner === -1 ? d[0] === 0 : d[0] === -d[1] && d[0] !== 0, 'ELO cambió de forma simétrica', JSON.stringify(d));
+  check(valid.every((x) => !x.d || (x.d[0] === 0 && x.d[1] === 0)) && st.every((x) => x.r === 1000), 'Sala amistosa: el ELO no cambia (solo cambia en Buscar rival)', JSON.stringify({ d, r: st.map((x) => x.r) }));
 
   // 2) respaldo por el servidor (Supabase Realtime), forzado
   step = 'respaldo por el servidor';
@@ -175,6 +175,8 @@ try {
     await ca.page.click('.modal .btn.danger');
     const fins = await Promise.all([ca.page, cb.page].map((p) => p.waitForSelector('.ol-final', { timeout: 30000 }).then(() => p.textContent('.ol-final .res-banner')).catch(() => '')));
     check(/ABANDONASTE/.test(fins[0]) && /ABANDONÓ/.test(fins[1]), 'Abandono: pierde quien se va y el rival gana la serie', fins.join(' / '));
+    const rr = await Promise.all([ca.page, cb.page].map((p) => p.evaluate(async () => { await window.DC.accounts.refreshAll(); return window.DC.accounts.slotAccount(0).rating; })));
+    check(rr[0] < 1000 && rr[1] > 1000 && rr[0] - 1000 === -(rr[1] - 1000), 'Competitivo: el ELO cambió de forma simétrica (baja quien abandona)', JSON.stringify(rr));
   }
   check(ca.errors.length === 0 && cb.errors.length === 0, 'Sin errores de JavaScript en las dos compus', [...ca.errors, ...cb.errors].join(' | '));
 

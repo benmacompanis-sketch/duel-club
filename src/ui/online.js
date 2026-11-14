@@ -54,7 +54,7 @@ export function onlineScreen(ui, params = {}) {
       body.replaceChildren(h('div.card.ol-need',
         h('div.ol-need-ico', icon('user')),
         h('h3', 'NECESITÁS UNA CUENTA'),
-        h('p.muted', 'Para jugar online cada uno entra con su cuenta desde su compu. Así el servidor sabe quién es quién y la partida cuenta para ELO, XP y PIES.'),
+        h('p.muted', 'Para jugar online cada uno entra con su cuenta desde su compu. Así el servidor sabe quién es quién y la partida cuenta para XP y PIES (y para el ELO en las competitivas).'),
         h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => ui.modal(accountModal, { p: 0, onDone: render }) }, icon('user'), 'INICIAR SESIÓN O CREAR CUENTA')));
       ui.focusFirst();
       return;
@@ -70,7 +70,7 @@ export function onlineScreen(ui, params = {}) {
 
     // ---- buscar rival
     const findCard = h('div.card.ol-card', { style: { '--accent': '#3985FF' } },
-      h('div.ol-card-head', h('span.ol-ico', icon('duel')), h('div', h('h3', 'BUSCAR RIVAL'), h('p.muted', 'Te emparejamos con alguien de ELO parecido. Mejor de 3, minijuegos al azar.'))),
+      h('div.ol-card-head', h('span.ol-ico', icon('duel')), h('div', h('h3', 'BUSCAR RIVAL'), h('p.muted', 'COMPETITIVO: te emparejamos con alguien de ELO parecido. Mejor de 3, minijuegos al azar. Es la única forma de ganar ELO.'))),
       h('ul.ol-points',
         h('li', icon('shield'), 'Rival de tu nivel (el rango se abre si tarda)'),
         h('li', icon('shuffle'), '3 minijuegos al azar, iguales para los dos'),
@@ -141,7 +141,7 @@ export function onlineScreen(ui, params = {}) {
   }
 
   scr.el = h('div.page.online-page',
-    header(ui, 'JUGAR ONLINE', 'Cada uno desde su compu · cuenta para ELO, XP y PIES', back,
+    header(ui, 'JUGAR ONLINE', 'Cada uno desde su compu · el ELO solo se juega en Buscar rival', back,
       whoSlot),
     body);
   render();
@@ -391,7 +391,7 @@ export async function runOnline(app, user, view, { rejoin = false } = {}) {
     async function askLeave() {
       if (leaving) return;
       leaving = true;
-      const ok = await ui.confirm({ title: '¿Abandonar la partida online?', text: 'Perdés la ronda en curso y la serie (cuenta para ELO).', yes: 'Abandonar', no: 'Seguir jugando' });
+      const ok = await ui.confirm({ title: '¿Abandonar la partida online?', text: match.view?.kind === 'ranked' ? 'Perdés la ronda en curso y la serie (cuenta para ELO).' : 'Perdés la ronda en curso y la serie.', yes: 'Abandonar', no: 'Seguir jugando' });
       leaving = false;
       if (ok) await match.leave();
     }
@@ -489,7 +489,7 @@ function lobbyScreen(ui, { match, done }) {
   const iv = setInterval(update, 200);
   const unsub = match.on(update);
   scr.el = h('div.ol-lobby',
-    h('div.ol-kicker', `${v.kind === 'ranked' ? 'PARTIDA POR ELO' : v.kind === 'challenge' ? 'DESAFÍO ONLINE' : 'SALA ' + v.code} · ${v.best_of > 1 ? 'MEJOR DE ' + v.best_of : 'PARTIDA ÚNICA'} · ${games}${v.caos ? ' · CAOS' : ''}`),
+    h('div.ol-kicker', `${v.kind === 'ranked' ? 'COMPETITIVA · POR ELO' : v.kind === 'challenge' ? 'DESAFÍO AMISTOSO' : 'SALA AMISTOSA ' + v.code} · ${v.best_of > 1 ? 'MEJOR DE ' + v.best_of : 'PARTIDA ÚNICA'} · ${games}${v.caos ? ' · CAOS' : ''}`),
     h('div.ol-vs',
       h('div.ol-side' + (match.slot === 0 ? '.me' : ''), profileCard(ui, scr, v.players[0], { compact: true }), h('span.ol-tag', match.slot === 0 ? 'VOS · J1' : 'RIVAL · J1')),
       h('div.ol-vs-mid', 'VS'),
@@ -605,7 +605,7 @@ function resultsHooks(ui, match, r, reported, applyOut, winner) {
     next: null,
     actions: (choose) => {
       contBtn = h('button.btn.primary.big', { nav: true, 'data-autofocus': true, disabled: true, onclick: () => choose('continue') }, icon('play'), 'CONTINUAR');
-      const leave = h('button.btn.ghost', { nav: true, onclick: async () => { if (await ui.confirm({ title: '¿Abandonar la serie?', text: 'Perdés la serie (cuenta para ELO).', yes: 'Abandonar', no: 'Seguir' })) choose('leave'); } }, 'ABANDONAR');
+      const leave = h('button.btn.ghost', { nav: true, onclick: async () => { if (await ui.confirm({ title: '¿Abandonar la serie?', text: match.view?.kind === 'ranked' ? 'Perdés la serie (cuenta para ELO).' : 'Perdés la serie.', yes: 'Abandonar', no: 'Seguir' })) choose('leave'); } }, 'ABANDONAR');
       const el = h('div.res-actions', leave, contBtn);
       const created = performance.now();
       // continuar solo cuando el servidor confirmó; después arranca solo
