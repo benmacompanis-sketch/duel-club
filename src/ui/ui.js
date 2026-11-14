@@ -38,7 +38,13 @@ export class UI {
     const act = document.activeElement;
     if (act && act.matches?.('input[type="text"], input[type="password"], textarea')) return;
     if (el && document.activeElement !== el && !el.disabled) {
-      el.focus({ preventScroll: true });
+      // pasar el mouse solo resalta: nunca elige nada (hovering avisa que este foco vino del mouse)
+      this.hovering = true;
+      try {
+        el.focus({ preventScroll: true });
+      } finally {
+        this.hovering = false;
+      }
       this.audio.play('hover', { gap: 60 });
     }
   }

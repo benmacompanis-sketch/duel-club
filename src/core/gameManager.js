@@ -10,6 +10,8 @@ import { StatsManager } from './statsManager.js';
 import { AccountService } from './accountService.js';
 import { AchievementManager } from './achievementManager.js';
 import { EVENTS } from './events.js';
+import { keyName } from './inputManager.js';
+const keyNameShort = (c) => ({ ShiftRight: 'SHIFT', NumpadEnter: 'ENTER' }[c] || keyName(c));
 import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel } from './utils.js';
 import { UI } from '../ui/ui.js';
 import { introScreen } from '../ui/intro.js';
@@ -456,6 +458,31 @@ export class MinigameRunner {
     this.renderOverlays(g);
   }
 
+  renderControls(g) {
+    const st = this.state;
+    const play = st === 'playing' ? this.game.time : 99;
+    let a = st === 'countdown' || st === 'paused' ? 1 : play < 3 ? 1 : play < 4 ? 4 - play : 0;
+    if (a <= 0 || !this.Game?.meta?.controls) return;
+    const inp = this.app.input;
+    const meta = this.Game.meta;
+    for (const p of [0, 1]) {
+      const b = inp.bindings[p];
+      const parts = meta.controls.map((c) => {
+        const keys = c.actions.length === 4 && c.actions.includes('up') ? (p ? '← ↑ ↓ →' : c.actions.map((x) => keyNameShort(b[x][0])).join(' '))
+          : c.actions.map((x) => keyNameShort(b[x][0])).join('/');
+        return `${keys} ${c.label.toLowerCase()}`;
+      });
+      const txt = `J${p + 1}: ${parts.join(' · ')}`;
+      const w = Math.min(600, 24 + txt.length * 7.4);
+      const x = p ? W - 16 - w : 16;
+      g.save();
+      g.globalAlpha = a;
+      panel(g, x, H - 40, w, 28, { r: 14, fill: 'rgba(11,16,32,0.82)', stroke: this.opts.players?.[p]?.color || '#9B6CFF' });
+      text(g, txt, x + w / 2, H - 26, { size: 12.5, body: true, weight: 700, color: '#fff' });
+      g.restore();
+    }
+  }
+
   renderOverlays(g) {
     const game = this.game;
     const t = game.realTime;
@@ -523,6 +550,8 @@ export class MinigameRunner {
       g.fillStyle = 'rgba(11,16,32,0.55)';
       g.fillRect(0, 0, W, H);
     }
+    // controles de cada jugador: durante la cuenta regresiva y los primeros segundos (y en pausa)
+    if (!this.opts?.online) this.renderControls(g);
     // partidas online: quién sos, conexión y avisos de espera
     this.opts?.netOverlay?.(g, this);
   }

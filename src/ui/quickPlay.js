@@ -18,9 +18,10 @@ export function quickPlayScreen(ui, params = {}) {
     const card = h('button.game-card', {
       nav: true, style: { '--c': m.color }, dataset: { id: m.id },
       'data-autofocus': m.id === selected || null,
-      onclick: () => { selected = m.id; renderDetail(); app.audio.play('click'); detail.querySelector('.play-btn')?.focus(); },
+      onclick: () => { selected = m.id; renderDetail(); app.audio.play('click'); },
       ondblclick: () => play(),
-      onfocus: () => { if (selected !== m.id) { selected = m.id; renderDetail(); } },
+      // con el teclado, moverse por la grilla va mostrando cada minijuego; con el mouse solo se elige con clic
+      onfocus: () => { if (!ui.hovering && selected !== m.id) { selected = m.id; renderDetail(); } },
     },
     h('span.gc-num', String(i + 1).padStart(2, '0')),
     gameIcon(ui, scr, m, 96),
@@ -56,7 +57,7 @@ export function quickPlayScreen(ui, params = {}) {
       h('button.btn.green.big.wide.play-btn', { nav: true, onclick: play }, icon('play'), 'JUGAR'));
   }
 
-  scr.el = h('div.page',
+  scr.el = h('div.page.qp-page',
     header(ui, 'QUICK PLAY', 'Elegí un minijuego y jugá una partida directa.', () => ui.goMenu()),
     h('div.qp-body', grid, detail));
   renderDetail();

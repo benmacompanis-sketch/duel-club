@@ -6,7 +6,7 @@ import { TAU, rgba } from '../core/utils.js';
 export function logo(big = false) {
   return h('div.logo' + (big ? '.big' : ''),
     h('div.logo-row', h('span.logo-duel', 'DUEL'), h('span.logo-bolt', icon('bolt')), h('span.logo-club', 'CLUB')),
-    h('div.logo-slogan', big ? 'ONE CLUB. INFINITE DUELS. QUESTIONABLE AURA.' : 'ONE CLUB. INFINITE DUELS.'));
+    h('div.logo-slogan', 'ONE CLUB. INFINITE DUELS.'));
 }
 
 /** Escenario con los dos personajes enfrentados. */
