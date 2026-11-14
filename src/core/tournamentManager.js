@@ -1,5 +1,6 @@
 // TournamentManager: sesiones de competición y flujos de cada modo.
 // Sistema global: victoria 3 pts, empate 1 pt para cada uno, derrota 0.
+import { chooseModality } from '../ui/rankedChoice.js';
 import { GAMES, GAME_BY_ID } from '../games/index.js';
 import { pickEvent } from './events.js';
 import { shuffle, choice } from './utils.js';
@@ -133,7 +134,7 @@ async function playOne(app, session, gameId, info) {
   const rec = app.stats.recordMinigame(res, session.mode);
   rec.newRecords.forEach((v, p) => v && session.recordsBroken.push({ gameId, p }));
   rec.server = app.accounts.submitMatch(res, {
-    mode: session.mode, compId: session.clientId,
+    mode: session.mode, compId: session.clientId, ranked: session.ranked,
     difficulty: info.difficulty ?? DIFFS[session.cfg.difficulty || 'normal'].v, caos: !!DIFFS[session.cfg.difficulty]?.caos,
   });
   const before = session.points.slice();
@@ -167,9 +168,19 @@ async function finishCompetition(app, session, rematch) {
   app.ui.goMenu();
 }
 
+// Modalidad para dos cuentas reales: casual o competitiva (ELO global). Devuelve false si se canceló.
+async function pickModality(app, session) {
+  const mod = await chooseModality(app, session.clientId);
+  if (!mod) return false;
+  session.ranked = mod.ranked;
+  if (mod.ranked) setTimeout(() => app.accounts.rankedClose(mod.ranked), 6 * 3600 * 1000);
+  return true;
+}
+
 // ------------------------------------------------------------------- DUEL MODE
 export async function runDuel(app, cfg) {
   const session = new Session('duel', cfg, snapshotPlayers(app));
+  if (!(await pickModality(app, session))) return app.ui.goMenu();
   session.queue = buildQueue(cfg);
   const n = session.queue.length;
   await app.ui.ask(vsScreen, { session, title: 'DUEL MODE', sub: `${n} minijuegos · ${DIFFS[cfg.difficulty].label}${cfg.events ? ' · Eventos especiales' : ''}` });
@@ -192,6 +203,7 @@ export async function runDuel(app, cfg) {
 // ------------------------------------------------------------------- TOURNAMENT
 export async function runTournament(app, cfg) {
   const session = new Session('tournament', cfg, snapshotPlayers(app));
+  if (!(await pickModality(app, session))) return app.ui.goMenu();
   const ids = GAMES.map((G) => G.meta.id);
   let bag = shuffle(ids);
   for (let r = 0; r < cfg.rounds; r++) {
@@ -265,6 +277,10 @@ export async function runSurvival(app, cfg) {
 
 // ------------------------------------------------------------------- QUICK PLAY
 export async function runQuick(app, gameId, cfg) {
+  const mod = await chooseModality(app, null);
+  if (!mod) { app.ui.show(quickPlayScreen, { selected: gameId }); return; }
+  const ranked = mod.ranked;
+  const endRanked = () => ranked && setTimeout(() => app.accounts.rankedClose(ranked), 120000);
   for (;;) {
     let res;
     const meta = GAME_BY_ID[gameId].meta;
@@ -281,6 +297,7 @@ export async function runQuick(app, gameId, cfg) {
       });
     } catch (e) {
       if (e && e.cancelled) {
+        endRanked();
         app.audio.playMusic('menu');
         app.ui.show(quickPlayScreen, { selected: gameId });
         return;
@@ -288,10 +305,11 @@ export async function runQuick(app, gameId, cfg) {
       throw e;
     }
     const rec = app.stats.recordMinigame(res, 'quick');
-    rec.server = app.accounts.submitMatch(res, { mode: 'quick', difficulty: DIFFS[cfg.difficulty || 'normal'].v, caos: !!DIFFS[cfg.difficulty]?.caos });
-    const action = await app.ui.ask(resultsScreen, { session: null, res, rec, info: { quick: true } });
+    rec.server = app.accounts.submitMatch(res, { mode: 'quick', difficulty: DIFFS[cfg.difficulty || 'normal'].v, caos: !!DIFFS[cfg.difficulty]?.caos, ranked });
+    const action = await app.ui.ask(resultsScreen, { session: null, res, rec, info: { quick: true, ranked: !!ranked } });
     app.runner.close();
     if (action === 'rematch') continue;
+    endRanked();
     app.audio.playMusic('menu');
     if (action === 'other') app.ui.show(quickPlayScreen, { selected: gameId });
     else app.ui.goMenu();

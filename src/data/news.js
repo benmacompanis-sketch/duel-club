@@ -4,6 +4,26 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-14-local-ranked-410',
+    date: '2026-11-14',
+    version: '4.10',
+    title: 'Competitivo en la misma compu',
+    tag: 'v4.10',
+    color: '#FF4B3E',
+    intro: 'Si los dos tienen cuenta, ahora pueden jugar local por ELO: el mismo ELO y el mismo ranking que el online.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        'Partidas locales CASUAL o COMPETITIVA cuando J1 y J2 tienen cuenta (Duel Mode, Tournament y Quick Play).',
+        'La competitiva la tienen que confirmar los dos, cada uno con su tecla. No se puede cambiar a mitad de la partida.',
+        'Un solo ELO y un solo ranking mundial: el local competitivo y el online usan exactamente el mismo cálculo.',
+      ] },
+      { kind: 'mejora', items: [
+        'Protección contra cuentas falsas que se dejan ganar: si algo se ve raro, el ELO queda en revisión (podés seguir jugando casual) y se acredita cuando se confirma.',
+        'Compartir compu o conexión no es motivo de sanción: el sistema mira muchas señales y nunca bloquea a nadie solo por eso.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-14-club-pass-49',
     date: '2026-11-14',
     version: '4.9',

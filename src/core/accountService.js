@@ -431,7 +431,16 @@ export class AccountService {
    * Envía el resultado de un minijuego. Solo cuenta para los jugadores con cuenta.
    * Devuelve una promesa con la respuesta del servidor (o null si nadie tiene cuenta).
    */
-  submitMatch(res, { mode = 'quick', compId = null, difficulty = 0.5, caos = false, bot = null } = {}) {
+  // ------------------------------------------------------------------ competitivo local (ELO global)
+  /** Abre una sesión competitiva con las cuentas de J1 y J2 (los dos ya confirmaron en pantalla). */
+  async rankedOpen(compId = null) {
+    return rpc('dc_local_ranked_open', { p_tok1: this.slotToken(0), p_tok2: this.slotToken(1), p_comp: compId });
+  }
+  rankedClose(id) {
+    if (!id) return;
+    rpc('dc_local_ranked_close', { p_token: this.slotToken(0) || this.slotToken(1), p_session: id }).catch(() => {});
+  }
+  submitMatch(res, { mode = 'quick', compId = null, difficulty = 0.5, caos = false, bot = null, ranked = null } = {}) {
     // contra un bot solo cuenta la cuenta de J1 (el servidor da XP y PIES reducidos, nunca ELO)
     const users = mode === 'bot' ? [this.slotUser(0), null] : [this.slotUser(0), this.slotUser(1)];
     if (!users[0] && !users[1]) return Promise.resolve(null);
@@ -440,6 +449,7 @@ export class AccountService {
       comp_id: compId,
       mode,
       bot,
+      ranked_session: ranked || undefined,
       difficulty: caos ? 'caos' : DIFF_NAMES[difficulty] || 'normal',
       ...this.matchPayload(res),
     };
@@ -519,6 +529,12 @@ export class AccountService {
             clearTimeout(this._retry);
             this._retry = setTimeout(() => this.processQueue(), 20000);
             break;
+          }
+          if (e.code === 'ranked_invalid' && item.payload?.ranked_session) {
+            // la sesión competitiva ya no es válida (p. ej. se cerró): el resultado se guarda como casual
+            delete item.payload.ranked_session;
+            item.payload.ranked_dropped = true;
+            continue;
           }
           if (e.code === 'too_fast' && item.tries++ < 12) {
             clearTimeout(this._retry);

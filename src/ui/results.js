@@ -139,6 +139,7 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
         h('span.res-reward.xp', `+${fmtN(s.xp)} XP`),
         s.pies ? h('span.res-reward.pies', `+${fmtN(s.pies)} PIES`) : null,
         s.delta ? h('span.res-reward' + (s.delta > 0 ? '.up' : '.down'), `${s.delta > 0 ? '+' : ''}${s.delta} ELO`) : null,
+        out?.ranked ? h('span.res-reward.ranked.' + out.ranked.status, out.ranked.status === 'credited' ? 'ELO GLOBAL ACTUALIZADO' : out.ranked.status === 'held' ? `ELO EN REVISIÓN (${out.ranked.d[p] > 0 ? '+' : ''}${out.ranked.d[p]})` : 'SIN ELO: LÍMITE DIARIO ENTRE USTEDES') : null,
         s.record ? h('span.res-reward.pies', '★ RÉCORD MUNDIAL') : null,
         s.factor < 1 ? h('span.res-reward.wait', s.factor === 0 ? 'Límite diario alcanzado' : 'Recompensa reducida (muchas partidas hoy)') : null].filter(Boolean));
     }
