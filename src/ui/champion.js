@@ -41,7 +41,7 @@ export function championScreen(ui, { session, done }) {
       g.fillStyle = 'rgba(255,255,255,0.12)';
       g.fillRect(x - wdt / 2, y, wdt, 8);
       g.fillStyle = 'rgba(11,16,32,0.6)';
-      g.font = '40px "Russo One"'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '40px "Lilita One"'; g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText(label, x, y + hgt / 2 + 4);
     };
     if (w >= 0) {

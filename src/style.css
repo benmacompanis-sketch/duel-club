@@ -17,8 +17,8 @@
   --panel-strong: rgba(14, 20, 42, 0.94);
   --line: rgba(155, 108, 255, 0.28);
   --radius: 18px;
-  --display: 'Russo One', 'Rubik Variable', system-ui, sans-serif;
-  --body: 'Rubik Variable', 'Rubik', system-ui, sans-serif;
+  --display: 'Lilita One', 'Nunito Variable', system-ui, sans-serif;
+  --body: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
   --s: 1;
 }
 * { box-sizing: border-box; }
@@ -1570,3 +1570,104 @@ button.home-slot:focus { border-color: var(--violet); }
 .sg-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; } .sg-main b { font-size: 14px; } .sg-main small { font-size: 11.5px; opacity: 0.75; line-height: 1.3; } .sg-best { font-size: 12px; font-weight: 800; color: var(--gold); }
 .sr-stars { display: flex; gap: 2px; font-size: 20px; } .sr-stars i { font-style: normal; color: rgba(255, 255, 255, 0.18); } .sr-stars i.on { color: var(--gold); text-shadow: 0 0 10px rgba(255, 201, 60, 0.7); }
 .solo-result { display: flex; align-items: center; gap: 12px; margin-right: auto; font-weight: 800; }
+
+/* =====================================================================
+   IDENTIDAD DUEL CLUB · "arcade callejero"
+   Tinta gruesa, sombras duras (sin desenfoque), colores planos, azul contra rojo y amarillo de acento.
+   ===================================================================== */
+:root {
+  --bg: #15121f; --bg2: #1f1a2e; --bg3: #2a2440;
+  --p1: #2e7bff; --p2: #ff4b3e; --violet: #ffd23f; --yellow: #ffd23f; --gold: #ffd23f; --green: #3ddc97; --coral: #ff4b3e;
+  --white: #fff4e0; --muted: #a79fb8; --ink: #0d0b14;
+  --panel: #221c33; --panel-strong: #1c1729; --line: #0d0b14; --radius: 12px;
+  --display: 'Lilita One', 'Nunito Variable', system-ui, sans-serif;
+  --body: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
+  --hard: 0 5px 0 var(--ink);
+}
+html, body { background: var(--bg); }
+body { font-weight: 600; }
+
+/* botones */
+.btn { background: var(--bg3); border: 3px solid var(--ink); border-radius: 12px; box-shadow: var(--hard); letter-spacing: 0.5px; transition: transform 0.08s, box-shadow 0.08s; }
+.btn:hover, .btn:focus, .btn:focus-visible { border-color: var(--ink); box-shadow: var(--hard), 0 0 0 3px var(--white); transform: translateY(-2px); }
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.btn.primary, .btn.gold { background: var(--yellow); color: #15121f; border-color: var(--ink); }
+.btn.primary:focus, .btn.primary:hover, .btn.gold:focus, .btn.gold:hover { box-shadow: var(--hard), 0 0 0 3px var(--white); }
+.btn.green { background: var(--green); color: #0b2a1c; border-color: var(--ink); }
+.btn.green:focus, .btn.green:hover { box-shadow: var(--hard), 0 0 0 3px var(--white); }
+.btn.danger { background: var(--p2); color: #fff; border-color: var(--ink); }
+.btn.danger:focus, .btn.danger:hover { box-shadow: var(--hard), 0 0 0 3px var(--white); }
+.btn.ghost { background: transparent; border-color: rgba(255, 244, 224, 0.28); box-shadow: none; }
+.btn.ghost:hover, .btn.ghost:focus { border-color: var(--white); box-shadow: none; }
+.btn.small { border-radius: 10px; box-shadow: 0 4px 0 var(--ink); }
+.icon-btn { border: 3px solid var(--ink) !important; background: var(--bg3) !important; box-shadow: 0 4px 0 var(--ink); border-radius: 12px !important; }
+
+/* tarjetas y paneles: opacos, borde de tinta, sombra dura */
+.card, .dialog, .solo-side, .solo-main, .pass-head, .store-featured, .club-empty, .ch-row, .season-row, .home-card, .solo-daily, .ladder-end, .prof-pass, .solo-note, .ss, .tb-slot, .store-bal, .online-card, .pcard, .need-acc {
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  border: 3px solid var(--ink) !important; box-shadow: 0 6px 0 rgba(0, 0, 0, 0.45) !important;
+}
+.card, .solo-side, .solo-main, .home-card, .ch-row, .season-row, .ss { background: var(--panel) !important; border-radius: 14px !important; }
+.dialog { background: var(--panel-strong) !important; border-radius: 16px !important; box-shadow: 0 10px 0 rgba(0, 0, 0, 0.5), 0 0 0 4px var(--yellow) !important; }
+.pass-head { background: linear-gradient(100deg, #1c3a8c 0%, #221c33 55%, #571c2a 100%) !important; }
+.pass-head.prem { background: linear-gradient(100deg, #6b4a00 0%, #221c33 55%, #571c2a 100%) !important; }
+.store-featured { background: #2a2440 !important; }
+.club-empty { background: #2a2440 !important; }
+.solo-daily { background: #2a2440 !important; border-color: var(--yellow) !important; }
+.solo-note { background: #1c3a8c !important; }
+.tb-slot { background: var(--panel) !important; border-left: 10px solid var(--c) !important; border-radius: 14px !important; }
+.tb-slot.right { border-left: 3px solid var(--ink) !important; border-right: 10px solid var(--c) !important; }
+.tb-slot.sel { outline: 3px solid var(--white); outline-offset: 0; }
+
+/* tarjetas clickeables */
+.mode-card, .item-card, .game-card, .solo-goal, .solo-game, .pass-cell, .home-link, .solo-tab, .solo-chip, .rf, .sh-row, .feed-row {
+  border: 3px solid var(--ink) !important; box-shadow: 0 5px 0 rgba(0, 0, 0, 0.45); backdrop-filter: none !important;
+}
+.mode-card, .game-card, .solo-goal, .solo-game, .home-link, .solo-tab, .solo-chip { background: var(--panel) !important; transition: transform 0.1s; }
+.mode-card { border-top: 8px solid var(--accent) !important; }
+.mode-card:hover, .mode-card:focus, .game-card:hover, .game-card:focus, .solo-goal:hover, .solo-goal:focus, .item-card:hover, .item-card:focus, .home-link:hover, .home-link:focus, .solo-game:hover, .solo-game:focus, .pass-cell:focus, .pass-cell:hover {
+  transform: translateY(-3px); outline: 3px solid var(--white); outline-offset: 0; box-shadow: 0 8px 0 rgba(0, 0, 0, 0.5);
+}
+.solo-tab.on, .solo-chip.on { background: var(--yellow) !important; color: #15121f !important; }
+.solo-game.sel, .game-card.sel { outline: 3px solid var(--yellow); outline-offset: 0; }
+.online-card { background: linear-gradient(100deg, #1c3a8c, #2a2440 60%, #571c2a) !important; }
+
+/* pestañas */
+.tab { border: 3px solid var(--ink) !important; background: var(--panel) !important; border-radius: 10px !important; box-shadow: 0 4px 0 var(--ink); }
+.tab.on { background: var(--yellow) !important; color: #15121f !important; }
+.tab:hover, .tab:focus { outline: 3px solid var(--white); outline-offset: 0; }
+
+/* menú lateral */
+.sn-btn { border-radius: 10px !important; border: 3px solid transparent !important; }
+.sn-btn:hover, .sn-btn:focus { background: rgba(255, 244, 224, 0.07) !important; border-color: rgba(255, 244, 224, 0.2) !important; }
+.sn-btn.on { background: var(--yellow) !important; color: #15121f !important; border-color: var(--ink) !important; box-shadow: 0 4px 0 var(--ink); }
+.sn-btn.on .sn-ico, .sn-btn.on svg { color: #15121f !important; }
+
+/* títulos */
+.page-header h1, .sec-head h2, .pass-head h3, .solo-side h3, .solo-main h3 { transform: skewX(-6deg); text-shadow: 3px 3px 0 var(--ink); color: var(--white); letter-spacing: 1px; }
+.page-header p, .sec-head p { color: var(--muted); }
+
+/* logo */
+.logo-duel, .logo-club, .side-logo .sl-duel, .side-logo .sl-club {
+  background: none !important; -webkit-background-clip: initial !important; background-clip: initial !important;
+  -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; filter: none !important;
+}
+.logo-duel, .side-logo .sl-duel { color: var(--p1) !important; text-shadow: 5px 5px 0 var(--ink) !important; }
+.logo-club, .side-logo .sl-club { color: var(--p2) !important; text-shadow: 5px 5px 0 var(--ink) !important; }
+.side-logo .sl-duel, .side-logo .sl-club { -webkit-text-stroke: 2px var(--ink); text-shadow: 3px 3px 0 var(--ink) !important; }
+.logo-bolt { filter: drop-shadow(3px 3px 0 var(--ink)) !important; }
+.logo-slogan { color: var(--yellow) !important; text-shadow: 2px 2px 0 var(--ink) !important; letter-spacing: 5px; }
+.press-start { background: var(--yellow) !important; color: #15121f !important; border: 3px solid var(--ink) !important; box-shadow: 0 6px 0 var(--ink) !important; border-radius: 12px !important; transform: skewX(-6deg); }
+.tf { background: var(--panel) !important; border: 3px solid var(--ink) !important; box-shadow: 0 5px 0 rgba(0, 0, 0, 0.45); backdrop-filter: none !important; }
+.tf b { background: none !important; -webkit-background-clip: initial !important; background-clip: initial !important; color: var(--yellow) !important; text-shadow: 2px 2px 0 var(--ink); }
+
+/* insignias y chips */
+.rar, .chip, .tag { border: 2px solid var(--ink) !important; }
+.res-banner { text-shadow: 4px 4px 0 var(--ink) !important; }
+.item-card, .pass-cell, .pc-lv, .lg, .sf-grid > *, .ch-row, .people > *, .rank-row, .ach-card, .news-card, .stat-tile { background-color: var(--panel) !important; }
+.pass-cell.can { background-color: #4a3a00 !important; }
+.pass-cell.got { opacity: 0.6; }
+.pc-lv { color: var(--white); border: 2px solid var(--ink); }
+.pass-col.reached .pc-lv { background: #2e7bff !important; }
+.pass-col.current .pc-lv { background: var(--yellow) !important; color: #15121f; }
+.hub-main > .section, .hub .content { position: relative; }

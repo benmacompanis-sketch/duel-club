@@ -72,88 +72,67 @@ export class Renderer {
   }
 }
 
-// Fondo arcade: degradado profundo, rejilla en perspectiva, estrellas y orbes de neón.
+// Fondo de DUEL CLUB: pantalla dividida (azul contra rojo) en diagonal, franja amarilla de "VS",
+// tramado de puntos tipo historieta y rayas que avanzan despacio. Plano, sin brillos.
 class Background {
   constructor() {
     this.t = 0;
-    this.stars = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random() * 0.62, z: rand(0.2, 1), tw: rand(0, TAU) }));
-    this.orbs = [
-      { x: 0.18, y: 0.3, r: 0.32, c: PALETTE.p1, sp: 0.13 },
-      { x: 0.82, y: 0.35, r: 0.3, c: PALETTE.p2, sp: 0.11 },
-      { x: 0.5, y: 0.15, r: 0.26, c: PALETTE.violet, sp: 0.08 },
-    ];
     this.tint = 0; // 0 = menú, 1 = juego (más oscuro)
+    this.dots = null;
+  }
+  dotPattern(g) {
+    if (this.dots) return this.dots;
+    const c = document.createElement('canvas');
+    c.width = c.height = 14;
+    const d = c.getContext('2d');
+    d.fillStyle = 'rgba(255,244,224,0.07)';
+    d.beginPath(); d.arc(3.5, 3.5, 1.6, 0, TAU); d.arc(10.5, 10.5, 1.6, 0, TAU); d.fill();
+    this.dots = g.createPattern(c, 'repeat');
+    return this.dots;
   }
   render(g, w, h, dt, mode) {
-    const anim = quality.animations;
-    if (anim) this.t += dt;
+    if (quality.animations) this.t += dt;
     this.tint = lerp(this.tint, mode === 'game' ? 1 : 0, Math.min(1, dt * 3));
     const t = this.t;
-    const grad = g.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, '#0B1020');
-    grad.addColorStop(0.55, '#111a3a');
-    grad.addColorStop(1, '#0B1020');
-    g.fillStyle = grad;
+    // base de tinta
+    g.fillStyle = '#15121F';
     g.fillRect(0, 0, w, h);
-
-    const m = Math.max(w, h);
-    for (const o of this.orbs) {
-      const ox = (o.x + Math.sin(t * o.sp * 2.1) * 0.06) * w;
-      const oy = (o.y + Math.cos(t * o.sp * 1.7) * 0.05) * h;
-      const r = o.r * m;
-      const rg = g.createRadialGradient(ox, oy, 0, ox, oy, r);
-      rg.addColorStop(0, rgba(o.c, 0.22 * (1 - this.tint * 0.6)));
-      rg.addColorStop(1, rgba(o.c, 0));
-      g.fillStyle = rg;
-      g.fillRect(ox - r, oy - r, r * 2, r * 2);
-    }
-
-    // estrellas
-    for (const s of this.stars) {
-      const a = 0.35 + 0.35 * Math.sin(t * 2 * s.z + s.tw);
-      g.fillStyle = `rgba(246,247,251,${a * s.z})`;
-      const sz = s.z * 2;
-      g.fillRect(((s.x * w + t * 6 * s.z) % w), s.y * h, sz, sz);
-    }
-
-    // rejilla en perspectiva (suelo synthwave)
-    const horizon = h * 0.66;
+    // mitad azul (izquierda) y mitad roja (derecha) separadas por una diagonal
+    const k = 1 - this.tint * 0.55;
+    const tilt = h * 0.18;
+    const mid = w * 0.5;
     g.save();
-    g.beginPath();
-    g.rect(0, horizon, w, h - horizon);
-    g.clip();
-    const fg = g.createLinearGradient(0, horizon, 0, h);
-    fg.addColorStop(0, 'rgba(155,108,255,0.0)');
-    fg.addColorStop(1, 'rgba(155,108,255,0.10)');
-    g.fillStyle = fg;
-    g.fillRect(0, horizon, w, h - horizon);
-    g.strokeStyle = `rgba(155,108,255,${0.28 - this.tint * 0.12})`;
-    g.lineWidth = 1;
-    const cx = w / 2;
-    for (let i = -24; i <= 24; i++) {
-      g.beginPath();
-      g.moveTo(cx + i * 30, horizon);
-      g.lineTo(cx + i * w * 0.16, h);
-      g.stroke();
-    }
-    const off = (t * 0.35) % 1;
-    for (let i = 0; i < 14; i++) {
-      const p = (i + off) / 14;
-      const y = horizon + Math.pow(p, 2.2) * (h - horizon);
-      g.globalAlpha = p;
-      g.beginPath();
-      g.moveTo(0, y);
-      g.lineTo(w, y);
-      g.stroke();
+    g.globalAlpha = 0.9 * k;
+    let gr = g.createLinearGradient(0, 0, mid, 0);
+    gr.addColorStop(0, '#1C3A8C'); gr.addColorStop(1, '#162457');
+    g.fillStyle = gr;
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(mid + tilt, 0); g.lineTo(mid - tilt, h); g.lineTo(0, h); g.closePath(); g.fill();
+    gr = g.createLinearGradient(mid, 0, w, 0);
+    gr.addColorStop(0, '#571C2A'); gr.addColorStop(1, '#8C2430');
+    g.fillStyle = gr;
+    g.beginPath(); g.moveTo(mid + tilt, 0); g.lineTo(w, 0); g.lineTo(w, h); g.lineTo(mid - tilt, h); g.closePath(); g.fill();
+    // rayas diagonales que avanzan
+    g.globalAlpha = 0.06 * k;
+    g.fillStyle = '#FFF4E0';
+    const sp = 90, off = (t * 14) % sp;
+    for (let x = -h - sp; x < w + h; x += sp) {
+      g.beginPath(); g.moveTo(x + off, 0); g.lineTo(x + off + 34, 0); g.lineTo(x + off + 34 - h * 0.6, h); g.lineTo(x + off - h * 0.6, h); g.closePath(); g.fill();
     }
     g.restore();
-    // línea de horizonte
-    const hl = g.createLinearGradient(0, 0, w, 0);
-    hl.addColorStop(0, 'rgba(57,133,255,0)');
-    hl.addColorStop(0.5, 'rgba(155,108,255,0.55)');
-    hl.addColorStop(1, 'rgba(255,101,79,0)');
-    g.fillStyle = hl;
-    g.fillRect(0, horizon - 1, w, 2);
+    // franja central amarilla (el "VS")
+    g.save();
+    g.globalAlpha = 0.85 * k;
+    g.fillStyle = '#FFD23F';
+    g.beginPath(); g.moveTo(mid + tilt - 5, 0); g.lineTo(mid + tilt + 5, 0); g.lineTo(mid - tilt + 5, h); g.lineTo(mid - tilt - 5, h); g.closePath(); g.fill();
+    g.restore();
+    // tramado de puntos y viñeta
+    g.fillStyle = this.dotPattern(g);
+    g.fillRect(0, 0, w, h);
+    const vg = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
+    vg.addColorStop(0, 'rgba(10,8,18,0)');
+    vg.addColorStop(1, `rgba(10,8,18,${0.55 + this.tint * 0.3})`);
+    g.fillStyle = vg;
+    g.fillRect(0, 0, w, h);
   }
 }
 
@@ -161,7 +140,7 @@ class Background {
 // FX: partículas, confeti, textos flotantes, sacudida de pantalla y destellos.
 // Cada minijuego crea su propia instancia para que no queden restos entre partidas.
 // ---------------------------------------------------------------------------------
-const CONFETTI_COLORS = ['#3985FF', '#FF654F', '#9B6CFF', '#48D597', '#FFC93C', '#F6F7FB'];
+const CONFETTI_COLORS = ['#2E7BFF', '#FF4B3E', '#FFD23F', '#3DDC97', '#FF3D8B', '#FFF4E0'];
 
 export class FX {
   constructor() {

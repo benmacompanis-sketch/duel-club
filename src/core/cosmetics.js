@@ -500,7 +500,7 @@ export const HATS = {
     const y = -16 + Math.sin(t * 3) * 2;
     g.beginPath(); g.ellipse(0, y, hw * 0.4, 7, 0, 0, TAU); g.stroke();
     g.restore();
-    g.font = '900 11px "Russo One", sans-serif'; g.textAlign = 'center'; g.fillStyle = '#FFF4CF';
+    g.font = '900 11px "Lilita One", sans-serif'; g.textAlign = 'center'; g.fillStyle = '#FFF4CF';
     g.fillText('67', 0, y - 9);
   },
 };
@@ -560,6 +560,19 @@ export const FACES = {
     g.fillRect(x, -4, 3, 7);
     g.fillStyle = '#0B1020'; g.font = '700 5px monospace'; g.fillText('DC', hw * 0.22, 2);
   },
+  face_creador(g, hw, t) {
+    // antifaz dorado con gemas violetas
+    g.save(); glow(g, '#FFD16B', 8);
+    g.fillStyle = '#FFD16B';
+    const w = hw * 0.48;
+    g.beginPath(); g.moveTo(-w, -6); g.quadraticCurveTo(0, -12, w, -6); g.lineTo(w * 0.9, 6); g.quadraticCurveTo(w * 0.4, 10, 0, 3); g.quadraticCurveTo(-w * 0.4, 10, -w * 0.9, 6); g.closePath(); g.fill();
+    g.restore();
+    g.fillStyle = '#1B1030';
+    for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(sx * w * 0.45, 0, w * 0.26, 4.5, 0, 0, TAU); g.fill(); }
+    g.fillStyle = '#B98CFF'; g.globalAlpha = 0.7 + Math.sin(t * 4) * 0.3;
+    g.beginPath(); g.arc(0, -6, 3, 0, TAU); g.fill();
+    g.globalAlpha = 1;
+  },
   face_menpo(g, hw) {
     g.fillStyle = '#2B2F3F';
     g.beginPath(); g.moveTo(-hw * 0.4, 6); g.lineTo(hw * 0.4, 6); g.lineTo(hw * 0.3, 24); g.lineTo(0, 30); g.lineTo(-hw * 0.3, 24); g.closePath(); g.fill();
@@ -605,6 +618,17 @@ export const BODIES = {
     g.beginPath(); g.moveTo(0, 0); g.lineTo(11, -7); g.lineTo(11, 7); g.fill();
     g.fillStyle = '#B42F25'; g.beginPath(); g.arc(0, 0, 3.6, 0, TAU); g.fill();
   } },
+  body_creador: { back: true, draw(g, bw, t) {
+    // capa real violeta con ribete dorado y estrellas
+    g.fillStyle = '#3B1C7A';
+    g.beginPath(); g.moveTo(-bw * 0.5, -4); g.lineTo(bw * 0.5, -4);
+    g.quadraticCurveTo(bw * 0.8 + Math.sin(t * 4) * 6, 40, bw * 0.48, 62);
+    g.lineTo(-bw * 0.48 - Math.sin(t * 4 + 1) * 6, 62); g.quadraticCurveTo(-bw * 0.8, 40, -bw * 0.5, -4); g.fill();
+    g.strokeStyle = '#FFD16B'; g.lineWidth = 3; g.stroke();
+    g.fillStyle = '#FFD16B';
+    for (let i = 0; i < 5; i++) { g.globalAlpha = 0.5 + Math.sin(t * 3 + i) * 0.5; star(g, -bw * 0.3 + ((i * 17) % (bw * 0.6)), 14 + i * 9, 3, 4, 0.4); g.fill(); }
+    g.globalAlpha = 1;
+  } },
   body_capa: { back: true, draw(g, bw, t, col) {
     g.fillStyle = shade(col, -0.35);
     g.beginPath(); g.moveTo(-bw * 0.45, -2); g.lineTo(bw * 0.45, -2);
@@ -619,7 +643,7 @@ export const BODIES = {
     g.save(); glow(g, '#FFD16B', 6);
     g.strokeStyle = '#FFD16B'; g.lineWidth = 3;
     g.beginPath(); g.arc(0, -4, bw * 0.38, 0.35, Math.PI - 0.35); g.stroke();
-    g.fillStyle = '#FFD16B'; g.font = '900 14px "Russo One", sans-serif'; g.textAlign = 'center';
+    g.fillStyle = '#FFD16B'; g.font = '900 14px "Lilita One", sans-serif'; g.textAlign = 'center';
     g.fillText('$', 0, bw * 0.38 + 6);
     g.restore();
   } },
@@ -655,7 +679,7 @@ export const BODIES = {
     g.fillStyle = '#48D597';
     g.beginPath(); g.moveTo(-bw * 0.5, -4); g.lineTo(bw * 0.1, -6); g.lineTo(bw * 0.2, 2); g.lineTo(-bw * 0.35, 30 + Math.sin(t * 3) * 2); g.lineTo(-bw * 0.55, 26); g.closePath(); g.fill();
     g.fillStyle = '#FFD16B'; g.fillRect(-bw * 0.48, 22, bw * 0.18, 3);
-    g.fillStyle = '#0B1020'; g.font = '900 8px "Russo One", sans-serif'; g.fillText('42', -bw * 0.2, 12);
+    g.fillStyle = '#0B1020'; g.font = '900 8px "Lilita One", sans-serif'; g.fillText('42', -bw * 0.2, 12);
   } },
 };
 
@@ -730,7 +754,7 @@ export function drawEntrance(g, id, x, y, k, t, col) {
       g.beginPath(); g.moveTo(x, -10); g.lineTo(x, y); g.stroke();
       g.lineWidth = 3; g.strokeStyle = `rgba(185,140,255,${a})`;
       for (let i = 0; i < 3; i++) { g.beginPath(); g.ellipse(x, y - 4, 40 + i * 30 + k * 60, 10 + i * 6, 0, 0, TAU); g.stroke(); }
-      g.globalAlpha = a; g.fillStyle = '#FFF4CF'; g.font = '900 22px "Russo One", sans-serif'; g.textAlign = 'center';
+      g.globalAlpha = a; g.fillStyle = '#FFF4CF'; g.font = '900 22px "Lilita One", sans-serif'; g.textAlign = 'center';
       g.fillText('EL CREADOR', x, y - 170 - k * 30);
       break;
     }
@@ -738,7 +762,7 @@ export function drawEntrance(g, id, x, y, k, t, col) {
       glow(g, '#FFD16B', 30);
       g.fillStyle = `rgba(255,209,107,${0.35 * a})`;
       g.beginPath(); g.moveTo(x - 30, -20); g.lineTo(x + 30, -20); g.lineTo(x + 90, y + 10); g.lineTo(x - 90, y + 10); g.fill();
-      g.font = `900 ${60 + k * 20}px "Russo One", sans-serif`; g.textAlign = 'center';
+      g.font = `900 ${60 + k * 20}px "Lilita One", sans-serif`; g.textAlign = 'center';
       g.fillStyle = `rgba(255,244,207,${a})`; g.fillText('67', x, y - 210);
       break;
   }
@@ -767,7 +791,7 @@ export function drawVictory(g, id, x, y, t, col) {
       });
       break;
     case 'vic_aplausos':
-      g.font = '900 22px "Russo One", sans-serif'; g.textAlign = 'center';
+      g.font = '900 22px "Lilita One", sans-serif'; g.textAlign = 'center';
       for (let i = 0; i < 5; i++) {
         const ph = (t * 0.8 + i * 0.2) % 1;
         g.globalAlpha = 1 - ph; g.fillStyle = ['#FFD16B', '#FF5FA2', '#25CFE6', '#48D597', '#B98CFF'][i];
@@ -824,7 +848,7 @@ export function drawVictory(g, id, x, y, t, col) {
     case 'vic_icono':
       g.fillStyle = 'rgba(11,16,32,0.6)'; roundRect(g, x - 120, y - 330, 240, 70, 14); g.fill();
       glow(g, col, 20); g.strokeStyle = col; g.lineWidth = 4; roundRect(g, x - 120, y - 330, 240, 70, 14); g.stroke();
-      g.font = '900 34px "Russo One", sans-serif'; g.textAlign = 'center'; g.fillStyle = Math.sin(t * 10) > -0.8 ? '#fff' : col;
+      g.font = '900 34px "Lilita One", sans-serif'; g.textAlign = 'center'; g.fillStyle = Math.sin(t * 10) > -0.8 ? '#fff' : col;
       g.fillText('ÍCONO', x, y - 283);
       break;
   }

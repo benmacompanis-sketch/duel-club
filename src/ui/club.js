@@ -38,7 +38,7 @@ export function h2hModal(ui, { a, b }) {
           g.strokeStyle = rgba(p.color, 0.8); g.lineWidth = 3; g.beginPath(); g.ellipse(x, H - 18, 60, 11, 0, 0, TAU); g.stroke();
           drawCharacter(g, { id: p.char, x, y: H - 18, s: 1.35, color: p.color, anim: 'idle', t: t + (side > 0 ? 1 : 0), facing: -side, acc: p.equipped });
         }
-        g.font = '64px "Russo One"'; g.textAlign = 'center'; g.fillStyle = '#FFC93C';
+        g.font = '64px "Lilita One"'; g.textAlign = 'center'; g.fillStyle = '#FFC93C';
         g.save(); g.translate(W / 2, H / 2 + 10); g.transform(1, 0, -0.18, 1, 0, 0); g.fillText('VS', 0, 0); g.restore();
       });
       const games = Object.entries(d.games || {}).sort((x, y) => y[1] - x[1]).slice(0, 5);

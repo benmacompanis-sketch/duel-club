@@ -4,6 +4,21 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-15-nueva-identidad',
+    date: '2026-11-15',
+    version: '4.3',
+    title: 'DUEL CLUB tiene nueva cara',
+    tag: 'v4.3',
+    color: '#FFD23F',
+    intro: 'Nuevo logo, nuevos colores y una pantalla dividida azul contra rojo.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'Nueva identidad visual: estilo arcade, bordes gruesos y colores más fuertes.',
+        'Nuevas tipografías y fondo de duelo.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-15-online-sin-lag',
     date: '2026-11-15',
     version: '4.2',

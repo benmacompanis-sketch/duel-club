@@ -98,16 +98,16 @@ export function mix(hexA, hexB, t) {
 }
 
 export const PALETTE = {
-  bg: '#0B1020',
-  bg2: '#121A33',
-  bg3: '#1A2446',
-  p1: '#3985FF',
-  p2: '#FF654F',
-  violet: '#9B6CFF',
-  green: '#48D597',
-  white: '#F6F7FB',
-  yellow: '#FFC93C',
-  muted: '#8C96B8',
+  bg: '#15121F',
+  bg2: '#1F1A2E',
+  bg3: '#2A2440',
+  p1: '#2E7BFF',
+  p2: '#FF4B3E',
+  violet: '#FFD23F',
+  green: '#3DDC97',
+  white: '#FFF4E0',
+  yellow: '#FFD23F',
+  muted: '#A79FB8',
 };
 
 // --- formato ---
@@ -144,8 +144,8 @@ export function roundRect(g, x, y, w, h, r) {
   g.closePath();
 }
 
-export const FONT_DISPLAY = '"Russo One", "Rubik Variable", system-ui, sans-serif';
-export const FONT_BODY = '"Rubik Variable", "Rubik", system-ui, sans-serif';
+export const FONT_DISPLAY = '"Lilita One", "Nunito Variable", system-ui, sans-serif';
+export const FONT_BODY = '"Nunito Variable", "Nunito", system-ui, sans-serif';
 
 /** Texto con opciones de contorno y brillo. */
 export function text(g, str, x, y, o = {}) {
@@ -177,9 +177,13 @@ export function panel(g, x, y, w, h, o = {}) {
     g.shadowColor = o.glow;
     g.shadowBlur = o.glowSize || 24;
   }
-  g.fillStyle = o.fill || 'rgba(18,26,51,0.85)';
+  g.fillStyle = o.fill || 'rgba(28,23,41,0.94)';
   g.fill();
   g.shadowBlur = 0;
+  // borde de tinta (identidad del juego) y, si hay, el color encima
+  g.lineWidth = (o.lineWidth || 2) + 2;
+  g.strokeStyle = 'rgba(13,11,20,0.9)';
+  g.stroke();
   if (o.stroke) {
     g.lineWidth = o.lineWidth || 2;
     g.strokeStyle = o.stroke;
