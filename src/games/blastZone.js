@@ -185,6 +185,7 @@ export default class BlastZone extends BaseGame {
   }
   hit(P, fx, fy) {
     if (!P.alive || P.inv > 0) return;
+    if (this.opts.solo && P.p === 1) return; // modo SOLO: el muñeco no participa
     P.lives--;
     P.hitsTaken++;
     P.inv = 1.4;

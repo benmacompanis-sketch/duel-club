@@ -67,7 +67,7 @@ export function accountModal(ui, { p, onDone }) {
     } else if (t === 'create') {
       fields.replaceChildren(label('Nombre visible', nameIn), label('Usuario único', userIn), label('Contraseña (mín. 6)', passIn), label('Repetir', pass2In), extRow('login'));
       submitBtn.textContent = 'CREAR CUENTA';
-      hint.textContent = 'Con usuario y contraseña no pedimos email ni datos personales. También podés crearla con Google o con tu email. Arrancás con 300 PIES de regalo.';
+      hint.textContent = 'Arrancás con 300 PIES de regalo.';
     } else {
       fields.replaceChildren(label('Usuario anterior', userIn), label('PIN anterior', pinIn), label('Nueva contraseña', passIn), label('Repetir', pass2In));
       submitBtn.textContent = 'RECUPERAR CUENTA';

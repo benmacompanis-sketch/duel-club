@@ -24,7 +24,7 @@ export function passSection(ui, owner, ctx) {
   if (!me) {
     return {
       el: h('div.need-acc', icon('trophy'), h('h2', 'PASE Y DESAFÍOS'),
-        h('p', 'Con una cuenta subís el Pase de Batalla de la temporada y completás desafíos diarios y semanales. La fila Premium se compra con PIES, nunca con dinero real.'),
+        h('p', 'Entrá con tu cuenta para subir el pase y hacer desafíos.'),
         h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => ctx.login(p) }, 'INICIAR SESIÓN / REGISTRARSE')),
     };
   }
@@ -69,7 +69,7 @@ export function passSection(ui, owner, ctx) {
           ? h('div.ph-prem-on', icon('crown'), h('b', 'PREMIUM ACTIVO'))
           : live ? h('button.btn.gold', { nav: true, onclick: () => buy(S, d) }, icon('crown'), `PASE PREMIUM · ${fmtN(S.premium_price)}`, piesIcon()) : null,
         live && ready ? h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => claim(null, null) }, `RECLAMAR TODO (${ready})`) : null,
-        !d.premium && live ? h('p.muted.small', 'Se paga con PIES una sola vez por temporada. Incluye las recompensas Premium de los niveles que ya tenés.') : null));
+        !d.premium && live ? h('p.muted.small', 'Incluye todo lo de los niveles que ya tenés.') : null));
 
     const lane = h('div.pass-lane');
     for (let L = 1; L <= S.levels; L++) {
@@ -103,7 +103,7 @@ export function passSection(ui, owner, ctx) {
   async function buy(S, d) {
     const acc = svc.slotAccount(p);
     if ((acc?.pies ?? 0) < S.premium_price) {
-      ui.toast({ kind: 'warn', title: 'No te alcanzan los PIES', text: `El Pase Premium cuesta ${fmtN(S.premium_price)} PIES y tenés ${fmtN(acc?.pies ?? 0)}. Los PIES se ganan jugando, con desafíos y con el pase libre.` });
+      ui.toast({ kind: 'warn', title: 'No te alcanzan los PIES', text: `Cuesta ${fmtN(S.premium_price)} PIES y tenés ${fmtN(acc?.pies ?? 0)}.` });
       return;
     }
     const ok = await ui.confirm({ title: '¿Comprar el Pase Premium?', text: `Cuesta ${fmtN(S.premium_price)} PIES (te quedarían ${fmtN(acc.pies - S.premium_price)}). Es para ${S.name} y se compra una sola vez. Las recompensas Premium de los ${d.level} niveles que ya alcanzaste quedan para reclamar.`, yes: 'Comprar', no: 'Cancelar', danger: false });
@@ -151,7 +151,7 @@ export function passSection(ui, owner, ctx) {
             : h('button.btn' + (done ? '.primary' : '.ghost'), { nav: true, disabled: done ? null : true, onclick: () => claimCh(c) }, done ? 'RECLAMAR' : 'EN CURSO'));
       }));
     body.replaceChildren(
-      h('p.muted', 'Los desafíos son iguales para todos y se cuentan solos con las partidas que registra el servidor (con tu cuenta). La práctica no cuenta.'),
+      h('p.muted', 'Se renuevan cada día y cada semana.'),
       group('daily', 'DIARIOS', d.daily_reset), group('weekly', 'SEMANALES', d.weekly_reset));
   }
   async function claimCh(c) {

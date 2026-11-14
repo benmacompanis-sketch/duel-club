@@ -294,7 +294,8 @@ export default class BlockBattle extends BaseGame {
 
   update(dt) {
     this.ambient(dt);
-    for (const p of [0, 1]) this.boards[p].update(dt, this.inputs[p]);
+    // modo SOLO (desafíos en solitario): el tablero del rival queda quieto
+    for (const p of [0, 1]) if (!(this.opts.solo && p === 1)) this.boards[p].update(dt, this.inputs[p]);
     if (this.level !== this.levelShown) {
       this.levelShown = this.level;
       this.sfx('powerup');

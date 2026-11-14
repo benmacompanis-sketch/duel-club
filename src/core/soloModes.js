@@ -28,7 +28,7 @@ function remember(app, entry) {
   app.persist();
 }
 
-async function playVsBot(app, gameId, level, { label, practice = false } = {}) {
+async function playVsBot(app, gameId, level, { label, practice = false, solo = false } = {}) {
   return app.runner.play(gameId, {
     players: players(app, level),
     difficulty: 0.5,
@@ -38,7 +38,80 @@ async function playVsBot(app, gameId, level, { label, practice = false } = {}) {
     label,
     mode: practice ? 'practice' : 'bot',
     bot: level,
+    solo,
   });
+}
+
+// ------------------------------------------------------------------- DESAFÍOS EN SOLITARIO (sin rival)
+// Cada minijuego tiene una meta con 1, 2 y 3 estrellas según tu récord personal en esa partida.
+// [mejor = 'higher' | 'lower', umbrales ★, ★★, ★★★, texto de la meta]
+export const SOLO_GOALS = {
+  reaction: ['lower', [350, 280, 220], 'Reaccioná lo más rápido posible (mejor tiempo)'],
+  race: ['lower', [26, 22, 19], 'Contrarreloj: tu mejor vuelta'],
+  hoop: ['higher', [15, 28, 40], 'Encestá todo lo que puedas'],
+  target: ['higher', [500, 1000, 1600], 'Puntería: sumá puntos sin tocar bombas'],
+  beat: ['higher', [40000, 80000, 120000], 'Seguí el ritmo de toda la canción'],
+  fish: ['higher', [120, 220, 320], 'Pescá lo más valioso antes de que termine el tiempo'],
+  blocks: ['higher', [3000, 8000, 15000], 'Maratón de bloques: hacé la mayor cantidad de puntos'],
+  tower: ['higher', [50, 100, 150], 'Subí lo más alto posible (la cima son 150 m)'],
+  color: ['higher', [35, 55, 75], 'Pintá la mayor parte del tablero'],
+  sneak: ['higher', [10, 18, 26], 'Juntá cristales en el laberinto'],
+  blast: ['higher', [30, 50, 70], 'Sobreviví a la zona de explosiones'],
+};
+export const soloStars = (gid, v) => {
+  const G = SOLO_GOALS[gid];
+  if (!G || v == null) return 0;
+  return G[1].filter((t) => (G[0] === 'lower' ? v <= t : v >= t)).length;
+};
+/** Minijuego del desafío del día (igual para todos). */
+export function dailySolo() {
+  const ids = Object.keys(SOLO_GOALS);
+  const day = Math.floor(Date.now() / 86400000);
+  return ids[(day * 7 + 3) % ids.length];
+}
+
+export async function runSolo(app, gameId, back) {
+  const S = app.save.solo;
+  S.solo ||= {};
+  for (;;) {
+    let res;
+    try {
+      res = await playVsBot(app, gameId, 'idle', { label: 'DESAFÍO SOLO', practice: true, solo: true });
+    } catch (e) {
+      if (e?.cancelled) { app.audio.playMusic('menu'); return back(); }
+      throw e;
+    }
+    const meta = GAME_BY_ID[gameId].meta;
+    const v = typeof res.records?.[0] === 'number' ? res.records[0] : null;
+    const G = SOLO_GOALS[gameId];
+    const prev = S.solo[gameId] || { best: null, stars: 0, plays: 0 };
+    const better = v != null && (prev.best == null || (G[0] === 'lower' ? v < prev.best : v > prev.best));
+    const stars = soloStars(gameId, v);
+    const rec = { ...prev, plays: prev.plays + 1, best: better ? v : prev.best, stars: Math.max(prev.stars, stars) };
+    const daily = dailySolo() === gameId && stars >= 3 ? new Date().toISOString().slice(0, 10) : null;
+    if (daily) rec.daily = daily;
+    S.solo[gameId] = rec;
+    app.persist();
+    const fmt = (x) => (x == null ? '—' : meta.record?.format ? meta.record.format(x) : String(x));
+    const action = await app.ui.ask(resultsScreen, {
+      session: null, res, rec: { newRecords: [false, false], server: null },
+      info: {
+        quick: true,
+        practice: true,
+        label: 'DESAFÍO SOLO',
+        actions: (choose) => h('div.res-actions',
+          h('div.solo-result',
+            h('span.sr-stars', [1, 2, 3].map((i) => h('i' + (i <= stars ? '.on' : ''), '★'))),
+            h('span', `${fmt(v)}${better ? ' · ¡NUEVO RÉCORD PERSONAL!' : prev.best != null ? ` · récord: ${fmt(prev.best)}` : ''}`)),
+          h('button.btn', { nav: true, onclick: () => choose('menu') }, 'VOLVER'),
+          h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => choose('rematch') }, icon('play'), 'OTRA VEZ')),
+      },
+    });
+    app.runner.close();
+    if (action === 'rematch') continue;
+    app.audio.playMusic('menu');
+    return back();
+  }
 }
 
 // ------------------------------------------------------------------- VS BOT

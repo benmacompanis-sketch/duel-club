@@ -235,7 +235,7 @@ export function newsSection(ui, owner, ctx) {
   }
 
   const el = h('div.news-section',
-    h('div.sec-head', h('h2', 'NOVEDADES'), h('p', 'Qué cambió en el juego, qué errores se arreglaron y un lugar para avisarnos si algo anda mal.')),
+    h('div.sec-head', h('h2', 'NOVEDADES'), h('p', 'Lo nuevo del juego. ¿Encontraste un error? Avisanos.')),
     tabsBox, body);
   render();
   return { el };

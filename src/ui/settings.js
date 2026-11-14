@@ -85,7 +85,7 @@ export function settingsScreen(ui, params = {}) {
         h('div.set-actions', { style: { marginTop: '12px' } },
           h('button.btn.small', { nav: true, onclick: () => { app.input.resetBindings(); s.bindings = null; app.persist(); renderBinds(); app.audio.play('confirm'); } }, 'Restablecer controles'))),
       h('div.card', h('h3', 'DATOS Y CUENTAS'),
-        h('p.muted', { style: { margin: '0 0 12px', fontSize: '13px', lineHeight: 1.5 } }, 'El progreso de las cuentas (XP, PIES, ELO, logros, inventario, historial) se guarda en el servidor y funciona desde cualquier dispositivo. Este navegador guarda solo los ajustes, los controles, las sesiones iniciadas y los récords locales de esta compu.'),
+        h('p.muted', { style: { margin: '0 0 12px', fontSize: '13px', lineHeight: 1.5 } }, 'Tu progreso se guarda en tu cuenta. Este navegador solo guarda ajustes y controles.'),
         h('div.set-actions',
           h('button.btn.small.danger', { nav: true, onclick: async () => {
             if (await ui.confirm({ title: '¿Borrar los datos locales?', text: 'Se borran las estadísticas e historial de ESTA compu (partidas de invitados). Las cuentas no se tocan.', yes: 'Borrar', no: 'Cancelar' })) {

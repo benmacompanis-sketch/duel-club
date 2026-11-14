@@ -81,7 +81,7 @@ export function clubSection(ui, owner, ctx) {
   const bar = h('div');
   if (!me) {
     return {
-      el: h('div.need-acc', icon('heart'), h('h2', 'CLUB'), h('p', 'El CLUB es la parte social: amigos, solicitudes, perfiles y cara a cara. Iniciá sesión para usarlo.'),
+      el: h('div.need-acc', icon('heart'), h('h2', 'CLUB'), h('p', 'Iniciá sesión para sumar amigos.'),
         h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => ctx.login(p) }, 'INICIAR SESIÓN / REGISTRARSE')),
     };
   }
@@ -124,7 +124,7 @@ export function clubSection(ui, owner, ctx) {
             h('button.btn.small', { nav: true, onclick: () => viewProfile(a.username) }, icon('user')),
             h('button.btn.small.ghost', { nav: true, title: 'Quitar amigo', onclick: async () => { if (await ui.confirm({ title: `¿Quitar a ${a.name}?`, text: 'Se elimina de tu lista de amigos.', yes: 'Quitar', no: 'Cancelar' })) act(() => svc.friendRemove(p, a.username), 'Amigo quitado'); } }, icon('close'))])))
           : h('div.club-empty',
-            h('div.ce-hero', h('span.ce-ico', icon('heart')), h('div', h('h3', 'Tu CLUB todavía está vacío'), h('p', 'Sumá amigos para desafiarlos online al instante, ver cuándo están conectados y comparar el cara a cara.'))),
+            h('div.ce-hero', h('span.ce-ico', icon('heart')), h('div', h('h3', 'Tu CLUB todavía está vacío'), h('p', 'Sumá amigos para desafiarlos online y ver quién está conectado.'))),
             h('div.ce-steps',
               h('div.ce-step', h('b', '1'), h('span', 'Buscá a tu amigo por su usuario o nombre.')),
               h('div.ce-step', h('b', '2'), h('span', 'Mandale una solicitud: le llega como notificación.')),
@@ -144,7 +144,7 @@ export function clubSection(ui, owner, ctx) {
       } else if (tab === 'h2h') {
         const others = f.friends;
         body.replaceChildren(
-          h('p.muted', 'Elegí un amigo para ver todas las partidas entre ustedes. También podés abrir el cara a cara desde cualquier perfil.'),
+          h('p.muted', 'Elegí un amigo para ver el historial entre ustedes.'),
           others.length ? h('div.people', others.map((a) => personRow(ui, owner, a, [h('button.btn.small.primary', { nav: true, onclick: () => vs(a.username) }, icon('duel'), 'VER CARA A CARA')])))
             : empty('Agregá amigos para ver su cara a cara.', 'duel'));
       }
@@ -195,7 +195,7 @@ export function clubSection(ui, owner, ctx) {
     };
     input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 350); });
     body.replaceChildren(h('div.search-row', input, h('button.btn.small.primary', { nav: true, onclick: run }, 'BUSCAR')), results);
-    results.replaceChildren(h('p.muted', 'Buscá por nombre visible o usuario. Los perfiles públicos muestran solo información de juego.'));
+    results.replaceChildren(h('p.muted', 'Buscá por nombre o usuario.'));
     setTimeout(() => input.focus(), 50);
   }
   render();

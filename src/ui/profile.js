@@ -54,7 +54,7 @@ export function profileSection(ui, owner, ctx) {
   const user = ctx.params.user || mine?.username;
   if (!user) {
     return {
-      el: h('div.need-acc', icon('user'), h('h2', 'PERFIL'), h('p', 'Creá una cuenta o iniciá sesión para tener tu perfil competitivo, con nivel, XP, ELO, PIES, logros y colección.'),
+      el: h('div.need-acc', icon('user'), h('h2', 'PERFIL'), h('p', 'Iniciá sesión para tener tu perfil.'),
         h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => ctx.login(viewer) }, 'INICIAR SESIÓN / REGISTRARSE'),
         h('button.btn', { nav: true, onclick: () => ctx.goto('ranking') }, 'VER EL RANKING MUNDIAL')),
     };
@@ -134,7 +134,7 @@ export function profileSection(ui, owner, ctx) {
           h('div.kbar', h('div.kbar-fill', { style: { width: pct + '%' } }), h('span', next ? `${pts} / ${next.points} pts` : 'MAESTRO')),
           h('span.mast-stats', `${m.played} PJ · ${m.wins} V · ${m.losses} D · ${m.draws} E · ${m.played ? Math.round((m.wins / m.played) * 100) : 0}% · racha ${m.best_streak}`),
           h('span.mast-rec', m.best_record != null ? `Mejor: ${Math.round(m.best_record * 100) / 100}` : ''));
-      })), h('p.muted.small', 'Puntos de dominio = partidas jugadas + 2 × victorias. Cada rango da XP y PIES; el rango Maestro da una skin y un título exclusivos.'));
+      })), h('p.muted.small', 'Llegá a Maestro para ganar una skin y un título.'));
     } else if (tab === 'achievements') {
       const got = ACHIEVEMENTS.filter((a) => d.achievements?.[a.id]);
       body.replaceChildren(got.length ? h('div.ach-mini', got.map((a) => h('div.ach-chip', { style: { '--tc': TIERS[a.tier].color }, title: a.desc }, icon(a.icon), h('span', a.name))))
