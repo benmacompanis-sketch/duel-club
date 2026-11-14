@@ -3,7 +3,7 @@ import { h, icon } from './dom.js';
 import { header, gameIcon } from './widgets.js';
 import { GAMES, GAME_BY_ID } from '../games/index.js';
 import { BOT_LEVELS, BOT_ORDER } from '../core/bots.js';
-import { runVsBot, runPractice, runLadder, LADDER_LEVEL } from '../core/soloModes.js';
+import { runVsBot, runPractice, runLadder, runSolo, LADDER_LEVEL, SOLO_GOALS, dailySolo } from '../core/soloModes.js';
 import { fmtN } from './kit.js';
 
 const fmtSecs = (s) => (s >= 60 ? `${Math.floor(s / 60)} min ${s % 60} s` : `${s} s`);
@@ -12,7 +12,7 @@ export function soloScreen(ui, params = {}) {
   const app = ui.app;
   const S = app.save.solo;
   const scr = {};
-  let tab = params.tab || 'vs';
+  let tab = params.tab || 'solo';
   let level = BOT_LEVELS[S.level] ? S.level : 'normal';
   let practiceOpp = 'idle';
   let game = GAME_BY_ID[S.game] ? S.game : GAMES[0].meta.id;
@@ -22,7 +22,7 @@ export function soloScreen(ui, params = {}) {
   const tabsEl = h('div.solo-tabs');
 
   function renderTabs() {
-    tabsEl.replaceChildren(...[['vs', 'VS BOT', 'duel'], ['ladder', 'ESCALERA', 'trophy'], ['practice', 'PRÁCTICA', 'target']].map(([id, name, ic]) =>
+    tabsEl.replaceChildren(...[['solo', 'SOLO', 'star'], ['vs', 'VS BOT', 'duel'], ['ladder', 'ESCALERA', 'trophy'], ['practice', 'PRÁCTICA', 'target']].map(([id, name, ic]) =>
       h('button.solo-tab' + (tab === id ? '.on' : ''), { nav: true, onclick: () => { tab = id; app.audio.play('click'); renderTabs(); render(); } }, icon(ic), name)));
   }
 
@@ -39,7 +39,32 @@ export function soloScreen(ui, params = {}) {
 
   function render() {
     const acc = app.accounts.slotAccount(0);
-    if (tab === 'vs') {
+    if (tab === 'solo') {
+      const R = (S.solo ||= {});
+      const day = dailySolo();
+      const total = Object.keys(SOLO_GOALS).reduce((n, id) => n + (R[id]?.stars || 0), 0);
+      const fmt = (id, v) => (v == null ? '—' : GAME_BY_ID[id].meta.record?.format ? GAME_BY_ID[id].meta.record.format(v) : String(v));
+      const play = (id) => { app.audio.play('confirm'); runSolo(app, id, () => again()); };
+      const today = new Date().toISOString().slice(0, 10);
+      body.replaceChildren(
+        h('div.solo-side',
+          h('h3', 'DESAFÍOS SOLO'),
+          h('p', 'Sin rival. Conseguí las tres estrellas en cada minijuego.'),
+          h('div.ss-total', h('b', `${total} / ${Object.keys(SOLO_GOALS).length * 3}`), h('small', 'ESTRELLAS')),
+          h('div.solo-daily' + (R[day]?.daily === today ? '.done' : ''),
+            h('small', 'DESAFÍO DEL DÍA'), h('b', GAME_BY_ID[day].meta.name), h('span', SOLO_GOALS[day][2]),
+            h('span', `Meta: ${fmt(day, SOLO_GOALS[day][1][2])} (3 estrellas)`),
+            R[day]?.daily === today ? h('span.sd-ok', 'COMPLETADO HOY') : null),
+          h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => play(day) }, icon('play'), 'JUGAR')),
+        h('div.solo-main', h('div.solo-goals', Object.keys(SOLO_GOALS).map((id) => {
+          const m = GAME_BY_ID[id].meta, r = R[id] || {};
+          return h('button.solo-goal', { nav: true, style: { '--c': m.color }, onclick: () => play(id) },
+            gameIcon(ui, scr, m, 54),
+            h('div.sg-main', h('b', m.name), h('small', SOLO_GOALS[id][2]),
+              h('span.sg-best', r.best != null ? `Récord: ${fmt(id, r.best)}` : 'Sin jugar')),
+            h('span.sr-stars', [1, 2, 3].map((i) => h('i' + (i <= (r.stars || 0) ? '.on' : ''), '★'))));
+        }))));
+    } else if (tab === 'vs') {
       const rec = () => {
         const v = S.vs[`${game}:${level}`];
         return v ? `Contra este bot en ${GAME_BY_ID[game].meta.name}: ${v.w} ganadas · ${v.l} perdidas · ${v.d} empates` : `Todavía no jugaste ${GAME_BY_ID[game].meta.name} contra el bot ${BOT_LEVELS[level].name}.`;
@@ -49,7 +74,7 @@ export function soloScreen(ui, params = {}) {
         h('div.solo-side',
           h('h3', 'DIFICULTAD DEL BOT'),
           chips(BOT_ORDER.map((l) => [l, BOT_LEVELS[l].name, BOT_LEVELS[l].color]), () => level, (v) => { level = v; S.level = v; app.persist(); recEl.textContent = rec(); }),
-          h('p.muted.small', 'Fácil reacciona lento y se equivoca. Experto casi no falla. El bot usa las mismas reglas y teclas que una persona.'),
+          h('p.muted.small', 'Experto casi no falla.'),
           recEl,
           h('div.solo-note', acc ? `Con la cuenta de J1 (${acc.name}) ganás XP y PIES reducidos y sumás desafíos. Nunca da ELO.` : 'Como invitado no se guardan recompensas. Iniciá sesión con J1 para ganar XP y PIES.'),
           h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => go() }, icon('play'), 'JUGAR')),
@@ -60,7 +85,7 @@ export function soloScreen(ui, params = {}) {
         h('div.solo-side',
           h('h3', 'RIVAL DE PRÁCTICA'),
           chips([['idle', 'Muñeco quieto', '#8C96B8'], ...BOT_ORDER.map((l) => [l, `Bot ${BOT_LEVELS[l].name}`, BOT_LEVELS[l].color])], () => practiceOpp, (v) => { practiceOpp = v; }),
-          h('p.muted.small', 'Practicá controles y estrategias sin presión. La práctica no da XP, PIES ni ELO y no cuenta en estadísticas, logros ni desafíos.'),
+          h('p.muted.small', 'Sin presión. No cuenta para nada.'),
           h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => { app.audio.play('confirm'); runPractice(app, game, practiceOpp, () => again()); } }, icon('play'), 'PRACTICAR')),
         h('div.solo-main', h('h3', 'MINIJUEGO'), gameGrid((now) => now && runPractice(app, game, practiceOpp, () => again()))));
     } else {
@@ -69,7 +94,7 @@ export function soloScreen(ui, params = {}) {
       body.replaceChildren(
         h('div.solo-side',
           h('h3', 'LA ESCALERA DEL CLUB'),
-          h('p', 'Los 16 minijuegos seguidos contra bots cada vez más difíciles: etapas 1–4 Fácil, 5–8 Normal, 9–12 Difícil y 13–16 Experto. Tenés 3 vidas: si perdés, se repite la etapa.'),
+          h('p', 'Los 16 minijuegos seguidos, cada vez más difícil. Tenés 3 vidas.'),
           h('div.ladder-steps', Array.from({ length: 16 }, (_, i) => h('span.ls.' + LADDER_LEVEL(i) + (i < S.best ? '.done' : ''), { title: `Etapa ${i + 1} · ${BOT_LEVELS[LADDER_LEVEL(i)].name}` }, i + 1))),
           h('div.solo-note', acc ? 'Cada etapa da XP y PIES (como VS BOT) y suma a los desafíos.' : 'Como invitado no se guardan recompensas.'),
           h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => { app.audio.play('confirm'); tab = 'ladder'; runLadder(app, (x) => again(x)); } }, icon('play'), 'EMPEZAR ESCALERA')),
@@ -93,7 +118,7 @@ export function soloScreen(ui, params = {}) {
   const stat = (k, v) => h('div.ss', h('small', k), h('b', v));
 
   scr.el = h('div.screen.solo-page',
-    header(ui, 'UN JUGADOR', 'Contra bots · el ELO solo se juega online en competitivo', back),
+    header(ui, 'UN JUGADOR', 'Desafíos, bots y práctica', back),
     tabsEl, body);
   scr.onBack = back;
   renderTabs();

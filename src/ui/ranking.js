@@ -72,7 +72,7 @@ export function rankingSection(ui, owner, ctx) {
             r ? h('b.rec-val', r.display) : h('b.rec-val', '—'),
             r ? h('button.linkbtn', { nav: true, style: { '--c': r.color || '#9B6CFF' }, onclick: () => r.username && ctx.goto('profile', { user: r.username }) }, r.name) : h('span.muted', 'Sin récord todavía'),
             r ? h('small', timeAgo(r.at)) : null);
-        })), h('p.muted.small', 'Récords mundiales: solo cuentan las partidas de jugadores con cuenta. El servidor descarta valores imposibles.'));
+        })), h('p.muted.small', 'Solo cuentan partidas con cuenta.'));
         return;
       }
       const out = await svc.ranking(kind, { scope, p, game: kind === 'game' ? game : null, limit, search });

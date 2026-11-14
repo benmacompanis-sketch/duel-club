@@ -14,7 +14,7 @@ export function inventorySection(ui, owner, ctx) {
   const me = svc.slotAccount(p);
   if (!me) {
     return {
-      el: h('div.need-acc', icon('card'), h('h2', 'INVENTARIO'), h('p', 'Iniciá sesión para ver tus objetos, equiparlos y desbloquear más. Los invitados usan los personajes y accesorios básicos.'),
+      el: h('div.need-acc', icon('card'), h('h2', 'INVENTARIO'), h('p', 'Iniciá sesión para ver y equipar tus objetos.'),
         h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => ctx.login(p) }, 'INICIAR SESIÓN / REGISTRARSE')),
     };
   }

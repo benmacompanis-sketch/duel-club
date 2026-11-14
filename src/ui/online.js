@@ -54,7 +54,7 @@ export function onlineScreen(ui, params = {}) {
       body.replaceChildren(h('div.card.ol-need',
         h('div.ol-need-ico', icon('user')),
         h('h3', 'NECESITÁS UNA CUENTA'),
-        h('p.muted', 'Para jugar online cada uno entra con su cuenta desde su compu. Así el servidor sabe quién es quién y la partida cuenta para XP y PIES (y para el ELO en las competitivas).'),
+        h('p.muted', 'Para jugar online, cada uno entra con su cuenta desde su compu.'),
         h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => ui.modal(accountModal, { p: 0, onDone: render }) }, icon('user'), 'INICIAR SESIÓN O CREAR CUENTA')));
       ui.focusFirst();
       return;
@@ -70,7 +70,7 @@ export function onlineScreen(ui, params = {}) {
 
     // ---- buscar rival
     const findCard = h('div.card.ol-card', { style: { '--accent': '#3985FF' } },
-      h('div.ol-card-head', h('span.ol-ico', icon('duel')), h('div', h('h3', 'BUSCAR RIVAL'), h('p.muted', 'COMPETITIVO: te emparejamos con alguien de ELO parecido. Mejor de 3, minijuegos al azar. Es la única forma de ganar ELO.'))),
+      h('div.ol-card-head', h('span.ol-ico', icon('duel')), h('div', h('h3', 'BUSCAR RIVAL'), h('p.muted', 'Competitivo, por ELO. Mejor de 3.'))),
       h('ul.ol-points',
         h('li', icon('shield'), 'Rival de tu nivel (el rango se abre si tarda)'),
         h('li', icon('shuffle'), '3 minijuegos al azar, iguales para los dos'),
@@ -120,7 +120,7 @@ export function onlineScreen(ui, params = {}) {
 
     const inboxBox = h('div.ol-inbox');
     body.replaceChildren(inboxBox, h('div.ol-grid', findCard, roomCard, challengeCard),
-      h('p.ol-note', icon('bolt'), ' La conexión es directa entre las dos compus (lo más rápido). Si alguna red no lo permite, la partida pasa por el servidor. Si alguien abandona o se desconecta, pierde la ronda en curso y la serie.'));
+      h('p.ol-note', icon('bolt'), ' Si alguien abandona, pierde la serie.'));
     ui.focusFirst();
 
     svc.friends(slotOf(app, user)).then((f) => {

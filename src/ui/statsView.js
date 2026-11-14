@@ -24,7 +24,7 @@ export function statsSection(ui, owner, ctx) {
   const localBtn = h('button.btn.small.ghost', { nav: true, onclick: () => { app.audio.play('click'); ui.show(recordsScreen, { back: () => ui.show(hubScreen, { section: 'stats' }) }); } }, icon('records'), 'RÉCORDS DE ESTA COMPU');
   if (!me) {
     return {
-      el: h('div.need-acc', icon('arrow'), h('h2', 'ESTADÍSTICAS'), h('p', 'Con una cuenta se guardan tus estadísticas completas, tu evolución de ELO y tu historial de PIES.'),
+      el: h('div.need-acc', icon('arrow'), h('h2', 'ESTADÍSTICAS'), h('p', 'Iniciá sesión para guardar tus estadísticas.'),
         h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => ctx.login(p) }, 'INICIAR SESIÓN / REGISTRARSE'), localBtn),
     };
   }
@@ -45,7 +45,7 @@ export function statsSection(ui, owner, ctx) {
             h('span', REASONS[t.reason] || t.reason, t.ref ? h('small', ' · ' + (ITEM_BY_ID[t.ref]?.name || GAME_NAMES[t.ref] || (t.reason === 'level' || t.reason === 'level_bonus' ? 'nivel ' + t.ref : t.ref))) : null),
             h('em', `saldo ${fmtN(t.balance)}`), h('small', timeAgo(t.at)))))
             : empty('Todavía no hay movimientos.', 'pie'),
-          h('p.muted.small', 'Los PIES se ganan jugando (con límite diario decreciente para evitar el farmeo) y solo se usan en la PIE STORE.'));
+          h('p.muted.small', 'Los PIES se ganan jugando.'));
         return;
       }
       const d = await svc.profile(me.username);

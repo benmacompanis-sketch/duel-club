@@ -164,7 +164,7 @@ export function emoteBubble(id) {
   const it = ITEM_BY_ID[id];
   const txt = {
     emo_gg: 'GG', emo_jaja: 'JAJA', emo_vacio: '…', emo_signo: '¿?', emo_cine: 'CINE ABSOLUTO', emo_contrato: 'ESTO NO ESTABA EN EL CONTRATO',
-    emo_necesidad: 'QUÉ NECESIDAD', emo_aura: '+1000 AURA', emo_serio: '😐', emo_empate: 'NADIE QUISO HACERSE CARGO',
+    emo_necesidad: 'QUÉ NECESIDAD', emo_aura: '+1000 AURA', emo_serio: '-_-', emo_empate: 'NADIE QUISO HACERSE CARGO',
     emo_creador: 'EL CREADOR', emo_s1_vamos: '¡VAMOS!', emo_s1_lag: 'FUE EL LAG', emo_s1_otra: 'OTRA', emo_s1_tilt: 'MODO TILT', emo_s1_ez: 'FÁCIL',
   }[id] || it?.name || '';
   return h('div.emote.em-' + (it?.rarity || 'common'), txt);

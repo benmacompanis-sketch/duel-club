@@ -240,13 +240,14 @@ function playSection(ui, owner, ctx) {
     { id: 'survival', title: 'SURVIVAL', sub: 'Vidas, etapas y dificultad que no para de subir.', color: '#FF654F', icon: 'survival', go: () => ui.show(survivalSetupScreen) },
   ];
   const el = h('div.play',
-    h('div.sec-head', h('h2', 'JUGAR'), h('p', 'Todas las partidas con cuenta dan XP y PIES. El ELO solo se gana o se pierde online, en Buscar rival (competitivo).')),
+    h('div.sec-head', h('h2', 'JUGAR'), h('p', 'El ELO se juega online, en Buscar rival.')),
     h('button.online-card', { nav: true, 'data-autofocus': true, onclick: () => { app.audio.play('confirm'); ui.show(onlineScreen); } },
       h('span.oc-ico', icon('bolt')),
       h('div.oc-main', h('small', 'NUEVO'), h('b', 'JUGAR ONLINE'), h('span', 'Vos en tu compu, tu amigo en la suya. Buscá rival por ELO, creá una sala con código o desafiá a un amigo del CLUB.')),
       h('span.oc-go', icon('play'))),
     h('div.sec-sub', 'UN JUGADOR · CONTRA BOTS'),
     h('div.mode-grid.solo-modes', [
+      { tab: 'solo', title: 'DESAFÍOS SOLO', sub: 'Sin rival: metas de tres estrellas en 11 minijuegos y un desafío por día.', color: '#FFC93C', icon: 'star' },
       { tab: 'vs', title: 'VS BOT', sub: 'Un minijuego contra un bot: Fácil, Normal, Difícil o Experto.', color: '#FF8E3C', icon: 'duel' },
       { tab: 'ladder', title: 'ESCALERA', sub: 'Singleplayer: los 16 minijuegos seguidos, bots cada vez más duros y 3 vidas.', color: '#9B6CFF', icon: 'trophy' },
       { tab: 'practice', title: 'PRÁCTICA', sub: 'Entrená cualquier minijuego sin presión. No da recompensas.', color: '#25CFE6', icon: 'target' },
@@ -257,7 +258,7 @@ function playSection(ui, owner, ctx) {
       h('button.mode-card', { nav: true, style: { '--accent': m.color }, onclick: () => { app.audio.play('confirm'); m.go(); } },
         h('span.mode-ico', icon(m.icon)), h('b', m.title), h('span', m.sub)))),
     h('div.card.caos-card',
-      h('div', h('b', 'DIFICULTAD CAOS'), h('p.muted', 'Disponible en todos los modos. Turbo, cámara lenta, controles invertidos, espejo, apagón y terremoto: siempre anunciados y siempre iguales para los dos.')),
+      h('div', h('b', 'DIFICULTAD CAOS'), h('p.muted', 'Turbo, cámara lenta, controles al revés, apagón y terremoto. Iguales para los dos.')),
       h('button.btn', { nav: true, onclick: () => { app.audio.play('click'); ui.show(playerSelectScreen, { title: 'JUGADORES', subtitle: 'Elegí personaje y color', onDone: () => ui.show(hubScreen, { section: 'play' }), onBack: () => ui.show(hubScreen, { section: 'play' }) }); } }, icon('user'), 'ELEGIR PERSONAJES')));
   return { el };
 }

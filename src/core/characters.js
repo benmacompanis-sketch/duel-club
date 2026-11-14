@@ -1094,7 +1094,7 @@ export function drawCharacter(g, o) {
   }
   const tf = g.getTransform();
   const px = Math.hypot(tf.a, tf.b) * s;
-  if (skin?.overlay && quality.level !== 'low' && px > 0.05 && px < 12) {
+  if (quality.level !== 'low' && px > 0.05 && px < 12) {
     // cuerpo en un lienzo auxiliar + patrón con 'source-atop' (solo pinta dentro de la silueta)
     const k = px;
     const W2 = Math.ceil(180 * k), H2 = Math.ceil(180 * k);
@@ -1108,9 +1108,24 @@ export function drawCharacter(g, o) {
     DRAW[ch.id](og, st, c, t, ch);
     og.restore();
     og.globalCompositeOperation = 'source-atop';
-    og.save();
-    skin.overlay(og, t, base);
-    og.restore();
+    if (skin?.overlay) {
+      og.save();
+      skin.overlay(og, t, base);
+      og.restore();
+    }
+    // volumen ("3D"): luz desde arriba a la izquierda, sombra abajo a la derecha y borde de luz
+    const lg = og.createLinearGradient(-70, -150, 60, 10);
+    lg.addColorStop(0, 'rgba(255,255,255,0.3)');
+    lg.addColorStop(0.42, 'rgba(255,255,255,0.03)');
+    lg.addColorStop(0.7, 'rgba(10,8,40,0.08)');
+    lg.addColorStop(1, 'rgba(10,8,40,0.4)');
+    og.fillStyle = lg;
+    og.fillRect(-90, -160, 180, 180);
+    const rg = og.createRadialGradient(-22, -100, 4, -22, -100, 46);
+    rg.addColorStop(0, 'rgba(255,255,255,0.18)');
+    rg.addColorStop(1, 'rgba(255,255,255,0)');
+    og.fillStyle = rg;
+    og.fillRect(-90, -160, 180, 180);
     og.globalCompositeOperation = 'source-over';
     og.shadowBlur = 0;
     g.drawImage(off, 0, 0, W2 - 1, H2 - 1, -90 * s, -160 * s, 180 * s * (W2 - 1) / W2, 180 * s * (H2 - 1) / H2);

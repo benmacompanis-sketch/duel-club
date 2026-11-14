@@ -767,8 +767,12 @@ export function drawVictory(g, id, x, y, t, col) {
       });
       break;
     case 'vic_aplausos':
-      g.font = '28px sans-serif'; g.textAlign = 'center';
-      for (let i = 0; i < 5; i++) { const ph = (t * 0.8 + i * 0.2) % 1; g.globalAlpha = 1 - ph; g.fillText('👏', x - 120 + i * 60, y - 40 - ph * 120); }
+      g.font = '900 22px "Russo One", sans-serif'; g.textAlign = 'center';
+      for (let i = 0; i < 5; i++) {
+        const ph = (t * 0.8 + i * 0.2) % 1;
+        g.globalAlpha = 1 - ph; g.fillStyle = ['#FFD16B', '#FF5FA2', '#25CFE6', '#48D597', '#B98CFF'][i];
+        g.fillText(i % 2 ? '¡BRAVO!' : '¡CLAP!', x - 120 + i * 60, y - 40 - ph * 120);
+      }
       break;
     case 'vic_fuegos':
       for (let i = 0; i < 3; i++) {
