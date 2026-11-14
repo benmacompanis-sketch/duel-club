@@ -72,66 +72,74 @@ export class Renderer {
   }
 }
 
-// Fondo de DUEL CLUB: pantalla dividida (azul contra rojo) en diagonal, franja amarilla de "VS",
-// tramado de puntos tipo historieta y rayas que avanzan despacio. Plano, sin brillos.
+// Fondo de DUEL CLUB: una página de historieta. Viñetas inclinadas (nada simétrico) de colores saturados,
+// cada una con tramado de puntos que crece hacia una esquina, calles blancas y borde de tinta.
+// Se dibuja una vez por tamaño de pantalla y después solo se copia (barato).
+const PAGE = [
+  // [polígono en coordenadas 0..1, color, esquina de donde nacen los puntos grandes]
+  [[[0, 0], [0.41, 0], [0.47, 0.47], [0, 0.41]], '#1E9BE0', [0, 0]],
+  [[[0.425, 0], [1, 0], [1, 0.53], [0.49, 0.475]], '#E8203A', [1, 0.5]],
+  [[[0, 0.425], [0.31, 0.455], [0.27, 1], [0, 1]], '#FF1F7A', [0, 1]],
+  [[[0.325, 0.46], [1, 0.545], [1, 0.78], [0.3, 0.74]], '#FFC93C', [0.3, 0.74]],
+  [[[0.285, 0.755], [0.72, 0.78], [0.72, 1], [0.285, 1]], '#8A10D8', [0.72, 0.78]],
+  [[[0.735, 0.79], [1, 0.795], [1, 1], [0.735, 1]], '#00A651', [1, 1]],
+];
 class Background {
   constructor() {
     this.t = 0;
     this.tint = 0; // 0 = menú, 1 = juego (más oscuro)
-    this.dots = null;
+    this.page = null;
   }
-  dotPattern(g) {
-    if (this.dots) return this.dots;
+  buildPage(w, h) {
     const c = document.createElement('canvas');
-    c.width = c.height = 14;
-    const d = c.getContext('2d');
-    d.fillStyle = 'rgba(255,244,224,0.11)';
-    d.beginPath(); d.arc(3.5, 3.5, 2, 0, TAU); d.arc(10.5, 10.5, 2, 0, TAU); d.fill();
-    this.dots = g.createPattern(c, 'repeat');
-    return this.dots;
+    c.width = Math.max(1, Math.round(w));
+    c.height = Math.max(1, Math.round(h));
+    const g = c.getContext('2d');
+    g.fillStyle = '#FFF4E0'; // calles de la página
+    g.fillRect(0, 0, w, h);
+    const sp = Math.max(9, Math.round(Math.min(w, h) / 70)); // separación de los puntos
+    for (const [poly, col, [cx, cy]] of PAGE) {
+      g.save();
+      g.beginPath();
+      poly.forEach(([x, y], i) => (i ? g.lineTo(x * w, y * h) : g.moveTo(x * w, y * h)));
+      g.closePath();
+      g.fillStyle = col;
+      g.fill();
+      g.clip();
+      // tramado: puntos más grandes cerca de la esquina "origen" de la viñeta
+      const xs = poly.map((p) => p[0] * w), ys = poly.map((p) => p[1] * h);
+      const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const ox = cx * w, oy = cy * h;
+      const far = Math.hypot(Math.max(Math.abs(x0 - ox), Math.abs(x1 - ox)), Math.max(Math.abs(y0 - oy), Math.abs(y1 - oy)));
+      g.fillStyle = 'rgba(10,6,20,0.62)';
+      let row = 0;
+      for (let y = y0 - sp; y < y1 + sp; y += sp * 0.87, row++) {
+        for (let x = x0 - sp + (row % 2 ? sp / 2 : 0); x < x1 + sp; x += sp) {
+          const f = 1 - Math.min(1, Math.hypot(x - ox, y - oy) / far);
+          const r = sp * (0.08 + 0.42 * f * f);
+          if (r < 0.5) continue;
+          g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+        }
+      }
+      g.restore();
+      // borde de tinta
+      g.beginPath();
+      poly.forEach(([x, y], i) => (i ? g.lineTo(x * w, y * h) : g.moveTo(x * w, y * h)));
+      g.closePath();
+      g.lineWidth = Math.max(4, Math.min(w, h) / 160);
+      g.strokeStyle = '#0D0B14';
+      g.lineJoin = 'miter';
+      g.stroke();
+    }
+    return c;
   }
   render(g, w, h, dt, mode) {
     if (quality.animations) this.t += dt;
     this.tint = lerp(this.tint, mode === 'game' ? 1 : 0, Math.min(1, dt * 3));
-    const t = this.t;
-    // base de tinta
-    g.fillStyle = '#15121F';
-    g.fillRect(0, 0, w, h);
-    // mitad azul (izquierda) y mitad roja (derecha) separadas por una diagonal
-    const k = 1 - this.tint * 0.55;
-    const tilt = h * 0.18;
-    const mid = w * 0.5;
-    g.save();
-    g.globalAlpha = 0.9 * k;
-    let gr = g.createLinearGradient(0, 0, mid, 0);
-    gr.addColorStop(0, '#1C3A8C'); gr.addColorStop(1, '#162457');
-    g.fillStyle = gr;
-    g.beginPath(); g.moveTo(0, 0); g.lineTo(mid + tilt, 0); g.lineTo(mid - tilt, h); g.lineTo(0, h); g.closePath(); g.fill();
-    gr = g.createLinearGradient(mid, 0, w, 0);
-    gr.addColorStop(0, '#571C2A'); gr.addColorStop(1, '#8C2430');
-    g.fillStyle = gr;
-    g.beginPath(); g.moveTo(mid + tilt, 0); g.lineTo(w, 0); g.lineTo(w, h); g.lineTo(mid - tilt, h); g.closePath(); g.fill();
-    // rayas diagonales que avanzan
-    g.globalAlpha = 0.06 * k;
-    g.fillStyle = '#FFF4E0';
-    const sp = 90, off = (t * 14) % sp;
-    for (let x = -h - sp; x < w + h; x += sp) {
-      g.beginPath(); g.moveTo(x + off, 0); g.lineTo(x + off + 34, 0); g.lineTo(x + off + 34 - h * 0.6, h); g.lineTo(x + off - h * 0.6, h); g.closePath(); g.fill();
-    }
-    g.restore();
-    // franja central amarilla (el "VS")
-    g.save();
-    g.globalAlpha = 0.85 * k;
-    g.fillStyle = '#FFD23F';
-    g.beginPath(); g.moveTo(mid + tilt - 5, 0); g.lineTo(mid + tilt + 5, 0); g.lineTo(mid - tilt + 5, h); g.lineTo(mid - tilt - 5, h); g.closePath(); g.fill();
-    g.restore();
-    // tramado de puntos y viñeta
-    g.fillStyle = this.dotPattern(g);
-    g.fillRect(0, 0, w, h);
-    const vg = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
-    vg.addColorStop(0, 'rgba(10,8,18,0)');
-    vg.addColorStop(1, `rgba(10,8,18,${0.55 + this.tint * 0.3})`);
-    g.fillStyle = vg;
+    if (!this.page || this.page.w !== w || this.page.h !== h) this.page = { w, h, c: this.buildPage(w, h) };
+    g.drawImage(this.page.c, 0, 0, w, h);
+    // atenuado para que la interfaz se lea (más oscuro durante los minijuegos)
+    g.fillStyle = `rgba(16,12,26,${0.38 + this.tint * 0.42})`;
     g.fillRect(0, 0, w, h);
   }
 }
