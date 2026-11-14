@@ -1711,3 +1711,20 @@ body { font-weight: 600; }
 .logo-slogan { background: var(--ink); padding: 4px 14px; transform: skewX(-8deg); }
 
 .logo-bolt { color: #fff4e0 !important; }
+/* menú lateral de historieta */
+.sn-group { font-family: var(--display); font-size: 11px; letter-spacing: 2.5px; color: var(--ink); background: var(--yellow); align-self: flex-start; padding: 2px 9px 1px; margin: 8px 0 2px 4px; border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); transform: rotate(-3deg) skewX(-8deg); }
+.sn-group:first-child { margin-top: 0; }
+.sn-ico { background: var(--accent) !important; color: #15121f !important; border: 3px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); border-radius: 8px !important; transform: rotate(-4deg); }
+.sn-btn { height: 36px !important; font-family: var(--display); font-weight: 400; letter-spacing: 0.5px; font-size: 15px; }
+.sn-btn:nth-child(even) .sn-ico { transform: rotate(4deg); }
+.sidenav { gap: 2px !important; }
+/* portada: el estallido no tapa el botón */
+.title-center::before { height: 250px !important; top: 196px !important; width: 820px !important; }
+.press-start { margin-top: 22px; }
+.sn-btn { height: 32px !important; font-size: 14px; }
+.sn-ico { width: 26px !important; height: 26px !important; }
+.sn-group { margin: 5px 0 1px 4px; font-size: 10px; }
+.hub-side { gap: 6px !important; }
+.home-stage { background: var(--panel) !important; border: 4px solid var(--ink) !important; box-shadow: 7px 7px 0 var(--ink) !important; border-radius: 14px !important; }
+.home-slot { border: 3px solid var(--ink) !important; box-shadow: 4px 4px 0 var(--ink); background: var(--panel) !important; }
+.news-banner, .home-news, .nb { border: 4px solid var(--ink) !important; box-shadow: 6px 6px 0 var(--ink) !important; }

@@ -155,14 +155,25 @@ export function text(g, str, x, y, o = {}) {
   g.textAlign = o.align || 'center';
   g.textBaseline = o.baseline || 'middle';
   if (o.alpha != null) g.globalAlpha *= o.alpha;
-  if (o.glow && quality.glow) {
+  // letras de historieta: los títulos grandes llevan contorno de tinta y sombra dura (en lugar de brillo)
+  const comic = !o.body && size >= 20 && o.comic !== false;
+  const stroke = o.stroke || (comic ? '#0D0B14' : null);
+  if (comic) {
+    const d = Math.max(2, size * 0.07);
+    g.lineJoin = 'round';
+    g.lineWidth = o.strokeWidth || Math.max(3, size * 0.16);
+    g.strokeStyle = '#0D0B14';
+    g.fillStyle = '#0D0B14';
+    g.strokeText(str, x + d, y + d);
+    g.fillText(str, x + d, y + d);
+  } else if (o.glow && quality.glow) {
     g.shadowColor = o.glow;
     g.shadowBlur = o.glowSize || size * 0.6;
   }
-  if (o.stroke) {
+  if (stroke) {
     g.lineJoin = 'round';
     g.lineWidth = o.strokeWidth || Math.max(3, size * 0.16);
-    g.strokeStyle = o.stroke;
+    g.strokeStyle = stroke;
     g.strokeText(str, x, y);
   }
   g.fillStyle = o.color || PALETTE.white;

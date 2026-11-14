@@ -24,19 +24,19 @@ import { passSection } from './pass.js';
 import { newsSection, newsBanner, newsUnseen, maybeShowNews } from './news.js';
 
 export const SECTIONS = [
-  { id: 'home', name: 'Inicio', icon: 'star', color: '#9B6CFF' },
-  { id: 'play', name: 'Jugar', icon: 'play', color: '#3985FF' },
-  { id: 'games', name: 'Minijuegos', icon: 'list', color: '#48D597' },
+  { id: 'home', name: 'Inicio', icon: 'star', color: '#FFD23F' },
+  { id: 'play', name: 'Jugar', icon: 'play', color: '#2E7BFF' },
+  { id: 'games', name: 'Minijuegos', icon: 'list', color: '#3DDC97' },
   { id: 'profile', name: 'Perfil', icon: 'user', color: '#25CFE6' },
-  { id: 'club', name: 'CLUB', icon: 'heart', color: '#FF5FA2' },
-  { id: 'ranking', name: 'Ranking', icon: 'records', color: '#FFC93C' },
-  { id: 'pass', name: 'Pase', icon: 'crown', color: '#FFC93C' },
-  { id: 'store', name: 'PIE STORE', icon: 'pie', color: '#FFD16B' },
-  { id: 'inventory', name: 'Inventario', icon: 'card', color: '#9B6CFF' },
+  { id: 'club', name: 'Amigos', icon: 'heart', color: '#FF3D8B' },
+  { id: 'ranking', name: 'Ranking', icon: 'records', color: '#FFD23F' },
   { id: 'achievements', name: 'Logros', icon: 'trophy', color: '#FF8E3C' },
-  { id: 'stats', name: 'Estadísticas', icon: 'arrow', color: '#48D597' },
+  { id: 'stats', name: 'Estadísticas', icon: 'arrow', color: '#3DDC97' },
+  { id: 'pass', name: 'Pase', icon: 'crown', color: '#FFD23F' },
+  { id: 'store', name: 'PIE STORE', icon: 'pie', color: '#FF4B3E' },
+  { id: 'inventory', name: 'Inventario', icon: 'card', color: '#B98CFF' },
   { id: 'news', name: 'Novedades', icon: 'flame', color: '#25CFE6' },
-  { id: 'settings', name: 'Configuración', icon: 'settings', color: '#8C96B8' },
+  { id: 'settings', name: 'Configuración', icon: 'settings', color: '#A79FB8' },
 ];
 const RENDER = {
   home: homeSection, play: playSection, games: gamesSection, profile: profileSection, club: clubSection, ranking: rankingSection,
@@ -116,9 +116,12 @@ export function hubScreen(ui, params = {}) {
   }
 
   // ---------------------------------------------------------------- barra lateral
-  const nav = h('nav.sidenav', SECTIONS.map((s) =>
+  // menú agrupado (estilo historieta): cada grupo con su cartelito
+  const GROUPS = { home: 'JUGAR', profile: 'VOS', pass: 'TIENDA', news: 'CLUB' };
+  const nav = h('nav.sidenav', SECTIONS.flatMap((s) => [
+    GROUPS[s.id] ? h('div.sn-group', GROUPS[s.id]) : null,
     h('button.sn-btn', { nav: true, dataset: { id: s.id }, style: { '--accent': s.color }, onclick: () => open(s.id) },
-      h('span.sn-ico', icon(s.icon)), h('span', s.name))));
+      h('span.sn-ico', icon(s.icon)), h('span', s.name))].filter(Boolean)));
   // punto en Novedades cuando hay una actualización que este navegador no vio
   function renderNavDots() {
     const b = nav.querySelector('.sn-btn[data-id="news"]');
@@ -207,7 +210,7 @@ function homeSection(ui, owner, ctx) {
         h('div.home-links',
           link('PIE STORE', 'Cosméticos con PIES', 'store', '#FFD16B'),
           link('Ranking mundial', 'ELO, nivel y récords', 'ranking', '#FFC93C'),
-          link('CLUB', 'Amigos, solicitudes y cara a cara', 'club', '#FF5FA2'),
+          link('Amigos', 'Solicitudes y cara a cara', 'club', '#FF3D8B'),
           link('Logros', '152 logros, algunos secretos', 'achievements', '#FF8E3C')))));
   function link(t, s, id, c) {
     return h('button.home-link', { nav: true, style: { '--accent': c }, onclick: () => ctx.goto(id) }, h('b', t), h('span', s));
