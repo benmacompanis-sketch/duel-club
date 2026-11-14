@@ -95,7 +95,7 @@ export function playerSelectScreen(ui, params) {
         g.filter = 'brightness(0)';
         drawCharacter(g, { id: ch.id, x: w / 2, y: hh * 0.9, s: 1.5, color: '#333', anim: 'idle', t, acc: 'none' });
         g.restore();
-        g.font = '56px "Russo One"';
+        g.font = '56px "Lilita One"';
         g.textAlign = 'center';
         g.fillStyle = 'rgba(246,247,251,0.75)';
         g.fillText('?', w / 2, hh * 0.55);

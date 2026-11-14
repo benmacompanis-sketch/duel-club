@@ -252,6 +252,8 @@ insert into public.catalog_items(id, category, rarity, price, min_level, is_defa
 ('skin_s1_prisma', 'skin', 'mythic', null, 1, false),
 ('char_creador', 'char', 'mythic', null, 1, false),
 ('hat_corona_creador', 'hat', 'mythic', null, 1, false),
+('face_creador', 'face', 'mythic', null, 1, false),
+('body_creador', 'body', 'mythic', null, 1, false),
 ('ent_creador', 'entrance', 'mythic', null, 1, false),
 ('vic_creador', 'victory', 'mythic', null, 1, false),
 ('title_creador', 'title', 'mythic', null, 1, false),

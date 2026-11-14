@@ -1,6 +1,6 @@
 // Punto de entrada de DUEL CLUB.
-import '@fontsource/russo-one/400.css';
-import '@fontsource-variable/rubik';
+import '@fontsource/lilita-one/400.css';
+import '@fontsource-variable/nunito';
 import './style.css';
 import { App } from './core/gameManager.js';
 
@@ -37,9 +37,9 @@ async function boot() {
   try {
     await Promise.race([
       Promise.all([
-        document.fonts.load('400 32px "Russo One"'),
-        document.fonts.load('600 16px "Rubik Variable"'),
-        document.fonts.load('800 16px "Rubik Variable"'),
+        document.fonts.load('400 32px "Lilita One"'),
+        document.fonts.load('600 16px "Nunito Variable"'),
+        document.fonts.load('800 16px "Nunito Variable"'),
       ]),
       new Promise((r) => setTimeout(r, 2500)),
     ]);

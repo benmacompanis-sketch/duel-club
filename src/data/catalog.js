@@ -333,6 +333,8 @@ export function levelInfo(xp) {
 export const CREATOR_ITEMS = [
   ['char_creador', 'char', 'mythic', 'El Creador', 'Capucha, corona flotante y un orbe de energía. Personaje exclusivo.'],
   ['hat_corona_creador', 'hat', 'mythic', 'Corona del Creador', 'Corona dorada que flota sobre la cabeza.'],
+  ['face_creador', 'face', 'mythic', 'Antifaz del Creador', 'Antifaz dorado con una gema violeta que late.'],
+  ['body_creador', 'body', 'mythic', 'Capa del Creador', 'Capa real violeta con ribete dorado y estrellas.'],
   ['ent_creador', 'entrance', 'mythic', 'Llegada del Creador', 'Un rayo dorado y la firma del club anuncian tu entrada.'],
   ['vic_creador', 'victory', 'mythic', 'Victoria del Creador', 'Lluvia de oro y violeta con tu corona en el cielo.'],
   ['title_creador', 'title', 'mythic', 'Creador de DUEL CLUB', 'El que hizo el club.'],
