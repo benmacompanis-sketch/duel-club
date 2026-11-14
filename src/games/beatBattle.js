@@ -74,6 +74,8 @@ export default class BeatBattle extends BaseGame {
     goal: 'Hacé más puntos que tu rival en la misma canción.',
     controls: [{ actions: ['left', 'down', 'up', 'right'], label: 'Carriles ← ↓ ↑ →' }],
     events: ['double', 'speed'],
+    // en un juego de ritmo, espejo/invertidos dan vuelta los carriles y la música no cambia de velocidad
+    caos: ['niebla', 'temblor'],
     noMusic: true,
     options: [
       { key: 'song', label: 'Canción', choices: [['random', 'Azar'], ['beat1', '108 BPM'], ['beat2', '124 BPM'], ['beat3', '140 BPM']], def: 'random' },

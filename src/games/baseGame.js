@@ -25,6 +25,7 @@ export class BaseGame {
     this.done = false;
     this.result = null;
     this.inverted = false;
+    this.mirrored = this.event === 'mirror'; // pantalla espejada (evento o CAOS): los controles la siguen
     this.timeScale = this.event === 'speed' ? 1.35 : 1;
     this.gravityScale = this.event === 'lowgrav' ? 0.5 : 1;
     this.extraObstacles = this.event === 'obstacles';

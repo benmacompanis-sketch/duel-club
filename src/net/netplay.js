@@ -9,7 +9,8 @@
 //            misma semilla de azar. Solo viajan las teclas (unos bytes por frame), nunca la imagen.
 //            Cada segundo se compara una huella del estado: si no coincide, la ronda se anula.
 import { SUPABASE_URL, SUPABASE_KEY } from '../config.js';
-import { mulberry32 } from '../core/utils.js';
+import { mulberry32, NATIVE_RANDOM } from '../core/utils.js';
+import { useDetMath, restoreMath } from './detmath.js';
 
 export const TICK = 1 / 60;
 const TICK_MS = 1000 / 60;
@@ -22,9 +23,10 @@ const ICE = [
 ];
 
 /** Retardo de entrada (en frames) para una latencia de ida y vuelta dada. */
-export function delayFor(rttMs, relay = false) {
+export function delayFor(rttMs, relay = false, jitterMs = 10) {
   const oneWay = (rttMs ?? 120) / 2;
-  return Math.max(2, Math.min(15, Math.ceil((oneWay + (relay ? 45 : 28)) / TICK_MS)));
+  // ida + altibajos de la conexión + un frame de margen (por el respaldo del servidor llegan de a tandas de 50 ms)
+  return Math.max(2, Math.min(12, Math.ceil((oneWay + Math.min(60, jitterMs) + (relay ? 55 : 8)) / TICK_MS) + 1));
 }
 
 // =====================================================================================================
@@ -37,11 +39,19 @@ export class Link {
    * @param {(m:object, via:string)=>void} o.onMessage
    * @param {(mode:string)=>void} [o.onChange]
    */
-  constructor({ slot, secret, sendSignal, onMessage, onChange, relayOnly = false, noRelay = false, localChannel = null }) {
+  constructor({ slot, secret, sendSignal, onMessage, onChange, relayOnly = false, noRelay = false, localChannel = null, netSim = null }) {
     this.slot = slot;
     this.secret = secret;
     this.sendSignal = sendSignal;
-    this.onMessage = onMessage;
+    // solo pruebas: simula una mala conexión (demora en ms, altibajos en ms y % de mensajes perdidos) al recibir
+    this.netSim = netSim && (netSim.lag || netSim.jitter || netSim.loss) ? netSim : null;
+    this.onMessage = !this.netSim ? onMessage : (m, via) => {
+      const n = this.netSim;
+      if (n.loss && NATIVE_RANDOM() * 100 < n.loss) return;
+      // cada tanto un pico de demora (como en una conexión real)
+      const spike = n.spike && NATIVE_RANDOM() < 0.01 ? n.spike : 0;
+      setTimeout(() => { if (!this.closed) onMessage(m, via); }, (n.lag || 0) + NATIVE_RANDOM() * (n.jitter || 0) + spike);
+    };
     this.onChange = onChange || (() => {});
     this.mode = 'connecting'; // connecting | p2p | relay | down
     this.pc = null;
@@ -101,6 +111,7 @@ export class Link {
       if (e.candidate && this.sentDesc && !this.closed) this.sendSignal({ type: 'cand', c: e.candidate.toJSON() }).catch(() => {});
     };
     pc.onconnectionstatechange = () => {
+      if (this.pc !== pc) return; // conexión vieja (ya se renovó)
       if (pc.connectionState === 'failed') this.p2pFailed = true;
       this.update();
     };
@@ -127,8 +138,28 @@ export class Link {
       });
     });
   }
+  /**
+   * Rearma la conexión directa desde cero (uno de los dos volvió a entrar a la partida). Mientras tanto los
+   * mensajes siguen viajando por el servidor.
+   */
+  restartP2P() {
+    if (this.closed || this.bc) return;
+    const old = this.pc;
+    this.pc = null;
+    try { this.dc?.close(); } catch {}
+    try { old?.close(); } catch {}
+    this.dc = null;
+    this.remoteSet = false;
+    this.sentDesc = false;
+    this.pendingCands = [];
+    this.p2pFailed = false;
+    if (!this.relayOnly && typeof RTCPeerConnection !== 'undefined') this.startP2P().catch((e) => { console.warn('DUEL CLUB p2p', e); this.p2pFailed = true; this.update(); });
+    else this.p2pFailed = true;
+    this.update();
+  }
   /** Señales del rival (llegan en orden por el servidor). */
   async handleSignal(p) {
+    if (p?.type === 'renew') return this.restartP2P();
     const pc = this.pc;
     if (!pc || this.closed || !p) return;
     try {
@@ -160,7 +191,7 @@ export class Link {
   bindChannel(ch) {
     this.dc = ch;
     ch.onopen = () => this.update();
-    ch.onclose = () => this.update();
+    ch.onclose = () => { if (this.dc === ch) this.update(); };
     ch.onmessage = (e) => {
       let m;
       try {
@@ -266,7 +297,8 @@ export class FrameInput {
 
 // Huella del estado del minijuego (para detectar desincronizaciones). Recorre los datos del juego
 // salvo lo visual/local: efectos, audio, lienzos y claves que empiezan con "_".
-const SKIP_KEYS = new Set(['app', 'audio', 'fx', 'players', 'inputs', 'opts', 'options', 'player', 'input', 'meta']);
+// 'result' y 'display' llevan textos armados con toLocaleString, que puede variar entre navegadores
+const SKIP_KEYS = new Set(['app', 'audio', 'fx', 'players', 'inputs', 'opts', 'options', 'player', 'input', 'meta', 'result', 'display']);
 function skipObj(v) {
   return (typeof Node !== 'undefined' && v instanceof Node)
     || (typeof CanvasRenderingContext2D !== 'undefined' && v instanceof CanvasRenderingContext2D)
@@ -341,12 +373,23 @@ export function stateHash(runner) {
 }
 
 // =====================================================================================================
+export const PROTO = 2; // versión del protocolo entre compus (si no coincide, hay que recargar la página)
+const D_MIN = 2;
+const D_MAX = 12; // retardo de entrada máximo: 12 frames = 200 ms
+
 /**
  * Una ronda (un minijuego) sincronizada entre las dos compus.
- * Ciclo: new → setReady(D) en las dos compus → start() → frame(dt) en cada cuadro → fin (onEnd).
+ * Ciclo: new → setReady(D) en las dos compus → el J1 fija el momento de arranque → start() en las dos casi a la
+ * vez → frame(dt) en cada cuadro → fin (onEnd).
+ *
+ * Fluidez:
+ *  - Cada compu aplica a SUS teclas un retardo propio (D frames). Si al rival le llegan justas, lo sube; si
+ *    sobra margen, lo baja. Así no hay tirones cuando la conexión tiene altibajos.
+ *  - Las dos compus corrigen de a poco su velocidad para ir por el mismo frame.
+ *  - Si hubo que esperar teclas, la partida se pone al día de a poco (sin saltos).
  */
 export class NetRound {
-  constructor({ app, link, slot, round, seed, onEnd, speed = 1 }) {
+  constructor({ app, link, slot, round, seed, onEnd, speed = 1, net = null }) {
     this.app = app;
     this.link = link;
     this.slot = slot;
@@ -354,9 +397,10 @@ export class NetRound {
     this.seed = seed >>> 0;
     this.onEnd = onEnd || (() => {});
     this.speed = speed;
+    this.net = net; // () => ({ rtt, jitter }) medidos antes de la ronda
     this.input = new FrameInput();
     this.inp = [new Map(), new Map()];
-    this.D = 0;
+    this.D = 3;
     this.f = 0;
     this.localNext = 0;
     this.remoteNext = 0;
@@ -367,6 +411,8 @@ export class NetRound {
     this.ended = false;
     this.ready = false;
     this.remoteReady = false;
+    this.goAt = null; // momento de arranque en el reloj de esta compu
+    this.gotRemoteInput = false;
     this.pendP = 0;
     this.pendT = null;
     this.simMs = 0;
@@ -378,47 +424,65 @@ export class NetRound {
     this.rtt = null;
     this.remoteF = 0;
     this.lastRecv = performance.now();
+    this.lastRemoteAt = performance.now();
     this.lastSend = 0;
     this.bias = 0;
     this.pressWin = 20;
     this.endFrame = null;
+    this.peerBufMin = 99;
+    this.peerBufSince = performance.now();
+    this.lastBump = 0;
+    this.stats = { stallFrames: 0, stallMs: 0, maxStall: 0, bursts: 0, steps: 0, dUp: 0, dDown: 0 };
     this.unsubKey = app.input.on((e) => this.onKey(e));
   }
 
-  /** El jugador de esta compu está listo. El J1 decide el retardo de entrada D. */
+  /** El jugador de esta compu está listo. D = retardo inicial de sus teclas (después se ajusta solo). */
   setReady(D) {
     if (this.ready) return;
     this.ready = true;
-    if (this.slot === 0) this.D = D;
+    this.D = Math.max(D_MIN, Math.min(D_MAX, Math.round(D) || 3));
     const hs = () => {
-      if (this.started || this.ended) return clearInterval(this.hsTimer);
-      this.link.send({ t: 'r', r: this.r, D: this.slot === 0 ? this.D : 0 });
+      if (this.ended || (this.started && (this.gotRemoteInput || this.slot === 1))) return clearInterval(this.hsTimer);
+      const m = { t: 'r', r: this.r, v: PROTO };
+      // el J1 avisa cuánto falta para arrancar (así las dos compus empiezan casi a la vez)
+      if (this.slot === 0 && this.goAt != null) m.in = Math.round(this.goAt - performance.now());
+      this.link.send(m);
     };
     hs();
-    this.hsTimer = setInterval(hs, 150);
-    this.tryStart();
+    this.hsTimer = setInterval(hs, 100);
+    this.tryGo();
   }
-  tryStart() {
-    if (this.started || this.ended || !this.ready || !this.remoteReady || !this.D) return;
-    this.start();
+  /** J1: cuando los dos están listos, fija el arranque un instante después (para que el aviso llegue a tiempo). */
+  tryGo() {
+    if (this.slot !== 0 || this.goAt != null || this.ended || !this.ready || !this.remoteReady) return;
+    const rtt = this.net?.()?.rtt ?? 120;
+    this.schedule(performance.now() + Math.max(300, Math.min(1500, rtt * 2 + 150)));
+  }
+  schedule(at) {
+    if (this.started || this.ended) return;
+    if (this.goAt != null && at >= this.goAt) return; // nos quedamos con el aviso más temprano
+    this.goAt = at;
+    clearTimeout(this.goTimer);
+    this.goTimer = setTimeout(() => this.start(), Math.max(0, at - performance.now()));
   }
 
   start() {
+    if (this.started || this.ended) return;
     this.started = true;
-    clearInterval(this.hsTimer);
+    clearTimeout(this.goTimer);
     const runner = this.app.runner;
-    for (const p of [0, 1]) for (let f = 0; f < this.D; f++) if (!this.inp[p].has(f)) this.inp[p].set(f, EMPTY);
+    // las primeras D teclas propias van vacías (retardo de entrada)
+    for (let f = 0; f < this.D; f++) this.inp[this.slot].set(f, EMPTY);
     this.localNext = this.D;
-    this.remoteAck = Math.max(this.remoteAck, this.D - 1);
-    this.remoteNext = 0;
     const rm = this.inp[1 - this.slot];
+    this.remoteNext = 0;
     while (rm.has(this.remoteNext)) this.remoteNext++;
     this.rng = mulberry32(this.seed);
     runner.opts.input = this.input;
     runner.opts.clock = () => this.simMs;
-    runner.opts.inputLag = this.D * TICK;
+    runner.opts.inputLag = (D_MAX + 1) * TICK; // constante: tiene que ser igual en las dos compus
     // el minijuego se vuelve a crear con la semilla compartida: lo que pasó durante la presentación no cuenta
-    this.withRng(() => runner.createGame());
+    this.withSim(() => runner.createGame());
     runner.startCountdown();
     this.bias = runner.game?.netPressBias?.() || 0;
     // margen permitido hacia atrás para la hora de una pulsación (Beat Battle necesita más por la latencia del audio)
@@ -428,6 +492,7 @@ export class NetRound {
     this.lastFrameAt = performance.now();
     this.dispMs = 0;
     this.viewAt = performance.now();
+    this.peerBufSince = performance.now();
     this.app.net = this;
     // si la pestaña queda oculta el navegador frena requestAnimationFrame: seguimos simulando igual
     this.bg = setInterval(() => {
@@ -435,12 +500,16 @@ export class NetRound {
     }, 100);
     this.sendInputs(performance.now());
   }
-  withRng(fn) {
+  /** Ejecuta un tramo de simulación con azar y matemática idénticos en las dos compus. */
+  withSim(fn) {
     const prev = Math.random;
+    const det = !this.app.noDetMath; // (solo pruebas: permite comprobar qué pasa sin la matemática propia)
     Math.random = this.rng;
+    if (det) useDetMath();
     try {
       return fn();
     } finally {
+      if (det) restoreMath();
       Math.random = prev;
     }
   }
@@ -477,17 +546,21 @@ export class NetRound {
     if (!this.running) return;
     const now = performance.now();
     this.lastFrameAt = now;
-    this.acc = Math.min(this.acc + dt * this.speed, hidden ? 1 : 0.3);
-    // si vamos por delante del rival, frenamos un poco para no trabarnos a cada rato esperando sus teclas
-    if (this.rtt != null) {
-      const ahead = this.f - (this.remoteF + (this.rtt / 2 / TICK_MS) * this.speed);
-      if (ahead > 2) this.acc -= dt * 0.12;
+    this.acc = Math.min(this.acc + dt * this.speed, hidden ? 1 : 0.25);
+    // las dos compus se acercan de a poco al mismo frame (la que va adelante frena, la que va atrás acelera)
+    if (this.rtt != null && this.gotRemoteInput) {
+      const since = Math.min(100, now - this.lastRemoteAt);
+      const remoteNow = this.remoteF + ((since + this.rtt / 2) / TICK_MS) * this.speed;
+      const diff = this.f - remoteNow;
+      if (diff > 0.75) this.acc -= dt * Math.min(0.1, diff * 0.03) * this.speed;
+      else if (diff < -0.75) this.acc += dt * Math.min(0.1, -diff * 0.03) * this.speed;
     }
     let steps = 0;
     let stalled = false;
-    const maxSteps = hidden ? 70 : 10 * Math.max(1, Math.round(this.speed));
+    // si quedó tiempo acumulado (hubo que esperar teclas), se recupera de a un frame extra por cuadro: sin saltos
+    const maxSteps = hidden ? 70 : (Math.max(1, Math.ceil(dt / TICK)) + 1) * Math.max(1, Math.round(this.speed));
     while (this.acc >= TICK && steps < maxSteps && this.running) {
-      if (this.localNext <= this.f + this.D) {
+      while (this.localNext <= this.f + this.D) {
         this.captureLocal(this.localNext++);
         this.dirty = true;
       }
@@ -499,6 +572,7 @@ export class NetRound {
         this.step();
       } catch (e) {
         console.error('DUEL CLUB: error en la simulación online', e);
+        this.app.logError?.(`online: ${e?.message}`);
         this.finish('error');
         return;
       }
@@ -506,8 +580,16 @@ export class NetRound {
       steps++;
     }
     // "trabado" = tiempo sin poder avanzar ni un frame (ir un poco adelantado y esperar es normal)
-    if (steps) this.stall = 0;
-    else if (stalled) this.stall += dt;
+    if (steps) {
+      this.stall = 0;
+      this.stats.steps += steps;
+      if (steps > 2 && !hidden) this.stats.bursts++;
+    } else if (stalled) {
+      this.stall += dt;
+      this.stats.stallFrames++;
+      this.stats.stallMs += dt * 1000;
+      if (this.stall > this.stats.maxStall) this.stats.maxStall = this.stall;
+    }
     if (steps) {
       this.dispMs = (this.f - 1) * TICK_MS;
       this.viewAt = now;
@@ -518,19 +600,18 @@ export class NetRound {
 
   /**
    * La hora exacta de cada pulsación la manda cada compu (precisión para reflejos y ritmo). Para que nadie
-   * pueda inventarse horas "adelantadas", se limita a un margen alrededor del frame en que se capturó.
-   * Es una cuenta pura (frame, D, juego): da lo mismo en las dos compus.
+   * pueda inventarse horas imposibles, se limita a un margen alrededor del frame al que pertenece.
+   * Es una cuenta pura (frame y juego): da lo mismo en las dos compus.
    */
   fixTimes(x, f) {
     if (!x[2]) return x;
-    const cap = (f - this.D) * TICK_MS;
-    const lo = cap - TICK_MS - this.pressWin;
-    const hi = cap + 2 * TICK_MS;
+    const hi = f * TICK_MS;
+    const lo = (f - D_MAX - 2) * TICK_MS - this.pressWin;
     const t = {};
     for (const k of Object.keys(x[2])) {
       if (!(k in BIT)) continue;
       const v = Number(x[2][k]);
-      t[k] = Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : cap;
+      t[k] = Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : hi - 3 * TICK_MS;
     }
     return [x[0], x[1], t];
   }
@@ -541,7 +622,7 @@ export class NetRound {
     this.input.cur[0] = this.fixTimes(this.inp[0].get(f), f);
     this.input.cur[1] = this.fixTimes(this.inp[1].get(f), f);
     this.simMs = f * TICK_MS;
-    this.withRng(() => runner.frame(TICK, false));
+    this.withSim(() => runner.frame(TICK, false));
     this.f = f + 1;
     const old = f - 240;
     if (old >= 0 && old <= this.remoteAck) {
@@ -561,12 +642,32 @@ export class NetRound {
       const x = mine.get(i) || EMPTY;
       d.push(x[1] ? x : [x[0]]);
     }
-    const msg = { t: 'i', r: this.r, s: from, d, a: this.remoteNext - 1, f: this.f, D: this.D, ts: Math.round(now) };
+    // b = cuántas teclas del rival tengo de sobra (él lo usa para ajustar su retardo)
+    const msg = { t: 'i', r: this.r, s: from, d, a: this.remoteNext - 1, f: this.f, b: this.remoteNext - this.f, ts: Math.round(now) };
     if (this.lastRemoteTs != null) msg.e = [this.lastRemoteTs, Math.round(now - this.lastRemoteAt)];
     if (linger) msg.end = this.endFrame;
     this.link.send(msg, { lossy: true });
     this.lastSend = now;
     this.dirty = false;
+  }
+
+  /** Ajusta el retardo de MIS teclas según cuánto margen le queda al rival. */
+  tuneDelay(b, now) {
+    if (!this.running || this.f < 45) return;
+    if (b < this.peerBufMin) this.peerBufMin = b;
+    if (b <= 0 && this.D < D_MAX && now - this.lastBump > 450) {
+      // al rival le llegan justas (o tarde): más retardo
+      this.D++;
+      this.lastBump = now;
+      this.stats.dUp++;
+      this.peerBufMin = 99;
+      this.peerBufSince = now;
+    } else if (now - this.peerBufSince > 5000) {
+      // 5 s seguidos con margen de sobra: menos retardo (el objetivo es que al rival siempre le sobre 1 frame)
+      if (this.peerBufMin >= 2 && this.D > D_MIN) { this.D--; this.stats.dDown++; }
+      this.peerBufMin = 99;
+      this.peerBufSince = now;
+    }
   }
 
   // ------------------------------------------------------------------ mensajes del rival
@@ -575,8 +676,7 @@ export class NetRound {
     const now = performance.now();
     if (m.t === 'i') {
       this.lastRecv = now;
-      if (this.slot === 1 && !this.D && m.D) this.D = m.D;
-      if (m.D) this.remoteReady = true;
+      this.gotRemoteInput = true;
       const map = this.inp[1 - this.slot];
       for (let k = 0; k < m.d.length; k++) {
         const fr = m.s + k;
@@ -594,12 +694,18 @@ export class NetRound {
         const r = now - m.e[0] - m.e[1];
         if (r > 0 && r < 5000) this.rtt = this.rtt == null ? r : this.rtt * 0.85 + r * 0.15;
       }
-      this.tryStart();
+      if (typeof m.b === 'number') this.tuneDelay(m.b, now);
+      // el rival ya arrancó y a mí no me llegó el aviso: arranco ya
+      if (!this.started && this.ready) this.schedule(now);
     } else if (m.t === 'r') {
       this.lastRecv = now;
+      if (m.v !== PROTO) { this.protoMismatch = true; return; }
       this.remoteReady = true;
-      if (this.slot === 1 && m.D && !this.D) this.D = m.D;
-      this.tryStart();
+      if (this.slot === 0) this.tryGo();
+      else if (typeof m.in === 'number' && this.ready) {
+        const lat = (this.net?.()?.rtt ?? 60) / 2;
+        this.schedule(now + Math.max(0, m.in - lat));
+      }
     } else if (m.t === 'h') {
       this.remoteHashes.set(m.f, m.h);
       const lh = this.hashes.get(m.f);
@@ -621,6 +727,7 @@ export class NetRound {
   desync(f, remote = false) {
     if (this.ended) return;
     console.warn('DUEL CLUB: desincronización en el frame', f, remote ? '(avisó el rival)' : '');
+    this.app.logError?.(`online: desincronización en el frame ${f} de ${this.app.runner.gameId}${remote ? ' (avisó el rival)' : ''}`);
     let n = 0;
     const notify = () => {
       this.link.send({ t: 'x', r: this.r, f });
@@ -640,6 +747,7 @@ export class NetRound {
     this.reason = reason;
     clearInterval(this.hsTimer);
     clearInterval(this.bg);
+    clearTimeout(this.goTimer);
     if (this.app.net === this) this.app.net = null;
     this.unsubKey?.();
     const until = performance.now() + 8000;
@@ -658,12 +766,13 @@ export class NetRound {
     clearInterval(this.bg);
     clearInterval(this.linger);
     clearInterval(this.xTimer);
+    clearTimeout(this.goTimer);
     if (this.app.net === this) this.app.net = null;
     this.unsubKey?.();
   }
 
-  /** Estado para el HUD: esperando al rival, latencia. */
+  /** Estado para el HUD: esperando al rival (solo si la espera se nota de verdad). */
   get waiting() {
-    return this.running && this.stall > 0.35;
+    return this.running && this.stall > 0.8;
   }
 }

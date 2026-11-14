@@ -2,7 +2,7 @@
 // BroadcastChannel, con "bots" que aprietan teclas al azar. Sirve para comprobar que las dos compus
 // simulan exactamente lo mismo (determinismo) en los 16 minijuegos.
 import { Link, NetRound, stateHash } from './netplay.js';
-import { mulberry32 } from '../core/utils.js';
+import { mulberry32, NATIVE_RANDOM } from '../core/utils.js';
 
 const KEYS = { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', a: 'KeyF', b: 'KeyG' };
 const PLAYERS = [
@@ -14,9 +14,16 @@ function key(type, code) {
   window.dispatchEvent(new KeyboardEvent(type, { code, key: code, bubbles: true }));
 }
 
-export async function netTest(app, { slot, channel, game, seed = 1234, speed = 4, D = 3, maxFrames = 3600, botSeed = 99, caos = false, renderTwice = false }) {
+export async function netTest(app, { slot, channel, game, seed = 1234, speed = 4, D = 3, maxFrames = 3600, botSeed = 99, caos = false, renderTwice = false, netSim = null, rtt = 20 }) {
   const log = [];
-  const link = new Link({ slot, secret: 'test', localChannel: channel, sendSignal: async () => {}, onMessage: (m) => round?.onMessage(m) });
+  // mala conexión simulada (al recibir): demora, altibajos, pérdida y picos
+  const recv = (m) => round?.onMessage(m);
+  const onMessage = !netSim ? recv : (m) => {
+    if (netSim.loss && NATIVE_RANDOM() * 100 < netSim.loss) return;
+    const spike = netSim.spike && NATIVE_RANDOM() < 0.01 ? netSim.spike : 0;
+    setTimeout(() => recv(m), (netSim.lag || 0) + NATIVE_RANDOM() * (netSim.jitter || 0) + spike);
+  };
+  const link = new Link({ slot, secret: 'test', localChannel: channel, sendSignal: async () => {}, onMessage });
   let round = null;
   link.start();
   const runner = app.runner;
@@ -40,7 +47,7 @@ export async function netTest(app, { slot, channel, game, seed = 1234, speed = 4
     for (const a of ['a', 'b']) if (rnd() < 0.18) { key('keydown', KEYS[a]); setTimeout(() => key('keyup', KEYS[a]), 30 + rnd() * 60); }
   }, 45);
   const done = new Promise((resolve) => {
-    round = new NetRound({ app, link, slot, round: 0, seed, speed, onEnd: (x) => resolve(x) });
+    round = new NetRound({ app, link, slot, round: 0, seed, speed, onEnd: (x) => resolve(x), net: () => ({ rtt, jitter: netSim?.jitter || 5 }) });
   });
   // registrar la huella cada 60 frames
   const origStep = round.step.bind(round);
@@ -48,6 +55,17 @@ export async function netTest(app, { slot, channel, game, seed = 1234, speed = 4
     origStep();
     if (round.f % 60 === 0) log.push([round.f, stateHash(runner)]);
     if (round.f >= maxFrames && round.running) round.finish('max');
+  };
+  // fluidez medida desde afuera: cuadros en los que la partida no pudo avanzar y saltos de más de 2 frames
+  const m = { stallFrames: 0, stallMs: 0, maxStall: 0, bursts: 0, cur: 0 };
+  const origFrame = round.frame.bind(round);
+  round.frame = (dt, hidden) => {
+    const f0 = round.f;
+    origFrame(dt, hidden);
+    if (!round.running && !round.ended) return;
+    const df = round.f - f0;
+    if (df === 0 && round.f > 5) { m.stallFrames++; m.stallMs += dt * 1000; m.cur += dt * 1000; if (m.cur > m.maxStall) m.maxStall = m.cur; } else m.cur = 0;
+    if (df > 2 * speed) m.bursts++;
   };
   round.setReady(D);
   const end = await done;
@@ -59,6 +77,7 @@ export async function netTest(app, { slot, channel, game, seed = 1234, speed = 4
     reason: end.reason, frame: end.frame, log,
     result: result && { winner: result.winner, scores: result.scores, display: result.display, playSeconds: result.playSeconds, flags: result.flags, records: result.records },
     received: link.received,
+    stats: { dUp: 0, dDown: 0, ...(round.stats || {}), ...m, D: round.D, rtt: round.rtt == null ? null : Math.round(round.rtt) },
   };
   setTimeout(() => { link.close(); runner.close(); }, 1500);
   return out;

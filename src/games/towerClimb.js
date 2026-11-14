@@ -70,10 +70,11 @@ export default class TowerClimb extends BaseGame {
           if (t2 === 'n' && rng() < 0.35) stars.push({ x: x2, y: y + 52, id: stars.length });
         }
       }
-      if (y > 260 && Math.floor(y / 230) > lasers.length && rng() < 0.85) lasers.push({ y: y + 44, period: R(2.2, 3), ph: R(0, 3), on: 0.5 });
+      // láseres más espaciados y lentos (ciclo de 3,8 a 4,8 s, encendidos un 40%) con aviso previo
+      if (y > 300 && Math.floor(y / 280) > lasers.length && rng() < 0.8) lasers.push({ y: y + 44, period: R(3.8, 4.8), ph: R(0, 4), on: 0.4 });
       if (Math.floor(y / 300) > checks.length - 1) checks.push(y);
     }
-    if (this.extraObstacles) for (const l of lasers) l.on = 0.62;
+    if (this.extraObstacles) for (const l of lasers) l.on = 0.5;
     this.plats = plats;
     this.lasers = lasers;
     this.stars = stars;
@@ -86,6 +87,11 @@ export default class TowerClimb extends BaseGame {
   }
   laserOn(l, t) {
     return ((t + l.ph) % l.period) / l.period < l.on;
+  }
+  /** Avisa 0,7 s antes de que el láser se prenda. */
+  laserWarn(l, t) {
+    const ph = ((t + l.ph) % l.period) / l.period;
+    return ph > 1 - 0.7 / l.period;
   }
   solid(P, plat) {
     const c = P.crumble.get(plat.id);
@@ -185,7 +191,7 @@ export default class TowerClimb extends BaseGame {
     // láseres
     for (const l of this.lasers) {
       if (P.stun <= 0 && this.laserOn(l, t) && P.y < l.y + 6 && P.y + 60 > l.y - 6) {
-        P.stun = 0.9; P.vy = Math.min(P.vy, -120); P.on = null;
+        P.stun = 0.7; P.vy = Math.min(P.vy, -120); P.on = null;
         this.sfx('zap');
         this.fx.burst(this.sx(P, P.x), this.sy(P, l.y), '#FF4D6D', 18, { speed: 240 });
         this.fx.shake(5);
@@ -308,6 +314,10 @@ export default class TowerClimb extends BaseGame {
         if (quality.glow) { g.shadowColor = '#FF4D6D'; g.shadowBlur = 16; }
         g.fillStyle = 'rgba(255,77,109,0.9)'; g.fillRect(x0 + PAD, y - 3, TW, 6);
         g.restore();
+      } else if (this.laserWarn(l, this.time)) {
+        // aviso: parpadea antes de prenderse
+        g.fillStyle = `rgba(255,201,60,${0.35 + 0.35 * Math.sin(this.time * 30)})`;
+        for (let x = 0; x < TW; x += 18) g.fillRect(x0 + PAD + x, y - 2, 10, 4);
       } else {
         g.fillStyle = 'rgba(255,77,109,0.18)';
         for (let x = 0; x < TW; x += 18) g.fillRect(x0 + PAD + x, y - 1, 8, 2);

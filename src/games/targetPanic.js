@@ -7,6 +7,7 @@ import { drawPortrait } from '../core/characters.js';
 import { W, H, TAU, rand, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, ease } from '../core/utils.js';
 import { drawStar } from '../core/renderer.js';
 
+const MAG = 6; // tiros por cargador
 const TOP = 110;
 
 export default class TargetPanic extends BaseGame {
@@ -38,7 +39,8 @@ export default class TargetPanic extends BaseGame {
 
   init() {
     this.duration = this.timed(this.options.time ?? 45);
-    this.aims = [0, 1].map((p) => ({ x: p ? W * 0.72 : W * 0.28, y: 420, vx: 0, vy: 0, cd: 0, recoil: 0 }));
+    // cargador: 6 tiros; se recarga solo (de a uno) o del todo en 0,9 s al vaciarse. Cadencia máxima: 3,5 tiros/s
+    this.aims = [0, 1].map((p) => ({ x: p ? W * 0.72 : W * 0.28, y: 420, vx: 0, vy: 0, cd: 0, recoil: 0, ammo: MAG, refill: 0, reload: 0, flash: 0 }));
     this.targets = [];
     this.spawnT = 0.4;
     this.score = [0, 0];
@@ -59,11 +61,13 @@ export default class TargetPanic extends BaseGame {
   }
 
   spawn() {
-    const d = this.diff;
-    const life = rand(2.6, 3.8) - d * 0.6;
-    const moving = Math.random() < 0.35 + d * 0.35;
+    // dificultad progresiva: con el correr de la partida hay más blancos móviles y viven menos
+    const prog = this.duration ? clamp(this.time / this.duration, 0, 1) : 0;
+    const d = this.diff + prog * 0.35;
+    const life = rand(2.8, 3.9) - d * 0.6;
+    const moving = Math.random() < 0.25 + d * 0.35;
     const mk = (owner, x, y, mirror) => {
-      const t = { owner, x, y, r: owner === 'gold' ? 22 : owner === 'bomb' ? 26 : 32, life, max: life, vx: 0, vy: 0, ph: rand(0, TAU), kind: 'still', dead: false };
+      const t = { owner, x, y, r: owner === 'gold' ? 28 : owner === 'bomb' ? 30 : 40, life, max: life, vx: 0, vy: 0, ph: rand(0, TAU), kind: 'still', dead: false };
       if (moving) {
         t.kind = choice(['line', 'sine']);
         t.vx = rand(80, 170) * (Math.random() < 0.5 ? -1 : 1) * (1 + d * 0.3);
@@ -135,6 +139,14 @@ export default class TargetPanic extends BaseGame {
     const inp = this.inputs[p];
     a.cd = Math.max(0, a.cd - dt);
     a.recoil = Math.max(0, a.recoil - dt * 6);
+    a.flash = Math.max(0, a.flash - dt * 8);
+    if (a.reload > 0) {
+      a.reload -= dt;
+      if (a.reload <= 0) { a.ammo = MAG; a.refill = 0; this.sfx('tick'); }
+    } else if (a.ammo < MAG && a.cd <= 0) {
+      a.refill += dt;
+      if (a.refill >= 0.3) { a.refill = 0; a.ammo++; }
+    }
     const ix = inp.axisX(), iy = inp.axisY();
     const len = Math.hypot(ix, iy) || 1;
     const sp = inp.held('b') ? 240 : 640;
@@ -143,20 +155,27 @@ export default class TargetPanic extends BaseGame {
     a.vy += ((iy / len) * sp - a.vy) * k;
     a.x = clamp(a.x + a.vx * dt, 20, W - 20);
     a.y = clamp(a.y + a.vy * dt, TOP, H - 16);
-    if (inp.pressed('a') && a.cd <= 0) this.shoot(p);
+    if (inp.pressed('a')) {
+      if (a.cd <= 0 && a.reload <= 0 && a.ammo > 0) this.shoot(p);
+      else if (a.reload > 0 || a.ammo <= 0) this.sfx('tick', { gap: 120 });
+    }
   }
 
   shoot(p) {
     const a = this.aims[p];
-    a.cd = 0.14;
+    a.cd = 0.28;
     a.recoil = 1;
+    a.flash = 1;
+    a.ammo--;
+    a.refill = 0;
+    if (a.ammo <= 0) a.reload = 0.9;
     this.shots[p]++;
     this.sfx('shoot', { pitch: p ? 1.15 : 1 });
     // el blanco más cercano bajo la mira (se prioriza el de arriba en la lista: más reciente)
     let hit = null, best = Infinity;
     for (const t of this.targets) {
       const d = Math.hypot(t.x - a.x, t.y - a.y);
-      const r = t.r * (0.5 + 0.5 * (t.life / t.max));
+      const r = t.r * (0.7 + 0.3 * (t.life / t.max));
       if (d < r && d < best) { best = d; hit = t; }
     }
     if (!hit) {
@@ -312,6 +331,15 @@ export default class TargetPanic extends BaseGame {
     g.shadowBlur = 0;
     g.fillStyle = '#fff';
     g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
+    // fogonazo del disparo
+    if (a.flash > 0) { g.globalAlpha = a.flash; g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(0, 0, r + 10 * (1 - a.flash), 0, TAU); g.stroke(); g.globalAlpha = 1; }
+    // balas del cargador (o barra de recarga)
+    if (a.reload > 0) {
+      g.fillStyle = 'rgba(11,16,32,0.7)'; g.fillRect(-24, r + 16, 48, 6);
+      g.fillStyle = col; g.fillRect(-24, r + 16, 48 * (1 - a.reload / 0.9), 6);
+    } else {
+      for (let i = 0; i < MAG; i++) { g.fillStyle = i < a.ammo ? col : 'rgba(246,247,251,0.18)'; g.fillRect(-22 + i * 8, r + 16, 5, 7); }
+    }
     g.restore();
     drawPortrait(g, a.x + 30, a.y + 30, 12, this.players[p], { t: t + p, ring: 2 });
   }
