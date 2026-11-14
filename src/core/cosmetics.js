@@ -486,6 +486,14 @@ export const HATS = {
     g.strokeStyle = 'rgba(255,255,255,0.25)'; g.lineWidth = 1;
     g.beginPath(); g.ellipse(0, -16, hw * 0.6, 9, 0, 0, TAU); g.stroke();
   },
+  hat_corona_creador(g, hw, t) {
+    g.save(); glow(g, '#FFD16B', 14);
+    const y = -12 + Math.sin(t * 2.4) * 3, w = hw * 0.42;
+    g.fillStyle = '#FFD16B';
+    g.beginPath(); g.moveTo(-w, y + 8); g.lineTo(-w, y - 6); g.lineTo(-w * 0.45, y + 1); g.lineTo(0, y - 12); g.lineTo(w * 0.45, y + 1); g.lineTo(w, y - 6); g.lineTo(w, y + 8); g.closePath(); g.fill();
+    g.fillStyle = '#B98CFF'; g.beginPath(); g.arc(0, y + 3, 3.5, 0, TAU); g.fill();
+    g.restore();
+  },
   hat_aureola67(g, hw, t) {
     g.save(); glow(g, '#FFD16B', 16);
     g.strokeStyle = '#FFD16B'; g.lineWidth = 5;
@@ -716,6 +724,16 @@ export function drawEntrance(g, id, x, y, k, t, col) {
       g.beginPath(); g.moveTo(x + (1 - k) * 220, y - (1 - k) * 420); g.lineTo(x + (1 - k) * 220 + 120, y - (1 - k) * 420 - 220); g.stroke();
       if (k > 0.85) { g.fillStyle = `rgba(255,209,107,${(1 - k) * 4})`; g.beginPath(); g.ellipse(x, y, 160 * k, 30, 0, 0, TAU); g.fill(); }
       break;
+    case 'ent_creador': {
+      glow(g, '#FFD16B', 26);
+      g.strokeStyle = `rgba(255,209,107,${a})`; g.lineWidth = 10;
+      g.beginPath(); g.moveTo(x, -10); g.lineTo(x, y); g.stroke();
+      g.lineWidth = 3; g.strokeStyle = `rgba(185,140,255,${a})`;
+      for (let i = 0; i < 3; i++) { g.beginPath(); g.ellipse(x, y - 4, 40 + i * 30 + k * 60, 10 + i * 6, 0, 0, TAU); g.stroke(); }
+      g.globalAlpha = a; g.fillStyle = '#FFF4CF'; g.font = '900 22px "Russo One", sans-serif'; g.textAlign = 'center';
+      g.fillText('EL CREADOR', x, y - 170 - k * 30);
+      break;
+    }
     case 'ent_elegido':
       glow(g, '#FFD16B', 30);
       g.fillStyle = `rgba(255,209,107,${0.35 * a})`;
@@ -785,6 +803,18 @@ export function drawVictory(g, id, x, y, t, col) {
       g.beginPath(); g.arc(x, y - 80, 40 + ph * 260, 0, TAU); g.stroke();
       g.strokeStyle = `rgba(255,209,107,${1 - ph})`;
       g.beginPath(); g.arc(x, y - 80, 20 + ph * 180, 0, TAU); g.stroke();
+      break;
+    }
+    case 'vic_creador': {
+      for (let i = 0; i < 46; i++) {
+        const ph = (t * 0.6 + i * 0.137) % 1;
+        g.globalAlpha = 1 - ph;
+        g.fillStyle = i % 2 ? '#FFD16B' : '#B98CFF';
+        g.save(); g.translate(x - 220 + ((i * 97) % 440), y - 320 + ph * 340); g.rotate(t * 4 + i); g.fillRect(-4, -4, 8, 8); g.restore();
+      }
+      g.globalAlpha = 1; glow(g, '#FFD16B', 20); g.fillStyle = '#FFD16B';
+      const cy = y - 230 + Math.sin(t * 2) * 6;
+      g.beginPath(); g.moveTo(x - 40, cy + 22); g.lineTo(x - 40, cy - 8); g.lineTo(x - 20, cy + 8); g.lineTo(x, cy - 20); g.lineTo(x + 20, cy + 8); g.lineTo(x + 40, cy - 8); g.lineTo(x + 40, cy + 22); g.closePath(); g.fill();
       break;
     }
     case 'vic_icono':

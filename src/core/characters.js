@@ -33,6 +33,8 @@ export const CHARACTERS = [
     bio: 'Cuando algo le sale bien, salta una tostada. Cuando sale mal, también.' },
   { id: 'silla', name: 'La Silla', title: 'Leyenda de plástico', accent: '#F5F7FC', accent2: '#B8C0D6', unlock: 'secret', meme: true,
     bio: 'Sobrevivió a mil asados. Símbolo universal de la neutralidad. Personaje secreto.' },
+  { id: 'creador', name: 'El Creador', title: 'El que hizo el club', accent: '#FFD16B', accent2: '#B98CFF', unlock: 'creator',
+    bio: 'Diseñó cada minijuego, cada PIE y cada trampa. Nadie sabe qué hay debajo de la capucha.' },
   { id: 'tuntun', name: 'Tung Tung Tung Sahur', title: 'El ritmo del bosque', accent: '#8B5A2B', accent2: '#E8C99A', unlock: 'store', meme: true,
     bio: 'Un tronco con palillo de tambor que marca el ritmo del duelo. Tun. Tun. Tun.' },
 ];
@@ -228,6 +230,67 @@ function limb(g, x, y, ang, len, width, color, handR, handColor) {
 // Dibujos individuales (mirando a la derecha, pies en 0,0, altura ~100)
 // ----------------------------------------------------------------------------------
 const DRAW = {
+  creador(g, s, c, t, ch) {
+    const gold = '#FFD16B', goldD = '#C9962E', robe = shade(c.body, -0.25), robeD = shade(c.body, -0.5);
+    // aura
+    if (quality.glow) {
+      const grd = g.createRadialGradient(0, -60, 10, 0, -60, 80);
+      grd.addColorStop(0, 'rgba(255,209,107,0.18)'); grd.addColorStop(1, 'rgba(255,209,107,0)');
+      g.fillStyle = grd; g.beginPath(); g.arc(0, -60, 80, 0, TAU); g.fill();
+    }
+    // botas
+    const lp = s.leg * 6;
+    g.fillStyle = '#1B1430';
+    roundRect(g, -15, -12 - Math.max(0, lp), 12, 12, 4); g.fill();
+    roundRect(g, 3, -12 - Math.max(0, -lp), 12, 12, 4); g.fill();
+    // capa trasera
+    g.fillStyle = robeD;
+    g.beginPath(); g.moveTo(-22, -64); g.quadraticCurveTo(-34 - Math.sin(t * 2) * 3, -20, -26, -6); g.lineTo(26, -6); g.quadraticCurveTo(34 + Math.sin(t * 2) * 3, -20, 22, -64); g.closePath(); g.fill();
+    limb(g, -20, -56, -s.armL, 22, 9, robe, 6, gold);
+    // túnica
+    g.fillStyle = robe;
+    g.beginPath(); g.moveTo(-20, -66); g.lineTo(20, -66); g.lineTo(26, -10); g.quadraticCurveTo(0, -4, -26, -10); g.closePath(); g.fill();
+    // ribete y cinturón dorados
+    g.fillStyle = gold;
+    g.fillRect(-3, -64, 6, 54);
+    roundRect(g, -22, -34, 44, 6, 3); g.fill();
+    g.fillStyle = '#FF5FA2'; g.beginPath(); g.arc(0, -31, 4, 0, TAU); g.fill();
+    // capucha
+    g.save();
+    g.translate(0, s.headY);
+    g.fillStyle = robe;
+    g.beginPath(); g.moveTo(-26, -62); g.quadraticCurveTo(-30, -104, 0, -112); g.quadraticCurveTo(30, -104, 26, -62); g.closePath(); g.fill();
+    g.strokeStyle = gold; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(-24, -64); g.quadraticCurveTo(-27, -100, 0, -108); g.quadraticCurveTo(27, -100, 24, -64); g.stroke();
+    // interior oscuro y ojos que brillan
+    g.fillStyle = '#0B0618';
+    g.beginPath(); g.ellipse(0, -80, 17, 15, 0, 0, TAU); g.fill();
+    g.save();
+    if (quality.glow) { g.shadowColor = gold; g.shadowBlur = 10; }
+    g.fillStyle = gold; g.strokeStyle = gold; g.lineWidth = 3; g.lineCap = 'round';
+    const ex = 3 * s.look;
+    for (const sx of [-7, 7]) {
+      g.beginPath();
+      if (s.eyes === 'closed' || s.eyes === 'happy') { g.arc(sx + ex, -78, 4, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); }
+      else if (s.eyes === 'hurt' || s.eyes === 'dizzy') { g.moveTo(sx - 3, -84); g.lineTo(sx + 3, -77); g.moveTo(sx + 3, -84); g.lineTo(sx - 3, -77); g.stroke(); }
+      else { g.ellipse(sx + ex, -80, 3.2, s.eyes === 'angry' ? 2 : 4, 0, 0, TAU); g.fill(); }
+    }
+    g.restore();
+    // corona flotante
+    const cy = -122 + Math.sin(t * 2.4) * 3;
+    g.fillStyle = gold;
+    g.beginPath(); g.moveTo(-13, cy + 7); g.lineTo(-13, cy - 3); g.lineTo(-6, cy + 2); g.lineTo(0, cy - 7); g.lineTo(6, cy + 2); g.lineTo(13, cy - 3); g.lineTo(13, cy + 7); g.closePath(); g.fill();
+    g.fillStyle = goldD; g.fillRect(-13, cy + 5, 26, 3);
+    g.restore();
+    // brazo delantero con orbe
+    limb(g, 20, -56, s.armR, 22, 9, robe, 6, gold);
+    const ox = 20 + Math.sin(s.armR) * 30, oy = -56 + Math.cos(s.armR) * 30 - 10 + Math.sin(t * 3) * 3;
+    g.save();
+    if (quality.glow) { g.shadowColor = ch.accent2; g.shadowBlur = 14; }
+    g.fillStyle = ch.accent2; g.beginPath(); g.arc(ox, oy, 6, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.7)'; g.beginPath(); g.arc(ox - 2, oy - 2, 2, 0, TAU); g.fill();
+    g.restore();
+  },
   volt(g, s, c, t, ch) {
     const dark = '#4B5675', metal = '#AEB8D6';
     // piernas
@@ -906,13 +969,13 @@ const HEAD = {
   volt: [0, -90, 54, -76], mochi: [2, -74, 56, -40], pico: [6, -70, 40, -56], brik: [2, -92, 40, -78],
   nimbus: [2, -96, 56, -60], fang: [2, -84, 46, -68], ozzy: [2, -84, 58, -58], rex: [10, -86, 42, -72],
   npc: [0, -100, 40, -80], formal: [0, -102, 40, -82], frigo: [0, -104, 48, -88], toasty: [2, -94, 46, -74],
-  silla: [0, -104, 50, -86], tuntun: [0, -106, 42, -82],
+  silla: [0, -104, 50, -86], tuntun: [0, -106, 42, -82], creador: [0, -112, 46, -82],
 };
 // Anclaje del cuello para accesorios de cuerpo: [x, y, ancho del torso]
 const NECK = {
   volt: [0, -54, 46], mochi: [0, -30, 58], pico: [2, -44, 34], brik: [0, -56, 44], nimbus: [0, -36, 52], fang: [0, -40, 38],
   ozzy: [0, -36, 46], rex: [2, -46, 40], npc: [0, -60, 36], formal: [0, -62, 38], frigo: [0, -66, 46], toasty: [0, -46, 32],
-  silla: [0, -52, 48], tuntun: [0, -54, 40],
+  silla: [0, -52, 48], tuntun: [0, -54, 40], creador: [0, -62, 40],
 };
 
 // accesorios de la versión anterior -> objetos del catálogo
@@ -939,11 +1002,15 @@ export function normLook(acc) {
   return acc;
 }
 
+// Lo que va en la nariz (nariz de payaso, bigote) se corre al hocico/pico en los personajes de perfil
+const NOSE_ITEMS = new Set(['face_payaso', 'face_bigote']);
+const NOSE = { rex: [24, -3], pico: [22, 0], fang: [18, 0], ozzy: [0, 12] };
 function drawHead(g, look, charId, t, color) {
   const [hx, hy, hw, ey] = HEAD[charId] || [0, -90, 50, -70];
   if (look.face && FACES[look.face]) {
     g.save();
-    g.translate(hx, ey);
+    const [nx, ny] = NOSE_ITEMS.has(look.face) ? NOSE[charId] || [0, 0] : [0, 0];
+    g.translate(hx + nx, ey + ny);
     FACES[look.face](g, hw, t, color);
     g.restore();
   }

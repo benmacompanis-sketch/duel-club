@@ -331,6 +331,10 @@ export function levelInfo(xp) {
 
 // Set exclusivo del creador de DUEL CLUB (benuchinb2): no se vende, no se puede conseguir y no da ventajas
 export const CREATOR_ITEMS = [
+  ['char_creador', 'char', 'mythic', 'El Creador', 'Capucha, corona flotante y un orbe de energía. Personaje exclusivo.'],
+  ['hat_corona_creador', 'hat', 'mythic', 'Corona del Creador', 'Corona dorada que flota sobre la cabeza.'],
+  ['ent_creador', 'entrance', 'mythic', 'Llegada del Creador', 'Un rayo dorado y la firma del club anuncian tu entrada.'],
+  ['vic_creador', 'victory', 'mythic', 'Victoria del Creador', 'Lluvia de oro y violeta con tu corona en el cielo.'],
   ['title_creador', 'title', 'mythic', 'Creador de DUEL CLUB', 'El que hizo el club.'],
   ['card_creador', 'card', 'mythic', 'Tarjeta del Creador', 'Violeta profundo, oro y la firma del club.'],
   ['frame_creador', 'frame', 'mythic', 'Marco del Creador', 'Oro y violeta que giran sin parar.'],
