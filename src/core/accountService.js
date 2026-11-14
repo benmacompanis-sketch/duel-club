@@ -399,13 +399,15 @@ export class AccountService {
    * Envía el resultado de un minijuego. Solo cuenta para los jugadores con cuenta.
    * Devuelve una promesa con la respuesta del servidor (o null si nadie tiene cuenta).
    */
-  submitMatch(res, { mode = 'quick', compId = null, difficulty = 0.5, caos = false } = {}) {
-    const users = [this.slotUser(0), this.slotUser(1)];
+  submitMatch(res, { mode = 'quick', compId = null, difficulty = 0.5, caos = false, bot = null } = {}) {
+    // contra un bot solo cuenta la cuenta de J1 (el servidor da XP y PIES reducidos, nunca ELO)
+    const users = mode === 'bot' ? [this.slotUser(0), null] : [this.slotUser(0), this.slotUser(1)];
     if (!users[0] && !users[1]) return Promise.resolve(null);
     const payload = {
       client_id: uid('m'),
       comp_id: compId,
       mode,
+      bot,
       difficulty: caos ? 'caos' : DIFF_NAMES[difficulty] || 'normal',
       ...this.matchPayload(res),
     };

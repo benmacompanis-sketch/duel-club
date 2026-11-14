@@ -14,6 +14,7 @@ export const BOT_ORDER = ['easy', 'normal', 'hard', 'expert'];
 const R = () => Math.random();
 const gauss = () => (R() + R() + R() + R() - 2) / 0.816; // aprox. normal(0, 1)
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const BR_T = 11;
 
 /**
  * Fuente de teclas que reemplaza a un jugador por un bot (misma interfaz que InputManager):
@@ -25,7 +26,7 @@ export class BotInput {
     this.slot = slot;
     this.L = BOT_LEVELS[level] || BOT_LEVELS.normal;
     this.gameId = gameId;
-    this.brain = BRAINS[gameId] || null;
+    this.brain = level === 'idle' ? null : BRAINS[gameId] || null; // 'idle': muñeco quieto (práctica)
     this.cur = new Set();
     this.prev = new Set();
     this.press = new Set();
@@ -141,7 +142,7 @@ const BRAINS = {
   // ---------------------------------------------------------------- REACTION RUSH
   reaction(g, p, b, w) {
     if (g.state === 'signal' && g.react[p] == null) {
-      if (b.mem.rt == null) b.mem.rt = clamp(b.L.react * (0.8 + R() * 0.45), 0.09, 0.8);
+      if (b.mem.rt == null) b.mem.rt = clamp((b.L.react + 0.06) * (0.85 + R() * 0.4), 0.17, 0.8);
       if (b.after('sig', true, b.mem.rt)) w.add('a');
       return;
     }
@@ -461,6 +462,303 @@ const BRAINS = {
     if (O && !O.dead && B.ground && Math.abs(O.x - B.x) < 70 && Math.abs(O.y - B.y) < 30 && B.dashCd <= 0 && b.every('dash', 0.5, () => R() < 0.25 + 0.5 * (1 - b.L.noise))) {
       w.delete('left'); w.delete('right'); w.add(O.x > B.x ? 'right' : 'left'); w.add('b');
     }
+  },
+
+  // ---------------------------------------------------------------- TURBO TENNIS
+  tennis(g, p, b, w) {
+    const P = g.pl[p];
+    const ball = g.ball;
+    const GROUND = 612, NET_X = 640, REACH = 86;
+    const hx = P.x + (p ? -22 : 22), hy = P.y - 62;
+    if (!ball) { b.steerX(w, P.x, p ? 1020 : 260, 10); return; }
+    if (ball.toss) {
+      if (g.server !== p) { b.steerX(w, P.x, p ? 1000 : 280, 10); return; }
+      // saque: pegarle cuando baja a la altura del golpe (después de un momento de reacción)
+      const d = Math.hypot(ball.x - hx, ball.y - hy);
+      if (ball.vy > 0 && d < REACH * 0.6 && b.after('srv', true, b.L.react)) { w.add(R() < 0.15 ? 'b' : 'a'); b.after('srv', false); }
+      return;
+    }
+    const mySide = (ball.x < NET_X ? 0 : 1) === p;
+    const coming = p ? ball.vx > 0 : ball.vx < 0;
+    let tx = p ? 1020 : 260;
+    if (mySide || coming) {
+      // dónde va a estar la pelota en un ratito (con reacción)
+      const lead = b.every('tl', Math.max(0.05, b.L.react * 0.5), () => {
+        let x = ball.x, y = ball.y, vx = ball.vx, vy = ball.vy;
+        const G = g.g;
+        for (let i = 0; i < 90; i++) {
+          vy += G * (1 / 60); x += vx / 60; y += vy / 60;
+          if (y > GROUND - BR_T) { y = GROUND - BR_T; vy = -Math.abs(vy) * 0.7; }
+          if (((x < NET_X ? 0 : 1) === p) && y > GROUND - 140 && y < GROUND - 30) break;
+        }
+        return x + gauss() * 30 * b.L.noise;
+      });
+      tx = lead - (p ? -22 : 22) * 0.6;
+      tx = p ? Math.max(NET_X + 40, tx) : Math.min(NET_X - 40, tx);
+    }
+    b.steerX(w, P.x, tx, 10);
+    const d = Math.hypot(ball.x - hx, ball.y - hy);
+    if (mySide && d < REACH * (0.55 + 0.25 * (1 - b.L.noise)) && P.swingCd <= 0 && !(g.lastHit === p && g.bounces === 0)) {
+      if (b.chance(1 - b.L.slip)) w.add(b.chance(0.18) ? 'b' : 'a');
+    }
+    if (mySide && ball.y < hy - 70 && Math.abs(ball.x - P.x) < 90 && P.y >= GROUND - 0.5 && b.chance(0.08)) w.add('up');
+  },
+
+  // ---------------------------------------------------------------- TOWER CLIMB
+  tower(g, p, b, w) {
+    const P = g.pl[p];
+    if (P.dead > 0 || P.finished != null) return;
+    const t = g.time;
+    const cx = (pl) => g.platX(pl, t) + pl.w / 2;
+    if (P.on) {
+      // próxima plataforma: más arriba y al alcance de un salto
+      const nxt = b.every('tw', Math.max(0.12, b.L.react * 0.8), () => {
+        let best = null, bs = Infinity;
+        for (const pl of g.plats) {
+          const dy = pl.y - P.on.y;
+          if (dy < 20 || dy > 150) continue;
+          if (P.crumble?.get(pl.id)?.state === 'gone') continue;
+          const sc = Math.abs(cx(pl) - P.x) / 200 - dy / 100 + (pl.type === 'c' ? 0.6 : 0) + R() * 0.8 * b.L.noise;
+          if (sc < bs) { bs = sc; best = pl; }
+        }
+        return best;
+      });
+      if (!nxt) { b.steerX(w, P.x, cx(P.on), 8); if (P.stars > 0 && b.chance(0.02)) w.add('b'); return; }
+      const tx = cx(nxt);
+      const dx = tx - P.x;
+      // láser entre esta plataforma y la próxima: esperar a que se apague
+      const blocked = g.lasers.some((l) => l.y > P.y - 10 && l.y < nxt.y + 70 && (g.laserOn(l, t) || g.laserOn(l, t + 0.35) || g.laserOn(l, t + 0.6)));
+      const edge = P.x + Math.sign(dx) * 30;
+      const onX = g.platX(P.on, t);
+      const nearEdge = edge < onX || edge > onX + P.on.w;
+      if (Math.abs(dx) > nxt.w / 2 - 10) b.steerX(w, P.x, tx, 6);
+      if (blocked) { w.delete('left'); w.delete('right'); return; }
+      if (Math.abs(dx) < Math.max(70, nxt.w / 2 + 40) || nearEdge) {
+        if (b.after('jmp', true, b.L.react * 0.5)) { w.add('up'); b.after('jmp', false); }
+      }
+    } else {
+      // en el aire: apuntar a la plataforma de arriba más cercana, o caer sobre una
+      const tgt = g.plats.filter((pl) => pl.y <= P.y + 160 && pl.y >= P.y - 400).sort((u, v) => Math.abs(cx(u) - P.x) + Math.abs(u.y - P.y) * 0.3 - (Math.abs(cx(v) - P.x) + Math.abs(v.y - P.y) * 0.3))[0];
+      if (tgt) b.steerX(w, P.x, cx(tgt), 8);
+      if (P.vy > 0) w.add('up'); // mantener el salto
+      if (P.stars > 0 && P.vy < -200 && b.chance(0.3)) w.add('b');
+    }
+  },
+
+  // ---------------------------------------------------------------- MICRO RACE (seguir la pista)
+  race(g, p, b, w) {
+    const c = g.cars[p];
+    if (c.finished != null) return;
+    const [idx] = g.nearest(c);
+    const N = g.N, T = g.track;
+    // punto a seguir más adelante en la pista (más lejos cuanto más rápido)
+    const la = 70 + c.speed * 0.32;
+    let j = idx, acc = 0;
+    while (acc < la) { const a = T[j], n = T[(j + 1) % N]; acc += Math.hypot(n.x - a.x, n.y - a.y); j = (j + 1) % N; }
+    const off = c.offroad ? 0 : b.err('lane', 18, 1.5);
+    const tp = T[j];
+    const tx = tp.x + tp.nx * off, ty = tp.y + tp.ny * off;
+    let diff = Math.atan2(ty - c.y, tx - c.x) - c.ang;
+    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+    const dz = 0.04 + 0.1 * b.L.noise;
+    // con reacción: el volante se actualiza cada tanto
+    const st = b.every('steer', Math.max(0.03, b.L.react * 0.25), () => (diff > dz ? 1 : diff < -dz ? -1 : 0));
+    if (st > 0) w.add('right'); else if (st < 0) w.add('left');
+    // frenar antes de las curvas cerradas
+    const a1 = T[(idx + 8) % N].ang, a2 = T[(idx + 40) % N].ang;
+    const bend = Math.abs(Math.atan2(Math.sin(a2 - a1), Math.cos(a2 - a1)));
+    if (bend > 0.5 && c.speed > g.maxSpeed * clamp(1.05 - bend * 0.32, 0.45, 0.95)) w.add('down');
+    if (c.offroad && c.speed > g.maxSpeed * 0.5) w.add('down');
+    if (Math.abs(diff) > 1.2 && c.speed > 160) w.add('down');
+    // los bots más flojos no van a fondo
+    if (c.speed > g.maxSpeed * (0.5 + 0.5 * b.L.speed) * (c.boost > 0 ? 1.5 : 1) && b.chance(0.5)) w.add('down');
+  },
+
+  // ---------------------------------------------------------------- DUEL ARENA (pelea)
+  arena(g, p, b, w) {
+    const F = g.f?.[p], O = g.f?.[1 - p];
+    if (!F || !O || F.ko || O.ko) return;
+    const dx = O.x - F.x, ad = Math.abs(dx);
+    const face = dx > 0 ? 'right' : 'left';
+    // defensa: si el rival está pegando cerca, bloquear (con reacción; los buenos a veces hacen parry)
+    const threat = O.atk && ad < 100 && O.atk.t < O.atk.start;
+    if (threat && F.ground && !F.atk && b.every('blkd', 0.35, () => R() < (1 - b.L.noise) * 0.55)) { w.add('b'); return; }
+    // especial a distancia
+    if (F.en >= 50 && F.specCd <= 0 && ad > 220 && F.ground && b.every('sp', 0.5, () => R() < 0.4)) { w.add('down'); w.add('a'); return; }
+    // acercarse a distancia de golpe
+    const want = 58 + b.err('sp', 18, 1);
+    if (ad > want + 12) w.add(face);
+    else if (ad < want - 30) w.add(face === 'right' ? 'left' : 'right');
+    // atacar: combos con ritmo según la dificultad
+    if (ad < 82 && Math.abs(O.y - F.y) < 60) b.tap(w, 'a', 0.11 + (1 - b.L.speed) * 0.4);
+    // saltos de vez en cuando (y patada aérea)
+    if (F.ground && b.every('jmp', 1.2, () => R() < 0.15)) w.add('up');
+    if (!F.ground && ad < 90 && !F.airUsed) b.tap(w, 'a', 0.3);
+  },
+
+  // ---------------------------------------------------------------- FISH FRENZY (pesca)
+  fish(g, p, b, w) {
+    const z = g.zones[p];
+    if (z.stun > 0) return;
+    const KJ = (f) => f.kind === 'boot' || f.kind === 'can';
+    if (z.hooked) {
+      const f = z.hooked;
+      if (KJ(f)) { if (b.after('junk', true, b.L.react)) w.add('b'); return; }
+      b.after('junk', false);
+      const thr = 0.62 + 0.3 * b.L.noise;
+      // recoger mientras la tensión aguanta; aflojar en los tirones (los buenos lo hacen mejor)
+      const relax = z.tension > thr || (z.pull > 0 && z.tension > 0.35 && b.chance(1 - b.L.noise));
+      if (!relax) w.add('a');
+      return;
+    }
+    const [hx, hy] = g.hookPos(z);
+    const tgt = b.every('ft', Math.max(0.1, b.L.react * 0.6), () => {
+      let best = null, bs = -Infinity;
+      for (const f of z.fish) {
+        if (KJ(f) || f.kind === 'jelly') continue;
+        const pts = { sardine: 10, clown: 20, puffer: 30, sword: 50, golden: 100 }[f.kind] || 10;
+        const d = Math.hypot(f.x - hx, f.y - hy);
+        const sc = pts * 0.6 - d * 0.12;
+        if (sc > bs) { bs = sc; best = f; }
+      }
+      return best;
+    });
+    if (!tgt || !z.fish.includes(tgt)) return;
+    const lead = 0.25;
+    const tx = tgt.x + tgt.dir * tgt.speed * lead, ty = tgt.y + b.err('fy', 10, 0.8);
+    // esquivar medusas cerca del anzuelo
+    const jelly = z.fish.find((f) => f.kind === 'jelly' && Math.hypot(f.x - hx, f.y - hy) < 70);
+    if (jelly) { w.add(jelly.y > hy ? 'up' : 'down'); return; }
+    b.steer(w, hx, hy, tx, ty, 10);
+    if (Math.hypot(tgt.x - hx, tgt.y - hy) < tgt.size + 12 && b.chance(b.L.hit)) w.add('a');
+  },
+
+  // ---------------------------------------------------------------- BLOCK BATTLE (encastre)
+  blocks(g, p, b, w) {
+    const B = g.boards?.[p];
+    const pc = B?.piece;
+    if (!B || B.dead || !pc) { b.mem.plan = null; return; }
+    const COLS = 10, ROWS = B.grid.length;
+    const norm = (cells) => {
+      const mx = Math.min(...cells.map((c) => c[0])), my = Math.min(...cells.map((c) => c[1]));
+      return cells.map(([x, y]) => [x - mx, y - my]).sort((a, c) => a[0] - c[0] || a[1] - c[1]);
+    };
+    const key = (cells) => norm(cells).map((c) => c.join(',')).join(';');
+    const pieceId = B.pieceCount ?? `${pc.k}${B.score}${B.lines}`;
+    if (!b.mem.plan || b.mem.planFor !== pc) {
+      // probar todas las rotaciones y columnas; elegir la mejor según alturas, huecos y líneas
+      const rots = [];
+      let cells = pc.cells.map((c) => c.slice());
+      for (let r = 0; r < 4; r++) {
+        if (!rots.some((x) => x.k === key(cells))) rots.push({ k: key(cells), cells: norm(cells) });
+        cells = cells.map(([x, y]) => [pc.n - 1 - y, x]);
+      }
+      let best = null, bs = -Infinity;
+      for (const R0 of rots) {
+        const wdt = Math.max(...R0.cells.map((c) => c[0])) + 1;
+        for (let x = 0; x + wdt <= COLS; x++) {
+          let y = 0;
+          const hit = (yy) => R0.cells.some(([cx, cy]) => { const gy = yy + cy, gx = x + cx; return gy >= ROWS || (gy >= 0 && B.grid[gy][gx]); });
+          if (hit(0)) continue;
+          while (!hit(y + 1)) y++;
+          const grid = B.grid.map((row) => row.slice());
+          for (const [cx, cy] of R0.cells) if (y + cy >= 0) grid[y + cy][x + cx] = 'X';
+          let lines = 0;
+          for (let r = 0; r < ROWS; r++) if (grid[r].every((c) => c)) lines++;
+          const hts = [];
+          let holes = 0;
+          for (let c = 0; c < COLS; c++) {
+            let h = 0, seen = false;
+            for (let r = 0; r < ROWS; r++) {
+              if (grid[r][c]) { if (!seen) { h = ROWS - r; seen = true; } } else if (seen) holes++;
+            }
+            hts.push(h);
+          }
+          const agg = hts.reduce((a, c) => a + c, 0);
+          let bump = 0;
+          for (let c = 0; c < COLS - 1; c++) bump += Math.abs(hts[c] - hts[c + 1]);
+          const sc = -0.51 * agg + 0.76 * lines * (lines >= 2 ? 1.4 : 1) - 0.36 * holes * 2 - 0.18 * bump + gauss() * 1.5 * b.L.noise;
+          if (sc > bs) { bs = sc; best = { k: R0.k, x }; }
+        }
+      }
+      b.mem.plan = best;
+      b.mem.planFor = pc;
+      b.mem.planT = b.t;
+    }
+    const plan = b.mem.plan;
+    if (!plan) return;
+    if (b.t - b.mem.planT < b.L.react) return; // "pensar"
+    const gap = 0.07 + (1 - b.L.speed) * 0.2;
+    if (key(pc.cells) !== plan.k) { b.tap(w, 'up', gap * 1.4); return; }
+    const curX = pc.x + Math.min(...pc.cells.map((c) => c[0]));
+    if (curX < plan.x) b.tap(w, 'right', gap);
+    else if (curX > plan.x) b.tap(w, 'left', gap);
+    else if (b.L.speed >= 0.8) b.tap(w, 'a', 0.3);
+    else w.add('down');
+  },
+
+  // ---------------------------------------------------------------- SHADOW SNEAK (laberinto)
+  sneak(g, p, b, w) {
+    const P = g.pl[p], O = g.pl[1 - p];
+    const COLS = 25, ROWS = 13;
+    const cx = Math.round(P.x), cy = Math.round(P.y);
+    const D = [['up', 0, -1], ['down', 0, 1], ['left', -1, 0], ['right', 1, 0]];
+    // BFS por el laberinto desde la celda actual
+    const bfs = () => {
+      const dist = new Int16Array(COLS * ROWS).fill(-1), first = new Int8Array(COLS * ROWS).fill(-1);
+      const q = [cy * COLS + cx];
+      dist[q[0]] = 0;
+      for (let i = 0; i < q.length; i++) {
+        const id = q[i], x = id % COLS, y = (id / COLS) | 0;
+        D.forEach(([, dx, dy], k) => {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS || !g.open(x, y, dx, dy)) return;
+          const nid = ny * COLS + nx;
+          if (dist[nid] >= 0) return;
+          dist[nid] = dist[id] + 1;
+          first[nid] = i === 0 ? k : first[id];
+          q.push(nid);
+        });
+      }
+      return { dist, first };
+    };
+    const plan = b.every('sn', Math.max(0.12, b.L.react * 0.7), () => {
+      const { dist, first } = bfs();
+      const at = (x, y) => Math.round(y) * COLS + Math.round(x);
+      const sight = 4 + Math.round(4 * (1 - b.L.noise)); // cuánto "ve" en la oscuridad
+      const oD = dist[at(O.x, O.y)];
+      if (O.hunter > 0 && P.hunter <= 0 && oD >= 0 && oD < sight + 2) {
+        // huir: la celda alcanzable más lejos del cazador
+        let best = -1, bs = -Infinity;
+        for (let id = 0; id < dist.length; id++) {
+          if (dist[id] < 1 || dist[id] > 7) continue;
+          const x = id % COLS, y = (id / COLS) | 0;
+          const sc = Math.abs(x - O.x) + Math.abs(y - O.y) - dist[id] * 0.3;
+          if (sc > bs) { bs = sc; best = id; }
+        }
+        return { dir: best >= 0 ? first[best] : -1, flee: true };
+      }
+      if (P.hunter > 0 && oD > 0) return { dir: first[at(O.x, O.y)], hunt: true };
+      if (g.lantern) { const lD = dist[at(g.lantern.x, g.lantern.y)]; if (lD > 0 && lD < sight + 4) return { dir: first[at(g.lantern.x, g.lantern.y)] }; }
+      let best = -1, bs = -Infinity;
+      for (const gm of g.gems) {
+        const id = at(gm.x, gm.y), d = dist[id];
+        if (d <= 0 || d > sight + 3) continue;
+        const sc = (gm.gold ? 3 : 1) * 4 - d + R() * 2 * b.L.noise;
+        if (sc > bs) { bs = sc; best = id; }
+      }
+      if (best >= 0) return { dir: first[best] };
+      // explorar: una celda lejana al azar
+      if (b.mem.explore == null || dist[b.mem.explore] <= 0) {
+        const cand = [];
+        for (let id = 0; id < dist.length; id++) if (dist[id] > 5) cand.push(id);
+        b.mem.explore = cand.length ? cand[Math.floor(R() * cand.length)] : null;
+      }
+      return { dir: b.mem.explore != null ? first[b.mem.explore] : -1 };
+    });
+    if (plan.dir >= 0) w.add(D[plan.dir][0]);
+    if ((plan.flee || plan.hunt) && P.sprintCd <= 0 && b.chance(0.5)) w.add('a');
+    if (plan.flee && P.trapCd <= 0 && b.chance(0.3)) w.add('b');
   },
 };
 
