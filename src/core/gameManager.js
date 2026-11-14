@@ -15,7 +15,7 @@ import { BotInput } from './bots.js';
 import { handleExtAuth } from '../ui/extAuthFlow.js';
 let GameRunnerDots = null;
 const keyNameShort = (c) => ({ ShiftRight: 'SHIFT', NumpadEnter: 'ENTER' }[c] || keyName(c));
-import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel, mulberry32 } from './utils.js';
+import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel, mulberry32, burst, comicPanel } from './utils.js';
 const fmtGhost = (v) => (Math.abs(v) >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10));
 import { UI } from '../ui/ui.js';
 import { introScreen } from '../ui/intro.js';
@@ -535,6 +535,7 @@ export class MinigameRunner {
     const meta = this.Game.meta;
     for (const p of [0, 1]) {
       if (this.bot && p === this.bot.slot) continue;
+      if (this.opts.solo && p === 1) continue;
       const b = inp.bindings[p];
       const parts = meta.controls.map((c) => {
         const keys = c.actions.length === 4 && c.actions.includes('up') ? (p ? '← ↑ ↓ →' : c.actions.map((x) => keyNameShort(b[x][0])).join(' '))
@@ -546,8 +547,10 @@ export class MinigameRunner {
       const x = p ? W - 16 - w : 16;
       g.save();
       g.globalAlpha = a;
-      panel(g, x, H - 40, w, 28, { r: 14, fill: 'rgba(11,16,32,0.82)', stroke: this.opts.players?.[p]?.color || '#9B6CFF' });
-      text(g, txt, x + w / 2, H - 26, { size: 12.5, body: true, weight: 700, color: '#fff' });
+      comicPanel(g, x, H - 44, w, 30, '#FFF4E0', { skew: p ? -8 : 8, dots: false, line: 3 });
+      g.fillStyle = this.opts.players?.[p]?.color || '#9B6CFF';
+      g.fillRect(p ? x + w - 18 : x + 10, H - 40, 8, 22);
+      text(g, txt, x + w / 2, H - 29, { size: 12.5, body: true, weight: 800, color: '#15121F' });
       g.restore();
     }
   }
@@ -583,11 +586,14 @@ export class MinigameRunner {
       const label = n < 3 ? String(3 - n) : '¡YA!';
       const sc = 1 + (1 - ease.outBack(Math.min(1, k * 2.2))) * 0.8;
       const cols = ['#FF654F', '#FFC93C', '#48D597'];
-      text(g, label, W / 2, H / 2, { size: 150 * sc, color: '#fff', glow: cols[Math.min(2, n)], stroke: 'rgba(11,16,32,0.9)', strokeWidth: 14, alpha: 1 - Math.max(0, k - 0.75) * 3 });
+      const al = 1 - Math.max(0, k - 0.75) * 3;
+      burst(g, W / 2, H / 2, 150 * sc, cols[Math.min(2, n)], { alpha: al, points: 16, rot: n * 0.4, sx: 1.25, line: 7 });
+      text(g, label, W / 2, H / 2, { size: 150 * sc, color: '#fff', strokeWidth: 16, alpha: al });
     }
     if (this.state === 'playing' && this.goFlash > 0) {
       const a = clamp(this.goFlash / 0.7, 0, 1);
-      text(g, '¡YA!', W / 2, H / 2, { size: 150 + (1 - a) * 80, color: '#fff', glow: '#48D597', alpha: a, stroke: 'rgba(11,16,32,0.9)', strokeWidth: 14 });
+      burst(g, W / 2, H / 2, 150 + (1 - a) * 80, '#48D597', { alpha: a, points: 16, sx: 1.3, line: 7 });
+      text(g, '¡YA!', W / 2, H / 2, { size: 150 + (1 - a) * 80, color: '#fff', alpha: a, strokeWidth: 16 });
     }
     if (game.event === 'invert' && (this.state === 'playing' || this.state === 'paused')) {
       const iv = this.invert;

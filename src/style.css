@@ -1928,3 +1928,74 @@ body { font-weight: 600; }
 .ts-head small { font-family: var(--display); letter-spacing: 1.5px; opacity: .85; }
 .ts-who { font-weight: 900; font-size: 18px; }
 .ts-kind, .ts-keys { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+/* ===================== AJUSTES DE HISTORIETA (4.13) ===================== */
+/* tarjetas de modos: dos capas recortadas con la MISMA forma (tinta afuera, color adentro) para que nada asome
+   por fuera del borde; la sombra dura sigue la silueta inclinada */
+.mode-card {
+  --cp: polygon(0 3%, 100% 0, 98% 100%, 2% 96%);
+  clip-path: none !important; background: transparent !important; border: 0 !important; border-radius: 0 !important;
+  box-shadow: none !important; filter: drop-shadow(5px 5px 0 var(--ink)); overflow: visible;
+}
+.mode-card:nth-child(even) { --cp: polygon(2% 0, 100% 4%, 100% 97%, 0 100%); clip-path: none !important; }
+.mode-card::before {
+  content: ''; position: absolute; inset: 0; z-index: -2; background: var(--ink); clip-path: var(--cp);
+}
+.mode-card::after {
+  display: block !important; content: ''; position: absolute; inset: 4px; z-index: -1; clip-path: var(--cp);
+  -webkit-mask-image: none !important; mask-image: none !important; border: 0 !important;
+  background: linear-gradient(125deg, var(--accent) 40%, transparent 100%), radial-gradient(circle, rgba(10, 6, 20, 0.42) 1.8px, transparent 2.2px) 0 0 / 9px 9px, var(--accent) !important;
+}
+.mode-card:hover, .mode-card:focus { filter: drop-shadow(7px 8px 0 var(--ink)) brightness(1.05); transform: translateY(-3px) rotate(-0.4deg) !important; }
+
+/* logo: separado de la tarjeta del jugador de arriba */
+.side-logo { margin: 16px 0 8px 6px !important; }
+
+/* menú lateral: las viñetas ENCASTRAN (cada borde compartido tiene la misma inclinación en las dos piezas),
+   con ángulos más marcados y una calle fina de papel entre ellas */
+.sn-btn { --cp: polygon(0 0, 100% 22%, 100% 78%, 0 100%); margin: -7px 0 !important; height: 46px !important; }
+.sn-btn:nth-of-type(even) { --cp: polygon(0 22%, 100% 0, 100% 100%, 0 78%); }
+.sn-btn:first-of-type { --cp: polygon(0 0, 100% 0, 100% 78%, 0 100%); margin-top: 0 !important; }
+.sn-btn::before { inset: 3px 3px 3px 3px; }
+.sn-btn:nth-of-type(odd) .sn-ico { transform: rotate(-9deg) !important; }
+.sn-btn:nth-of-type(even) .sn-ico { transform: rotate(8deg) !important; }
+.sidenav { transform: rotate(-1.2deg) !important; padding-top: 8px !important; }
+.sn-btn { letter-spacing: .5px !important; font-size: 17.5px !important; }
+
+/* ===================== DENTRO DEL JUEGO: presentación, pausa y resultados en estilo historieta ===================== */
+.intro { background: radial-gradient(circle, rgba(13, 11, 20, 0.25) 1.6px, transparent 2px) 0 0 / 10px 10px, color-mix(in srgb, var(--c) 30%, rgba(13, 11, 20, 0.88)) !important; backdrop-filter: none !important; }
+.intro-card { position: relative; padding: 22px 24px; background: #FFF4E0; border: 5px solid var(--ink); box-shadow: 10px 10px 0 var(--ink); transform: rotate(-0.6deg); color: #15121F; }
+.intro-info { padding: 14px 16px; background: linear-gradient(110deg, var(--c) 0 55%, color-mix(in srgb, var(--c) 70%, #fff) 100%); border: 4px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); clip-path: polygon(0 0, 100% 2%, 99% 100%, 1% 98%); color: #15121F; }
+.intro-kicker { color: #15121F !important; font-family: var(--display); letter-spacing: 2px !important; font-size: 15px !important; }
+.intro-title { color: #fff !important; text-shadow: 4px 4px 0 var(--ink) !important; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; font-size: 62px !important; transform: skewX(-6deg); }
+.intro-top .muted { color: #15121F !important; font-weight: 800; }
+.intro-desc { color: #15121F !important; font-weight: 700; background: #FFF4E0; border: 3px solid var(--ink); padding: 10px 12px; border-radius: 4px 18px 4px 18px; }
+.intro-goal { background: #FFD23F !important; border: 3px solid var(--ink) !important; box-shadow: 4px 4px 0 var(--ink); color: #15121F !important; border-radius: 0 !important; transform: rotate(-0.8deg); }
+.intro-goal .icon { color: #15121F !important; }
+.intro-event { border: 3px solid var(--ink) !important; box-shadow: 4px 4px 0 var(--ink); border-radius: 0 !important; background: var(--ec) !important; color: #15121F; }
+.intro-event span { color: #15121F !important; font-weight: 700; }
+.ctrl-box { background: #221C33 !important; border: 4px solid var(--ink) !important; border-left: 12px solid var(--c) !important; border-radius: 0 !important; box-shadow: 5px 5px 0 var(--ink) !important; color: #fff; }
+.ctrl-head b { font-family: var(--display); font-size: 24px !important; letter-spacing: 1px; }
+.ready-chip { border: 3px dashed #FFF4E0 !important; border-radius: 0 !important; font-family: var(--display); letter-spacing: 1px; }
+.ready-chip.on { background: #3DDC97 !important; color: #15121F !important; border: 3px solid var(--ink) !important; transform: rotate(-1.5deg); }
+.intro-actions .tip { color: #15121F !important; font-weight: 800; }
+.pause-menu { background: #FFF4E0 !important; color: #15121F; border: 5px solid var(--ink) !important; border-radius: 0 !important; box-shadow: 10px 10px 0 var(--ink) !important; transform: rotate(-1deg); }
+.pause-menu h2 { color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--ink); background: #FF4B3E; border: 4px solid var(--ink); padding: 4px 18px; align-self: center; transform: skewX(-8deg); }
+.pause-menu .sub, .pause-vol { color: #15121F !important; font-weight: 800; }
+.pause-menu .btn:not(.primary):not(.danger) { background: #FFFFFF !important; color: #15121F !important; }
+.pause-menu .btn:not(.primary):not(.danger) svg { color: #15121F !important; }
+/* resultados: página de historieta */
+.results { background: radial-gradient(circle, rgba(13, 11, 20, 0.3) 1.6px, transparent 2px) 0 0 / 10px 10px, color-mix(in srgb, var(--c) 40%, rgba(13, 11, 20, 0.9)) !important; backdrop-filter: none !important; }
+.res-kicker { color: #15121F !important; background: #FFF4E0; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 3px 12px; font-family: var(--display); letter-spacing: 2px !important; transform: rotate(-1deg); }
+.res-banner { color: #fff !important; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 6px 6px 0 var(--ink) !important; font-size: 72px !important; transform: rotate(-2deg) skewX(-6deg); }
+.res-phrase { color: #15121F !important; background: #FFD23F; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 3px 12px; font-family: var(--display) !important; letter-spacing: 1px; transform: rotate(1deg); }
+.res-col { border-radius: 0 !important; border: 5px solid var(--ink) !important; box-shadow: 7px 7px 0 var(--ink) !important; background: linear-gradient(120deg, var(--c) 0 38%, #221C33 38%) !important; }
+.res-col.right { background: linear-gradient(240deg, var(--c) 0 38%, #221C33 38%) !important; }
+.res-col.win { transform: rotate(-1deg) scale(1.02); box-shadow: 7px 7px 0 var(--ink), 0 0 0 5px #FFD23F !important; }
+.res-score { color: #FFD23F !important; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--ink) !important; }
+.res-name { -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 3px 3px 0 var(--ink); }
+.res-stats { border-radius: 0 !important; background: #FFF4E0 !important; color: #15121F; border: 4px solid var(--ink) !important; box-shadow: 6px 6px 0 var(--ink); }
+.res-stats h4, .stat-row em { color: #15121F !important; font-weight: 800; }
+.stat-row .best { color: #1F8A57 !important; }
+.board { border-radius: 0 !important; background: #221C33 !important; border: 4px solid var(--ink) !important; box-shadow: 6px 6px 0 var(--ink); }
+.res-reward { border: 2px solid var(--ink) !important; box-shadow: 2px 2px 0 var(--ink); border-radius: 4px !important; }

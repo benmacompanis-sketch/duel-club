@@ -4,6 +4,28 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-14-comic-ingame-413',
+    date: '2026-11-14',
+    version: '4.13',
+    title: 'La historieta llegó adentro de los minijuegos',
+    tag: 'v4.13',
+    color: '#FF8E3C',
+    intro: 'Marcadores, cuenta regresiva, carteles, presentación, pausa y resultados con el estilo cómic.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'Marcadores en paneles de historieta con tinta gruesa y sombra dura; el reloj es un estallido.',
+        'Cuenta regresiva y carteles (¡GOL!, ¡TIEMPO!…) con globos de impacto.',
+        'Cada minijuego tiñe su fondo con su color, con tramado de puntos y líneas de acción.',
+        'Presentación, pausa y resultados rediseñados. Sin brillos neón: todo tinta y color.',
+        'El menú de la izquierda encastra como una tira de historieta, con ángulos más marcados.',
+      ] },
+      { kind: 'arreglo', items: [
+        'La tarjeta VS BOT (y las demás) ya no dejan asomar color por fuera del borde.',
+        'El logo ya no se encima con la tarjeta del jugador.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-14-2v2-412',
     date: '2026-11-14',
     version: '4.12',

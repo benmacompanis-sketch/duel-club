@@ -182,25 +182,78 @@ export function text(g, str, x, y, o = {}) {
 }
 
 export function panel(g, x, y, w, h, o = {}) {
+  // panel de historieta: sombra dura de tinta, relleno casi opaco, contorno de tinta grueso y el color por dentro
+  const r = Math.min(o.r ?? 18, 8);
   g.save();
-  roundRect(g, x, y, w, h, o.r ?? 18);
-  if (o.glow && quality.glow) {
-    g.shadowColor = o.glow;
-    g.shadowBlur = o.glowSize || 24;
-  }
-  g.fillStyle = o.fill || 'rgba(28,23,41,0.94)';
+  roundRect(g, x + 4, y + 4, w, h, r);
+  g.fillStyle = 'rgba(13,11,20,0.85)';
   g.fill();
-  g.shadowBlur = 0;
-  // borde de tinta (identidad del juego) y, si hay, el color encima
-  g.lineWidth = (o.lineWidth || 2) + 2;
-  g.strokeStyle = 'rgba(13,11,20,0.9)';
+  roundRect(g, x, y, w, h, r);
+  let fill = o.fill || '#221C33';
+  const m = /^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/.exec(fill);
+  if (m && Number(m[4]) < 0.9) fill = `rgba(${m[1]},${m[2]},${m[3]},${Math.max(0.92, Number(m[4]))})`;
+  g.fillStyle = fill;
+  g.fill();
+  g.lineWidth = (o.lineWidth || 2) + 3;
+  g.strokeStyle = '#0D0B14';
   g.stroke();
   if (o.stroke) {
+    roundRect(g, x + 3.5, y + 3.5, w - 7, h - 7, Math.max(0, r - 3));
     g.lineWidth = o.lineWidth || 2;
     g.strokeStyle = o.stroke;
     g.stroke();
   }
   g.restore();
+}
+
+// ------------------------------------------------------------------ piezas de historieta
+const INK = '#0D0B14';
+/** Estallido de cómic (globo de impacto) con contorno de tinta y sombra dura. */
+export function burst(g, x, y, r, color, o = {}) {
+  const n = o.points || 14, rot = o.rot || 0, inner = o.inner ?? 0.72, sx = o.sx || 1.25;
+  const pts = [];
+  for (let i = 0; i < n * 2; i++) {
+    const a = rot + (i * Math.PI) / n;
+    const rr = i % 2 ? r * inner * (0.92 + ((i * 37) % 7) / 50) : r * (0.94 + ((i * 53) % 9) / 60);
+    pts.push([x + Math.cos(a) * rr * sx, y + Math.sin(a) * rr]);
+  }
+  const path = () => { g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.closePath(); };
+  g.save();
+  if (o.alpha != null) g.globalAlpha *= o.alpha;
+  g.translate(6, 6); path(); g.fillStyle = INK; g.fill(); g.translate(-6, -6);
+  path(); g.fillStyle = color; g.fill();
+  g.lineJoin = 'round'; g.lineWidth = o.line || 5; g.strokeStyle = INK; g.stroke();
+  g.restore();
+}
+/** Panel inclinado de historieta: color sólido, tramado, tinta gruesa y sombra dura. */
+export function comicPanel(g, x, y, w, h, fill, o = {}) {
+  const sk = o.skew ?? 10;
+  const path = (dx = 0, dy = 0) => {
+    g.beginPath();
+    g.moveTo(x + sk + dx, y + dy); g.lineTo(x + w + dx, y + (o.tilt || 0) + dy);
+    g.lineTo(x + w - sk + dx, y + h + dy); g.lineTo(x + dx, y + h - (o.tilt || 0) + dy); g.closePath();
+  };
+  g.save();
+  if (o.alpha != null) g.globalAlpha *= o.alpha;
+  path(5, 5); g.fillStyle = INK; g.fill();
+  path(); g.fillStyle = fill; g.fill();
+  if (o.dots !== false) { g.save(); path(); g.clip(); g.fillStyle = halftone(g, o.dotColor || 'rgba(13,11,20,0.22)'); g.fillRect(x, y, w, h); g.restore(); }
+  path(); g.lineWidth = o.line || 4; g.lineJoin = 'round'; g.strokeStyle = INK; g.stroke();
+  g.restore();
+}
+const htCache = new Map();
+/** Patrón de tramado de puntos (se cachea por color). */
+export function halftone(g, color = 'rgba(13,11,20,0.2)', step = 9, r = 1.9) {
+  const key = color + step + r;
+  let pat = htCache.get(key);
+  if (pat) return pat;
+  const c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(step, step) : Object.assign(document.createElement('canvas'), { width: step, height: step });
+  const x = c.getContext('2d');
+  x.fillStyle = color;
+  x.beginPath(); x.arc(step / 2, step / 2, r, 0, Math.PI * 2); x.fill();
+  pat = g.createPattern(c, 'repeat');
+  htCache.set(key, pat);
+  return pat;
 }
 
 export function glowCircle(g, x, y, r, color, alpha = 1) {
@@ -214,14 +267,15 @@ export function glowCircle(g, x, y, r, color, alpha = 1) {
 // Calidad visual global (la ajusta Settings): afecta brillo, partículas y resolución.
 export const quality = {
   level: 'high',
-  glow: true,
+  glow: false,
   particles: 1,
   dprCap: 2,
   animations: true,
   set(level, animations = true) {
     this.level = level;
     this.animations = animations;
-    this.glow = level !== 'low';
+    // estilo historieta: sin brillos neón (tinta y sombras duras); el halo queda solo para efectos puntuales
+    this.glow = false;
     this.particles = level === 'high' ? 1 : level === 'medium' ? 0.6 : 0.3;
     this.dprCap = level === 'high' ? 2 : level === 'medium' ? 1.5 : 1;
   },

@@ -1,6 +1,6 @@
 // Renderer: escala el escenario lógico 1280x720 a cualquier ventana, gestiona los canvas
 // (fondo animado, juego y capa de efectos) y provee el sistema de partículas/FX.
-import { W, H, TAU, vrand as rand, clamp, rgba, quality, text, vchoice as choice, PALETTE, lerp } from './utils.js';
+import { W, H, TAU, vrand as rand, clamp, rgba, quality, text, vchoice as choice, PALETTE, lerp, burst, FONT_DISPLAY } from './utils.js';
 
 export class Renderer {
   constructor() {
@@ -311,7 +311,14 @@ export class FX {
     for (const t of this.texts) {
       const k = t.life / t.max;
       const pop = k > 0.85 ? 1 + (k - 0.85) * 3 : 1;
-      text(g, t.str, t.x, t.y, { size: t.size * pop, color: t.color, stroke: t.stroke, alpha: clamp(k * 2.5, 0, 1) });
+      const a = clamp(k * 2.5, 0, 1);
+      if (t.size >= 40) {
+        // carteles grandes (¡GOL!, ¡TIEMPO!…): globo de impacto de historieta detrás
+        g.save(); g.font = `400 ${t.size * pop}px ${FONT_DISPLAY}`;
+        const tw = g.measureText(t.str).width; g.restore();
+        burst(g, t.x, t.y, Math.max(t.size * 0.95, tw * 0.42) * pop, t.color, { alpha: a, rot: t.x * 0.01, sx: 1.35 });
+        text(g, t.str, t.x, t.y, { size: t.size * pop, color: '#FFFFFF', alpha: a });
+      } else text(g, t.str, t.x, t.y, { size: t.size * pop, color: t.color, stroke: t.stroke, alpha: a });
     }
   }
   renderFlash(g) {

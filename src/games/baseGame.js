@@ -4,7 +4,7 @@
 import { FX } from '../core/renderer.js';
 import { PlayerInput } from '../core/inputManager.js';
 import { drawPortrait } from '../core/characters.js';
-import { W, H, text, panel, rgba, fmtTime, clamp, PALETTE, roundRect, quality, shade } from '../core/utils.js';
+import { W, H, text, panel, rgba, fmtTime, clamp, PALETTE, roundRect, quality, shade, burst, comicPanel, halftone, mix } from '../core/utils.js';
 
 export class BaseGame {
   constructor(app, opts) {
@@ -112,39 +112,37 @@ export class BaseGame {
       const left = p === 0;
       const x = left ? 18 : W - 18 - 380;
       const col = this.color(p);
+      // panel de historieta: color del jugador, tramado, tinta gruesa y sombra dura (inclinado hacia el centro)
+      comicPanel(g, x, 10, 380, 66, shade(col, -0.45), { skew: left ? 12 : -12, tilt: left ? 3 : -3, dotColor: rgba(col, 0.35) });
       g.save();
-      roundRect(g, x, 12, 380, 64, 20);
-      const grad = g.createLinearGradient(x, 0, x + 380, 0);
-      grad.addColorStop(left ? 0 : 1, rgba(col, 0.42));
-      grad.addColorStop(left ? 1 : 0, 'rgba(11,16,32,0.6)');
-      g.fillStyle = grad;
-      g.fill();
-      g.lineWidth = 2;
-      g.strokeStyle = rgba(col, 0.75);
-      g.stroke();
+      g.fillStyle = col;
+      g.beginPath();
+      if (left) { g.moveTo(x + 12, 10); g.lineTo(x + 92, 10); g.lineTo(x + 80, 76); g.lineTo(x, 76); }
+      else { g.moveTo(x + 288, 10); g.lineTo(x + 368, 10); g.lineTo(x + 380, 76); g.lineTo(x + 300, 76); }
+      g.closePath(); g.fill(); g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.stroke();
       g.restore();
-      const px = left ? x + 40 : x + 340;
-      drawPortrait(g, px, 44, 26, this.players[p], { t: t + p, facing: left ? 1 : -1 });
-      text(g, this.name(p).toUpperCase(), left ? x + 76 : x + 304, 30, { size: 15, align: left ? 'left' : 'right', color: PALETTE.white, body: true, weight: 700 });
-      if (o.sub) text(g, o.sub[p], left ? x + 76 : x + 304, 54, { size: 14, align: left ? 'left' : 'right', color: rgba(PALETTE.white, 0.7), body: true, weight: 500 });
+      const px = left ? x + 44 : x + 336;
+      drawPortrait(g, px, 43, 26, this.players[p], { t: t + p, facing: left ? 1 : -1 });
+      text(g, this.name(p).toUpperCase(), left ? x + 98 : x + 282, 30, { size: 20, align: left ? 'left' : 'right', color: PALETTE.white });
+      if (o.sub) text(g, o.sub[p], left ? x + 98 : x + 282, 56, { size: 13, align: left ? 'left' : 'right', color: rgba(PALETTE.white, 0.85), body: true, weight: 800 });
       if (o.scores) {
-        text(g, String(o.scores[p]), left ? x + 362 : x + 18, 45, { size: o.scoreSize || 36, align: left ? 'right' : 'left', color: '#fff', glow: col });
+        text(g, String(o.scores[p]), left ? x + 360 : x + 20, 44, { size: o.scoreSize || 40, align: left ? 'right' : 'left', color: '#FFD23F' });
       }
     }
     if (o.timer != null) {
       const low = o.timer <= 10;
       const pulse = low ? 1 + Math.max(0, Math.sin(t * 10)) * 0.08 : 1;
-      panel(g, W / 2 - 74, 10, 148, 70, { r: 22, fill: 'rgba(11,16,32,0.82)', stroke: low ? '#FF654F' : 'rgba(155,108,255,0.7)', glow: low ? '#FF654F' : null });
-      text(g, o.timerText || fmtTime(Math.ceil(o.timer)), W / 2, 46, { size: 34 * pulse, color: low ? '#FF8A78' : '#fff' });
+      burst(g, W / 2, 44, 46 * pulse, low ? '#FF4B3E' : '#FFD23F', { points: 12, rot: t * 0.3, inner: 0.8, sx: 1.7 });
+      text(g, o.timerText || fmtTime(Math.ceil(o.timer)), W / 2, 46, { size: 34 * pulse, color: low ? '#FFFFFF' : '#15121F', comic: low });
     } else if (o.center) {
-      panel(g, W / 2 - 90, 10, 180, 70, { r: 22, fill: 'rgba(11,16,32,0.82)', stroke: 'rgba(155,108,255,0.7)' });
-      text(g, o.center, W / 2, o.centerSub ? 36 : 46, { size: o.centerSize || 26 });
-      if (o.centerSub) text(g, o.centerSub, W / 2, 62, { size: 13, body: true, color: rgba(PALETTE.white, 0.7) });
+      comicPanel(g, W / 2 - 92, 10, 184, 68, '#FFD23F', { skew: 10, dotColor: 'rgba(13,11,20,0.15)' });
+      text(g, o.center, W / 2, o.centerSub ? 36 : 46, { size: o.centerSize || 26, color: '#15121F', comic: false });
+      if (o.centerSub) text(g, o.centerSub, W / 2, 62, { size: 13, body: true, weight: 800, color: '#15121F' });
     }
     if (this.scoreMul() > 1) {
-      const a = 0.7 + Math.sin(t * 8) * 0.3;
-      panel(g, W / 2 - 80, 86, 160, 28, { r: 14, fill: rgba('#48D597', 0.25 * a + 0.1), stroke: '#48D597' });
-      text(g, 'PUNTOS x2', W / 2, 100, { size: 16, color: '#BFFFE0' });
+      const a = 0.75 + Math.sin(t * 8) * 0.25;
+      comicPanel(g, W / 2 - 84, 88, 168, 30, '#3DDC97', { skew: 8, alpha: a, dots: false });
+      text(g, 'PUNTOS x2', W / 2, 103, { size: 20, color: '#FFFFFF' });
     }
   }
 
@@ -162,11 +160,30 @@ export class BaseGame {
 
   /** Fondo de arena genérico con viñeta. */
   arenaBG(g, c1 = '#0F1630', c2 = '#0B1020') {
+    // cada minijuego tiñe su fondo con su color (misma familia de historieta, paletas distintas)
+    const tint = this.meta?.color || '#9B6CFF';
+    c1 = mix(c1, tint, 0.38);
+    c2 = mix(c2, tint, 0.22);
     const grad = g.createLinearGradient(0, 0, 0, H);
     grad.addColorStop(0, c1);
     grad.addColorStop(1, c2);
     g.fillStyle = grad;
     g.fillRect(0, 0, W, H);
+    // historieta: tramado de puntos con el color del minijuego y líneas de acción desde el centro
+    const mc = this.meta?.color || '#9B6CFF';
+    g.fillStyle = halftone(g, rgba(mc, 0.16), 12, 2.2);
+    g.fillRect(0, 0, W, H);
+    g.save();
+    g.strokeStyle = 'rgba(13,11,20,0.35)';
+    g.lineWidth = 3;
+    g.beginPath();
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2 + 0.13;
+      g.moveTo(W / 2 + Math.cos(a) * 420, H / 2 + Math.sin(a) * 300);
+      g.lineTo(W / 2 + Math.cos(a) * 900, H / 2 + Math.sin(a) * 700);
+    }
+    g.stroke();
+    g.restore();
   }
   vignette(g) {
     const r = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95);
@@ -175,9 +192,9 @@ export class BaseGame {
     g.fillStyle = r;
     g.fillRect(0, 0, W, H);
   }
-  grid(g, x, y, w, h, step, color = 'rgba(155,108,255,0.07)') {
+  grid(g, x, y, w, h, step, color = 'rgba(13,11,20,0.28)') {
     g.strokeStyle = color;
-    g.lineWidth = 1;
+    g.lineWidth = 2;
     g.beginPath();
     for (let gx = x; gx <= x + w; gx += step) { g.moveTo(gx, y); g.lineTo(gx, y + h); }
     for (let gy = y; gy <= y + h; gy += step) { g.moveTo(x, gy); g.lineTo(x + w, gy); }
