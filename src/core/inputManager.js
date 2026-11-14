@@ -14,7 +14,12 @@ export const DEFAULT_BINDINGS = {
     up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'],
     a: ['Enter', 'NumpadEnter'], b: ['ShiftRight'],
   },
+  // 2v2 en un teclado: J3 e J4 (solo se activan durante las partidas por equipos)
+  2: { up: ['KeyI'], down: ['KeyK'], left: ['KeyJ'], right: ['KeyL'], a: ['KeyU'], b: ['KeyO'] },
+  3: { up: ['Numpad8'], down: ['Numpad5'], left: ['Numpad4'], right: ['Numpad6'], a: ['Numpad0'], b: ['NumpadDecimal'] },
 };
+// botones estándar de un joystick (Gamepad API, mapeo "standard")
+const PAD_BUTTONS = { a: [0], b: [1, 2], up: [12], down: [13], left: [14], right: [15] };
 
 const KEY_NAMES = {
   ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Enter: 'ENTER', NumpadEnter: 'ENTER',
@@ -45,6 +50,9 @@ export class InputManager {
     this.listeners = new Set();
     this.captureMode = false; // true durante el juego: bloquea por completo las teclas asignadas
     this.codeIndex = new Map();
+    this.teamMode = false; // J3 y J4 activos (partidas 2v2)
+    this.pads = {}; // jugador → índice de joystick
+    this.padPrev = new Map();
     this.rebuildIndex();
     this._kd = (e) => this.onKeyDown(e);
     this._ku = (e) => this.onKeyUp(e);
@@ -84,7 +92,48 @@ export class InputManager {
   }
   rebuildIndex() {
     this.codeIndex.clear();
-    for (const p of [0, 1]) for (const a of ACTIONS) for (const c of this.bindings[p][a]) this.codeIndex.set(c, { p, a });
+    for (const p of this.teamMode ? [0, 1, 2, 3] : [0, 1]) for (const a of ACTIONS) for (const c of this.allCodes(p, a)) this.codeIndex.set(c, { p, a });
+  }
+  /** Teclas + botones del joystick asignado a ese jugador. */
+  allCodes(p, a) {
+    const list = this.bindings[p]?.[a] || [];
+    const pad = this.pads[p];
+    return pad == null ? list : [...list, `Pad${pad}:${a}`];
+  }
+  setTeamMode(on) {
+    this.teamMode = !!on;
+    this.rebuildIndex();
+  }
+  /** Asigna (o quita con null) un joystick a un jugador. */
+  assignPad(p, index) {
+    for (const k of Object.keys(this.pads)) if (this.pads[k] === index) delete this.pads[k];
+    if (index == null) delete this.pads[p];
+    else this.pads[p] = index;
+    this.rebuildIndex();
+  }
+  /** Lee los joysticks (una vez por cuadro) y los convierte en "teclas" virtuales Pad{n}:{acción}. */
+  pollPads() {
+    const list = typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : [];
+    for (const gp of list) {
+      if (!gp) continue;
+      const ax = gp.axes || [];
+      for (const a of ACTIONS) {
+        let on = (PAD_BUTTONS[a] || []).some((i) => gp.buttons[i]?.pressed);
+        if (a === 'left') on ||= ax[0] < -0.5; else if (a === 'right') on ||= ax[0] > 0.5;
+        else if (a === 'up') on ||= ax[1] < -0.5; else if (a === 'down') on ||= ax[1] > 0.5;
+        const code = `Pad${gp.index}:${a}`;
+        const was = this.padPrev.get(code) || false;
+        if (on && !was) {
+          this.pressedFrame.add(code);
+          this.pressTimes.set(code, performance.now());
+          this.down.add(code);
+          const bound = this.codeIndex.get(code);
+          const evt = { code, repeat: false, player: bound ? bound.p : -1, action: bound ? bound.a : a, pad: gp.index, typing: false };
+          for (const fn of [...this.listeners]) { try { fn(evt); } catch (err) { console.error(err); } }
+        } else if (!on && was) this.down.delete(code);
+        this.padPrev.set(code, on);
+      }
+    }
   }
   /** Asigna una tecla. Si estaba en uso, intercambia para que nunca haya conflictos. */
   rebind(p, action, code) {
@@ -147,18 +196,18 @@ export class InputManager {
   }
 
   held(p, action) {
-    const codes = this.bindings[p][action];
+    const codes = this.allCodes(p, action);
     for (let i = 0; i < codes.length; i++) if (this.down.has(codes[i])) return true;
     return false;
   }
   pressed(p, action) {
-    const codes = this.bindings[p][action];
+    const codes = this.allCodes(p, action);
     for (let i = 0; i < codes.length; i++) if (this.pressedFrame.has(codes[i])) return true;
     return false;
   }
   pressTime(p, action) {
     let best = null;
-    for (const c of this.bindings[p][action]) {
+    for (const c of this.allCodes(p, action)) {
       if (this.pressedFrame.has(c)) {
         const t = this.pressTimes.get(c);
         if (best == null || t < best) best = t;

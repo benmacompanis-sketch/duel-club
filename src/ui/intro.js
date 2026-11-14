@@ -7,16 +7,18 @@ import { EVENTS, eventIcon } from '../core/events.js';
 export function introScreen(ui, { meta, opts, onStart, onBack }) {
   const app = ui.app;
   const scr = {};
-  const ready = [false, false];
+  const N = opts.team ? 4 : 2;
+  const ready = Array(N).fill(false);
   let started = false;
   const chips = [];
 
   // modos contra bot: el lugar del bot ya está listo; en el modo solo directamente no hay rival
   const botSlot = opts.bot && !opts.online ? (opts.botSlot ?? 1) : -1;
-  if (botSlot >= 0) ready[botSlot] = true;
+  const botSet = new Set(opts.bots && !opts.online ? Object.keys(opts.bots).map(Number) : botSlot >= 0 ? [botSlot] : []);
+  for (const s of botSet) ready[s] = true;
   const ctrlBox = (p) => {
     const prof = opts.players[p];
-    if (p === botSlot) {
+    if (botSet.has(p)) {
       if (opts.solo) return null;
       chips[p] = h('div.ready-chip.on', '¡LISTO!');
       return h('div.ctrl-box.bot-box', { style: { '--c': prof.color } },
@@ -24,10 +26,11 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
         h('div.ctrl-row', h('span.muted', 'Juega la compu.')), chips[p]);
     }
     const b = app.input.bindings[p];
-    const chip = h('div.ready-chip', 'Pulsá ', keycap(b.a[0]), ' cuando estés listo');
+    const pad = app.input.pads[p];
+    const chip = pad != null ? h('div.ready-chip', `Joystick ${pad + 1}: pulsá A cuando estés listo`) : h('div.ready-chip', 'Pulsá ', keycap(b.a[0]), ' cuando estés listo');
     chips[p] = chip;
     return h('div.ctrl-box', { style: { '--c': prof.color } },
-      h('div.ctrl-head', h('b', prof.name), h('small', `JUGADOR ${p + 1}`)),
+      h('div.ctrl-head', h('b', prof.name), h('small', opts.team ? `J${p + 1} · EQUIPO ${p % 2 ? 'ROJO' : 'AZUL'}` : `JUGADOR ${p + 1}`)),
       ...meta.controls.map((c) => h('div.ctrl-row', h('span', c.label), h('span.keys', ...c.actions.map((a) => keycap(b[a][0]))))),
       chip);
   };
@@ -75,7 +78,7 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
     chips[p].classList.add('on');
     chips[p].textContent = '¡LISTO!';
     app.audio.play('ready');
-    if (ready[0] && ready[1]) setTimeout(start, 380);
+    if (ready.every(Boolean)) setTimeout(start, 380);
   };
   const back = () => {
     if (opts.mode === 'quick') app.runner.abort();
@@ -90,7 +93,7 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
         h('p.intro-desc', meta.description),
         h('div.intro-goal', icon(opts.solo ? 'star' : 'trophy'), h('span', opts.goal || meta.goal)),
         evBox),
-      h('div.intro-controls' + (opts.solo ? '.solo' : ''), ctrlBox(0), ctrlBox(1)),
+      h('div.intro-controls' + (opts.solo ? '.solo' : '') + (opts.team ? '.team' : ''), ...Array.from({ length: N }, (_, p) => ctrlBox(p))),
       h('div.intro-actions',
         h('button.btn.ghost', { nav: true, onclick: back }, icon('back'), opts.mode === 'quick' ? 'VOLVER' : 'SALIR'),
         h('span.tip', 'Durante la partida: ', keycap('Escape'), ' o ', keycap('KeyP'), ' para pausar'),
@@ -99,7 +102,7 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
   scr.onKey = (e) => {
     if (e.repeat) return true;
     if (e.code === 'Escape') { back(); return true; }
-    if (e.player >= 0 && e.player !== botSlot && e.action === 'a') { setReady(e.player); return true; }
+    if (e.player >= 0 && e.player < N && !botSet.has(e.player) && e.action === 'a') { setReady(e.player); return true; }
     return e.player >= 0;
   };
   return scr;

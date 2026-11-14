@@ -162,11 +162,14 @@ const BRAINS = {
   // ---------------------------------------------------------------- PONG CHAOS
   pong(g, p, b, w) {
     const pd = g.paddles[p];
+    const sd = pd.side ?? p;
     const TOP = 100, BOT = 704, BRr = 11;
     let ball = null, tt = Infinity;
     for (const k of g.balls) {
-      const toward = p ? k.vx > 0 : k.vx < 0;
+      const toward = sd ? k.vx > 0 : k.vx < 0;
       if (!toward) continue;
+      // 2v2: la paleta de adelante deja las pelotas que ya la pasaron para su compañero del arco
+      if (pd.front && (sd ? k.x > pd.x + 20 : k.x < pd.x - 20)) continue;
       const t = Math.abs(pd.x - k.x) / Math.max(1, Math.abs(k.vx));
       if (t < tt) { tt = t; ball = k; }
     }
@@ -380,7 +383,9 @@ const BRAINS = {
       return { par, order };
     };
     const m = b.mem;
-    const goalBad = m.goal == null || g.cells[m.goal].owner === p || b.t - m.goalT > 3;
+    const me = p % 2; // en 2v2 se pinta para el equipo
+    const mate = g.team ? g.bodies[(p + 2) % 4] : null;
+    const goalBad = m.goal == null || g.cells[m.goal].owner === me || b.t - m.goalT > 3;
     if (goalBad || m.hid !== hid) {
       const { par, order } = bfs();
       if (goalBad && b.t >= (m.think || 0)) {
@@ -388,8 +393,10 @@ const BRAINS = {
         let best = null, bs = -Infinity;
         for (let i = 1; i < order.length; i++) {
           const k = g.cells[order[i]];
-          if (k.owner === p) continue;
-          const sc = (k.owner === 1 - p ? 2.6 : 2) + (k.gold ? 1.5 : 0) - i * 0.04 + R() * 1.4 * b.L.noise;
+          if (k.owner === me) continue;
+          let sc = (k.owner === 1 - me ? 2.6 : 2) + (k.gold ? 1.5 : 0) - i * 0.04 + R() * 1.4 * b.L.noise;
+          // 2v2: no ir a pintar justo donde ya está el compañero (se reparten el tablero)
+          if (mate) { const mc = g.cellAt(mate.x, mate.y); if (mc && Math.abs(mc.c - k.c) + Math.abs(mc.r - k.r) < 4) sc -= 1.6; }
           if (sc > bs) { bs = sc; best = order[i]; }
         }
         for (const pw of g.powers || []) {

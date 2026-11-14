@@ -18,7 +18,10 @@ export class BaseGame {
     this.fx = new FX();
     // En las partidas online el input llega del módulo de red (mismas teclas en las dos compus, frame a frame)
     const src = opts.input || app.input;
-    this.inputs = [new PlayerInput(src, 0, this), new PlayerInput(src, 1, this)];
+    // 2v2: J1+J3 (equipo azul, lado 0) contra J2+J4 (equipo rojo, lado 1)
+    this.team = !!opts.team;
+    this.np = this.team ? 4 : 2;
+    this.inputs = Array.from({ length: this.np }, (_, p) => new PlayerInput(src, p, this));
     this.online = !!opts.online;
     this.time = 0; // tiempo de juego (afectado por la escala de tiempo)
     this.realTime = 0;
@@ -38,7 +41,11 @@ export class BaseGame {
     return this.players[p].color;
   }
   name(p) {
+    if (this.team && p < 2 && this.players[p + 2]) return `${this.players[p].name} & ${this.players[p + 2].name}`;
     return this.players[p].name;
+  }
+  side(p) {
+    return p % 2;
   }
   // duración ajustada por el evento "tiempo reducido"
   timed(sec) {

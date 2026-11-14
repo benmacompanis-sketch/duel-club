@@ -1914,3 +1914,17 @@ body { font-weight: 600; }
 .gh-item b { font-family: var(--display); font-size: 22px; }
 .gh-item span { align-self: center; font-size: 12px; font-weight: 800; }
 .sp-row.me span, .sp-row.me i, .sp-row.me b { color: #fff !important; }
+/* presentación 2v2: cuatro paneles chicos */
+.intro-controls.team { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.intro-controls.team .ctrl-box { padding: 10px 12px; gap: 4px; font-size: 13px; }
+.intro-controls.team .ctrl-row { font-size: 12px; }
+/* ===================== 2v2 ===================== */
+.team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.team-slot { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); color: #fff; }
+.team-slot.blue { background: linear-gradient(135deg, #1c3a8c, #221c33); transform: rotate(-0.6deg); }
+.team-slot.red { background: linear-gradient(135deg, #8a2a3a, #221c33); transform: rotate(0.6deg); }
+.ts-head { display: flex; justify-content: space-between; align-items: baseline; }
+.ts-head b { font-family: var(--display); font-size: 30px; }
+.ts-head small { font-family: var(--display); letter-spacing: 1.5px; opacity: .85; }
+.ts-who { font-weight: 900; font-size: 18px; }
+.ts-kind, .ts-keys { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }

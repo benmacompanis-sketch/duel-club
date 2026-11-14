@@ -38,14 +38,19 @@ export default class PongChaos extends BaseGame {
   init() {
     this.target = this.options.target ?? 7;
     this.score = [0, 0];
-    this.paddles = [0, 1].map((p) => ({ x: p ? W - 60 : 60, y: (TOP + BOT) / 2, vy: 0, h: 116, smash: 0, smashCd: 0, flash: 0 }));
+    // 2v2: cada equipo tiene una paleta en el arco (J1/J2) y otra adelantada (J3/J4)
+    this.paddles = Array.from({ length: this.np }, (_, p) => {
+      const side = p % 2, front = p >= 2;
+      const x = front ? (side ? W - 300 : 300) : side ? W - 60 : 60;
+      return { x, y: (TOP + BOT) / 2 + (front ? (side ? 120 : -120) : 0), vy: 0, h: front ? 92 : 116, side, front, smash: 0, smashCd: 0, flash: 0 };
+    });
     this.baseSpeed = 470 + this.diff * 110;
     this.balls = [];
     this.trail = [];
     this.bumpers = [];
     this.wall = null;
-    this.hits = [0, 0];
-    this.smashes = [0, 0];
+    this.hits = Array(this.np).fill(0);
+    this.smashes = Array(this.np).fill(0);
     this.rally = 0;
     this.bestRally = 0;
     this.maxSpeed = 0;
@@ -84,7 +89,7 @@ export default class PongChaos extends BaseGame {
   update(dt) {
     this.ambient(dt);
     // paletas
-    for (const p of [0, 1]) {
+    for (let p = 0; p < this.np; p++) {
       const pd = this.paddles[p];
       const inp = this.inputs[p];
       const dir = inp.axisY();
@@ -95,7 +100,7 @@ export default class PongChaos extends BaseGame {
       pd.smash = Math.max(0, pd.smash - dt);
       pd.smashCd = Math.max(0, pd.smashCd - dt);
       if (inp.pressed('a') && pd.smashCd <= 0) { pd.smash = 0.2; pd.smashCd = 0.45; }
-      const targetH = (this.effect?.id === 'mini' ? 70 : 116) + (this.diff < 0.3 ? 14 : 0);
+      const targetH = (this.effect?.id === 'mini' ? 70 : pd.front ? 92 : 116) + (this.diff < 0.3 ? 14 : 0);
       pd.h += (targetH - pd.h) * Math.min(1, dt * 6);
     }
     // caos progresivo
@@ -149,12 +154,13 @@ export default class PongChaos extends BaseGame {
     if (b.y < TOP + BR) { b.y = TOP + BR; b.vy = Math.abs(b.vy); this.sfx('bounce', { pitch: 0.8 }); this.fx.burst(b.x, b.y, '#9B6CFF', 5, { speed: 120, gravity: 0 }); }
     if (b.y > BOT - BR) { b.y = BOT - BR; b.vy = -Math.abs(b.vy); this.sfx('bounce', { pitch: 0.8 }); this.fx.burst(b.x, b.y, '#9B6CFF', 5, { speed: 120, gravity: 0 }); }
     // paletas
-    for (const p of [0, 1]) {
+    for (let p = 0; p < this.np; p++) {
       const pd = this.paddles[p];
-      const movingToward = p === 0 ? b.vx < 0 : b.vx > 0;
+      const sd = pd.side;
+      const movingToward = sd === 0 ? b.vx < 0 : b.vx > 0;
       if (!movingToward) continue;
-      const face = p === 0 ? pd.x + PW / 2 : pd.x - PW / 2;
-      const crossed = p === 0 ? b.x - BR <= face && b.x > pd.x - PW : b.x + BR >= face && b.x < pd.x + PW;
+      const face = sd === 0 ? pd.x + PW / 2 : pd.x - PW / 2;
+      const crossed = sd === 0 ? b.x - BR <= face && b.x > pd.x - PW : b.x + BR >= face && b.x < pd.x + PW;
       if (crossed && Math.abs(b.y - pd.y) <= pd.h / 2 + BR) {
         const off = clamp((b.y - pd.y) / (pd.h / 2), -1, 1);
         const ang = off * 1.0;
@@ -167,9 +173,9 @@ export default class PongChaos extends BaseGame {
           pd.smash = 0;
           this.sfx('smash');
           this.fx.shake(8);
-          this.fx.float(pd.x + (p ? -60 : 60), pd.y - 50, '¡SMASH!', this.color(p), 30);
+          this.fx.float(pd.x + (sd ? -60 : 60), pd.y - 50, '¡SMASH!', this.color(p), 30);
         } else this.sfx('paddle', { pitch: 0.9 + Math.random() * 0.2 });
-        const dir = p === 0 ? 1 : -1;
+        const dir = sd === 0 ? 1 : -1;
         b.vx = Math.cos(ang) * speed * dir;
         b.vy = Math.sin(ang) * speed + pd.vy * 0.22;
         b.x = face + dir * (BR + 1);
@@ -179,7 +185,7 @@ export default class PongChaos extends BaseGame {
         this.rally++;
         this.bestRally = Math.max(this.bestRally, this.rally);
         this.maxSpeed = Math.max(this.maxSpeed, speed);
-        this.fx.burst(face, b.y, [this.color(p), '#fff'], smash ? 26 : 12, { angle: p === 0 ? 0 : Math.PI, spread: 1.1, speed: smash ? 520 : 300, gravity: 0, kind: 'spark' });
+        this.fx.burst(face, b.y, [this.color(p), '#fff'], smash ? 26 : 12, { angle: sd === 0 ? 0 : Math.PI, spread: 1.1, speed: smash ? 520 : 300, gravity: 0, kind: 'spark' });
         this.fx.ring(face, b.y, this.color(p), smash ? 90 : 50);
       }
     }
@@ -260,6 +266,9 @@ export default class PongChaos extends BaseGame {
     this.effect = null;
   }
 
+  teamSum(arr) {
+    return this.team ? [arr[0] + arr[2], arr[1] + arr[3]] : arr.slice();
+  }
   end() {
     const [a, b] = this.score;
     this.finish({
@@ -267,11 +276,11 @@ export default class PongChaos extends BaseGame {
       scores: [a, b],
       scoreLabel: 'Goles',
       stats: [
-        { label: 'Golpes', values: this.hits.map(String), raw: this.hits, better: 'high' },
-        { label: 'Smashes', values: this.smashes.map(String), raw: this.smashes, better: 'high' },
+        { label: 'Golpes', values: this.teamSum(this.hits).map(String), raw: this.teamSum(this.hits), better: 'high' },
+        { label: 'Smashes', values: this.teamSum(this.smashes).map(String), raw: this.teamSum(this.smashes), better: 'high' },
         { label: 'Rally más largo', values: [String(this.bestRally), String(this.bestRally)] },
       ],
-      records: this.hits.slice(),
+      records: this.team ? [null, null] : this.hits.slice(),
       margin: Math.abs(a - b),
     });
   }
@@ -335,10 +344,11 @@ export default class PongChaos extends BaseGame {
     }
     g.globalAlpha = 1;
     // paletas
-    for (const p of [0, 1]) {
+    for (let p = 0; p < this.np; p++) {
       const pd = this.paddles[p];
       const col = this.color(p);
       const charge = pd.smash > 0;
+      if (this.team) text(g, `J${p + 1}`, pd.x, pd.y - pd.h / 2 - 16, { size: 16, color: col, body: true, weight: 900 });
       g.save();
       if (quality.glow) { g.shadowColor = charge ? '#FFC93C' : col; g.shadowBlur = 18 + pd.flash * 20; }
       g.fillStyle = charge ? '#FFE08A' : pd.flash > 0.5 ? '#ffffff' : col;

@@ -4,6 +4,23 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-14-2v2-412',
+    date: '2026-11-14',
+    version: '4.12',
+    title: 'Llegó el 2v2 por equipos',
+    tag: 'v4.12',
+    color: '#25CFE6',
+    intro: 'Equipo azul contra equipo rojo en la misma compu: hasta 4 personas, joysticks y bots compañeros.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        '2v2 · EQUIPOS (en Jugar): cada lugar puede ser una persona o un bot, con su dificultad.',
+        'Cuatro jugadores en un teclado (J3 con IJKL + U/O, J4 con el teclado numérico) o con joysticks: pulsá A para sumarlo.',
+        'Pong Chaos en dobles (uno en el arco y otro adelante) y Color Control por equipos. Vamos a sumar más minijuegos.',
+        'Los bots juegan en equipo: se reparten la cancha y cubren a su compañero.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-14-singleplayer-411',
     date: '2026-11-14',
     version: '4.11',

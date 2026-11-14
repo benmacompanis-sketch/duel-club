@@ -135,6 +135,11 @@ export const DATA_EN = {
   'GHOST RUN: competí contra tu propio fantasma (en Tower Climb y Micro Race lo ves moverse; en los de puntos, la diferencia en vivo).': 'GHOST RUN: compete against your own ghost (in Tower Climb and Micro Race you see it move; in score games, the live difference).',
   'Los desafíos cambian solos todos los días y todas las semanas: siempre hay algo nuevo para jugar.': 'Challenges change by themselves every day and every week: there’s always something new to play.',
   'Dan XP y PIES (y suben el CLUB PASS). Nunca dan ELO.': 'They give XP and PIES (and level up the CLUB PASS). Never ELO.',
+  'Llegó el 2v2 por equipos': '2v2 team play is here', 'Equipo azul contra equipo rojo en la misma compu: hasta 4 personas, joysticks y bots compañeros.': 'Blue team vs red team on the same computer: up to 4 people, controllers and bot teammates.',
+  '2v2 · EQUIPOS (en Jugar): cada lugar puede ser una persona o un bot, con su dificultad.': '2v2 · TEAMS (in Play): each spot can be a person or a bot, with its own difficulty.',
+  'Cuatro jugadores en un teclado (J3 con IJKL + U/O, J4 con el teclado numérico) o con joysticks: pulsá A para sumarlo.': 'Four players on one keyboard (P3 with IJKL + U/O, P4 with the numpad) or with controllers: press A to add one.',
+  'Pong Chaos en dobles (uno en el arco y otro adelante) y Color Control por equipos. Vamos a sumar más minijuegos.': 'Pong Chaos doubles (one in goal, one up front) and team Color Control. More minigames are coming.',
+  'Los bots juegan en equipo: se reparten la cancha y cubren a su compañero.': 'Bots play as a team: they split the field and cover their teammate.',
   // --- novedades
   'DUEL CLUB tiene nueva cara': 'DUEL CLUB has a new look', 'Nuevo logo, nuevos colores y una pantalla dividida azul contra rojo.': 'New logo, new colors and a blue-vs-red split screen.', 'Online sin lag y Desafíos Solo': 'Lag-free online and Singleplayer Challenges',
   'Tu personaje responde al instante en el online, y hay desafíos para jugar sin rival.': 'Your character responds instantly online, and there are challenges to play without an opponent.', 'La gran actualización: bots, Pase de Batalla y más': 'The big update: bots, Battle Pass and more',

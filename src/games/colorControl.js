@@ -68,21 +68,23 @@ export default class ColorControl extends BaseGame {
     }
     this.totalWeight = this.cells.reduce((s, k) => s + (k.wall ? 0 : k.gold ? 2 : 1), 0);
     const midR = Math.floor(rows / 2);
-    this.bodies = [0, 1].map((p) => {
-      const c = p ? cols - 2 : 1;
-      this.at(c, midR).wall = false;
-      return { x: this.ox + (c + 0.5) * this.cell, y: this.oy + (midR + 0.5) * this.cell, vx: 0, vy: 0, r: this.cell * 0.3, speed: 0, boost: 0, freeze: 0, shield: 0, face: p ? -1 : 1, moving: false };
+    // 2v2: J3 y J4 arrancan arriba/abajo de su compañero y pintan para su equipo (lado = jugador % 2)
+    this.bodies = Array.from({ length: this.np }, (_, p) => {
+      const sd = p % 2;
+      const c = sd ? cols - 2 : 1;
+      const rr = this.team ? Math.max(0, Math.min(rows - 1, midR + (p < 2 ? -2 : 2))) : midR;
+      this.at(c, rr).wall = false;
+      return { x: this.ox + (c + 0.5) * this.cell, y: this.oy + (rr + 0.5) * this.cell, vx: 0, vy: 0, r: this.cell * 0.3, speed: 0, boost: 0, freeze: 0, shield: 0, face: sd ? -1 : 1, moving: false, side: sd };
     });
     this.totalWeight = this.cells.reduce((s, k) => s + (k.wall ? 0 : k.gold ? 2 : 1), 0);
-    this.painted = [0, 0];
-    this.steals = [0, 0];
-    this.powerCount = [0, 0];
+    this.painted = Array(this.np).fill(0);
+    this.steals = Array(this.np).fill(0);
+    this.powerCount = Array(this.np).fill(0);
     this.powers = [];
     this.powerT = 4;
     this.banner = null;
     this.lastWarn = false;
-    this.paintAt(0, this.bodies[0].x, this.bodies[0].y, true);
-    this.paintAt(1, this.bodies[1].x, this.bodies[1].y, true);
+    for (let p = 0; p < this.np; p++) this.paintAt(p, this.bodies[p].x, this.bodies[p].y, true);
   }
 
   at(c, r) {
@@ -93,12 +95,17 @@ export default class ColorControl extends BaseGame {
     return this.at(Math.floor((x - this.ox) / this.cell), Math.floor((y - this.oy) / this.cell));
   }
 
+  /** ¿El equipo de ese lado tiene escudo activo? */
+  shielded(sd) {
+    return this.bodies.some((b) => b.side === sd && b.shield > 0);
+  }
   paintAt(p, x, y, silent = false) {
     const k = this.cellAt(x, y);
-    if (!k || k.wall || k.owner === p) return;
-    if (k.owner === 1 - p && this.bodies[1 - p].shield > 0) return; // escudo del rival
-    if (k.owner === 1 - p) this.steals[p]++;
-    k.owner = p;
+    const sd = p % 2;
+    if (!k || k.wall || k.owner === sd) return;
+    if (k.owner === 1 - sd && this.shielded(1 - sd)) return; // escudo del rival
+    if (k.owner === 1 - sd) this.steals[p]++;
+    k.owner = sd;
     k.t = 0;
     this.painted[p]++;
     if (!silent) this.sfx('paint', { pitch: 0.8 + Math.random() * 0.5, gap: 40 });
@@ -118,9 +125,12 @@ export default class ColorControl extends BaseGame {
 
   update(dt) {
     this.ambient(dt);
-    for (const p of [0, 1]) this.move(p, dt);
-    // choque entre jugadores
-    const [a, b] = this.bodies;
+    for (let p = 0; p < this.np; p++) this.move(p, dt);
+    // choque entre jugadores (todas las parejas)
+    for (let i = 0; i < this.np; i++) for (let j = i + 1; j < this.np; j++) this.collide(this.bodies[i], this.bodies[j]);
+    this.updatePowers(dt);
+  }
+  collide(a, b) {
     const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), min = a.r + b.r;
     if (d < min && d > 0) {
       const nx = dx / d, ny = dy / d, push = (min - d) / 2;
@@ -141,6 +151,8 @@ export default class ColorControl extends BaseGame {
       shove(b, nx * push, ny * push);
       if (Math.random() < 0.1) this.sfx('bounce', { gap: 200 });
     }
+  }
+  updatePowers(dt) {
     // potenciadores
     this.powerT -= dt;
     if (this.powerT <= 0 && this.powers.length < 2) {
@@ -151,7 +163,7 @@ export default class ColorControl extends BaseGame {
     }
     for (let i = this.powers.length - 1; i >= 0; i--) {
       const pw = this.powers[i];
-      for (const p of [0, 1]) {
+      for (let p = 0; p < this.np; p++) {
         const bd = this.bodies[p];
         if (Math.hypot(bd.x - pw.x, bd.y - pw.y) < bd.r + 16) {
           this.applyPower(p, pw);
@@ -212,9 +224,10 @@ export default class ColorControl extends BaseGame {
       const cc = Math.floor((pw.x - this.ox) / this.cell), cr = Math.floor((pw.y - this.oy) / this.cell);
       for (let r = cr - 2; r <= cr + 2; r++) for (let c = cc - 2; c <= cc + 2; c++) {
         const k = this.at(c, r);
-        if (k && !k.wall && k.owner !== p && !(k.owner === 1 - p && this.bodies[1 - p].shield > 0)) {
-          if (k.owner === 1 - p) this.steals[p]++;
-          k.owner = p; k.t = -Math.hypot(c - cc, r - cr) * 0.05; this.painted[p]++;
+        const sd = p % 2;
+        if (k && !k.wall && k.owner !== sd && !(k.owner === 1 - sd && this.shielded(1 - sd))) {
+          if (k.owner === 1 - sd) this.steals[p]++;
+          k.owner = sd; k.t = -Math.hypot(c - cc, r - cr) * 0.05; this.painted[p]++;
         }
       }
       this.fx.burst(pw.x, pw.y, [this.color(p), '#fff'], 40, { speed: 420, gravity: 0 });
@@ -223,12 +236,15 @@ export default class ColorControl extends BaseGame {
     } else if (pw.type === 'speed') bd.boost = 4;
     else if (pw.type === 'shield') bd.shield = 5;
     else if (pw.type === 'freeze') {
-      this.bodies[1 - p].freeze = 1.6;
+      for (const ob of this.bodies.filter((b) => b.side !== p % 2)) {
+        ob.freeze = 1.6;
+        this.fx.burst(ob.x, ob.y, ['#9FD8FF', '#fff'], 24, { speed: 200, gravity: 0 });
+      }
       this.sfx('freeze');
-      this.fx.burst(this.bodies[1 - p].x, this.bodies[1 - p].y, ['#9FD8FF', '#fff'], 24, { speed: 200, gravity: 0 });
     }
   }
 
+  tsum(a) { return this.team ? [a[0] + a[2], a[1] + a[3]] : a.slice(); }
   end() {
     const pc = this.pct();
     const r = pc.map((v) => Math.round(v * 10) / 10);
@@ -238,11 +254,11 @@ export default class ColorControl extends BaseGame {
       display: r.map((v) => `${v.toFixed(1)}%`),
       scoreLabel: '% del tablero',
       stats: [
-        { label: 'Casillas pintadas', values: this.painted.map(String), raw: this.painted, better: 'high' },
-        { label: 'Casillas robadas', values: this.steals.map(String), raw: this.steals, better: 'high' },
-        { label: 'Potenciadores', values: this.powerCount.map(String), raw: this.powerCount, better: 'high' },
+        { label: 'Casillas pintadas', values: this.tsum(this.painted).map(String), raw: this.tsum(this.painted), better: 'high' },
+        { label: 'Casillas robadas', values: this.tsum(this.steals).map(String), raw: this.tsum(this.steals), better: 'high' },
+        { label: 'Potenciadores', values: this.tsum(this.powerCount).map(String), raw: this.tsum(this.powerCount), better: 'high' },
       ],
-      records: r,
+      records: this.team ? [null, null] : r,
       flags: r.map((v) => ({ pct: v })),
       margin: Math.abs(Math.round(r[0]) - Math.round(r[1])),
     });
@@ -274,7 +290,7 @@ export default class ColorControl extends BaseGame {
       if (k.owner >= 0) {
         g.fillStyle = 'rgba(255,255,255,0.14)';
         roundRect(g, x + 6, y + 5, S - 12, 5, 3); g.fill();
-        if (this.bodies[k.owner].shield > 0) { g.strokeStyle = 'rgba(72,213,151,0.7)'; g.lineWidth = 2; roundRect(g, x + 4, y + 4, S - 8, S - 8, 6); g.stroke(); }
+        if (this.shielded(k.owner)) { g.strokeStyle = 'rgba(72,213,151,0.7)'; g.lineWidth = 2; roundRect(g, x + 4, y + 4, S - 8, S - 8, 6); g.stroke(); }
       }
       if (k.gold) {
         g.strokeStyle = rgba('#FFC93C', 0.7 + Math.sin(t * 4) * 0.25);
@@ -296,7 +312,7 @@ export default class ColorControl extends BaseGame {
       this.powerIcon(g, pw.type, pw.x, by, P.color);
     }
     // jugadores
-    const order = this.bodies[0].y < this.bodies[1].y ? [0, 1] : [1, 0];
+    const order = this.bodies.map((_, i) => i).sort((i, j) => this.bodies[i].y - this.bodies[j].y);
     for (const p of order) {
       const bd = this.bodies[p];
       const col = this.color(p);
@@ -327,7 +343,7 @@ export default class ColorControl extends BaseGame {
 
   renderHUD(g) {
     const pc = this.pct();
-    this.hudTop(g, { scores: pc.map((v) => `${v.toFixed(0)}%`), sub: this.bodies.map((b, p) => (b.shield > 0 ? 'Escudo activo' : b.boost > 0 ? 'Turbo' : b.freeze > 0 ? '¡Congelado!' : `${this.painted[p]} pintadas`)), timer: this.remaining });
+    this.hudTop(g, { scores: pc.map((v) => `${v.toFixed(0)}%`), sub: [0, 1].map((p) => { const b = this.bodies[p]; return this.shielded(p) ? 'Escudo activo' : b.boost > 0 ? 'Turbo' : b.freeze > 0 ? '¡Congelado!' : `${this.tsum(this.painted)[p]} pintadas`; }), timer: this.remaining });
     // barra de dominio
     const x0 = W / 2 - 220, wbar = 440, y = 86;
     g.fillStyle = 'rgba(255,255,255,0.08)';

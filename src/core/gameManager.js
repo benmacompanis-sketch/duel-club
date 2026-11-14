@@ -158,6 +158,7 @@ export class App {
       this.runner.crash(e);
     }
     this.input.endFrame();
+    this.input.pollPads();
     requestAnimationFrame(this._loop);
   }
 }
@@ -204,7 +205,15 @@ export class MinigameRunner {
     // VS BOT / Singleplayer / Práctica: un jugador lo maneja la compu (mismas teclas y reglas que una persona)
     this.bot = null;
     this.bots = [];
-    if (this.opts.bot && !this.opts.online) {
+    if (this.opts.bots && !this.opts.online) {
+      let src = this.app.input;
+      for (const [slot, level] of Object.entries(this.opts.bots)) {
+        const b = new BotInput(src, Number(slot), level, this.Game.meta.id);
+        this.bots.push(b);
+        src = b;
+      }
+      this.opts.input = src;
+    } else if (this.opts.bot && !this.opts.online) {
       // bot0: solo para pruebas automáticas (bot contra bot)
       const base = this.opts.bot0 ? new BotInput(this.app.input, 0, this.opts.bot0, this.Game.meta.id) : this.app.input;
       this.bot = new BotInput(base, this.opts.botSlot ?? 1, this.opts.bot, this.Game.meta.id);

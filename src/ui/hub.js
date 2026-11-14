@@ -7,6 +7,7 @@ import { levelInfo, GAME_NAMES } from '../data/catalog.js';
 import { accountModal } from './accountModal.js';
 import { notificationsModal } from './notifications.js';
 import { duelSetupScreen, tournamentSetupScreen, survivalSetupScreen } from './modeSetup.js';
+import { teamSetupScreen } from './teamSetup.js';
 import { quickPlayScreen } from './quickPlay.js';
 import { settingsScreen } from './settings.js';
 import { playerSelectScreen } from './playerSelect.js';
@@ -238,6 +239,7 @@ function playSection(ui, owner, ctx) {
   const MODES = [
     { id: 'duel', title: 'DUEL MODE', sub: 'La competición principal: de 3 a 12 minijuegos, un campeón.', color: '#3985FF', icon: 'duel', go: () => ui.show(duelSetupScreen) },
     { id: 'quick', title: 'QUICK PLAY', sub: 'Elegí un minijuego y jugá ya. Revancha con un botón.', color: '#48D597', icon: 'quick', go: () => ui.show(quickPlayScreen) },
+    { id: 'team', title: '2v2 · EQUIPOS', sub: 'Azul contra rojo: hasta 4 personas (teclado o joysticks) o bots compañeros.', color: '#25CFE6', icon: 'duel', go: () => ui.show(teamSetupScreen) },
     { id: 'tournament', title: 'TOURNAMENT', sub: 'Rondas, clasificación y una gran final que vale doble.', color: '#9B6CFF', icon: 'tournament', go: () => ui.show(tournamentSetupScreen) },
     { id: 'survival', title: 'SURVIVAL', sub: 'Vidas, etapas y dificultad que no para de subir.', color: '#FF654F', icon: 'survival', go: () => ui.show(survivalSetupScreen) },
   ];

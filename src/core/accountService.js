@@ -463,9 +463,10 @@ export class AccountService {
     if (!id) return;
     rpc('dc_local_ranked_close', { p_token: this.slotToken(0) || this.slotToken(1), p_session: id }).catch(() => {});
   }
-  submitMatch(res, { mode = 'quick', compId = null, difficulty = 0.5, caos = false, bot = null, ranked = null } = {}) {
+  submitMatch(res, { mode = 'quick', compId = null, difficulty = 0.5, caos = false, bot = null, ranked = null, humans = null } = {}) {
     // contra un bot solo cuenta la cuenta de J1 (el servidor da XP y PIES reducidos, nunca ELO)
     const users = mode === 'bot' ? [this.slotUser(0), null] : [this.slotUser(0), this.slotUser(1)];
+    if (humans) humans.forEach((hm, i) => { if (!hm) users[i] = null; });
     if (!users[0] && !users[1]) return Promise.resolve(null);
     const payload = {
       client_id: uid('m'),
