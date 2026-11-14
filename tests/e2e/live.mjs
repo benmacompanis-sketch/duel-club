@@ -131,7 +131,7 @@ try {
   check(sub.slots && sub.slots[0] && sub.slots[1], 'Partida real enviada y aceptada por el servidor para las dos cuentas', JSON.stringify(sub));
   if (sub.slots?.[0]) {
     check(sub.slots[0].xp > 0 && sub.slots[1].xp > 0, 'Ambas cuentas ganaron XP', JSON.stringify(sub.slots));
-    check(sub.winner === -1 ? sub.slots[0].delta === 0 : sub.slots[0].delta === -sub.slots[1].delta && sub.slots[0].delta !== 0, 'ELO cambió de forma simétrica entre las dos cuentas', JSON.stringify(sub));
+    check(sub.slots[0].delta === 0 && sub.slots[1].delta === 0, 'Partida local entre dos cuentas: el ELO no cambia (solo cambia online en competitivo)', JSON.stringify(sub));
   }
   // 4) PIE STORE: compra real desde la interfaz
   lastPage = p1;
@@ -143,7 +143,7 @@ try {
   await p1.click('.sn-btn[data-id="store"]');
   await p1.waitForSelector('.item-card');
   step = 'tienda: abrir objeto';
-  await p1.click('.item-card:not(.owned) >> nth=0');
+  await p1.click('.store > .item-grid .item-card:not(.owned) >> nth=0'); // el primero de la grilla (no los destacados del día)
   await p1.waitForSelector('.item-dialog .btn.green');
   step = 'tienda: botón comprar';
   await p1.click('.item-dialog .btn.green');
@@ -195,7 +195,7 @@ try {
   const names = await p1.locator('.rank-row .rank-name b').allTextContents();
   check(names.some((n) => n.includes(A.name)) && names.some((n) => n.includes(B.name)), 'Las dos cuentas aparecen en el ranking mundial', names.join(', '));
   const profileA = await p1.evaluate(async (u) => (await window.DC.accounts.profile(u)), A.user);
-  check(profileA.matches.length === 1 && profileA.rating_history.length === 1, 'Perfil público con historial y evolución de ELO', JSON.stringify({ m: profileA.matches.length, rh: profileA.rating_history.length }));
+  check(profileA.matches.length === 1 && profileA.rating_history.length === 0, 'Perfil público con historial (sin cambios de ELO por partidas locales)', JSON.stringify({ m: profileA.matches.length, rh: profileA.rating_history.length }));
   const savedA = await p1.evaluate(async () => { await window.DC.accounts.refreshAll(); return window.DC.accounts.slotAccount(0); });
   check(fr.r1 && savedA.achievements?.friend_1, 'El logro "Ya no jugás solo" se otorga y se ve al instante en las dos cuentas');
   check(c1.errors.length === 0, 'Sin errores de JavaScript durante la sesión', c1.errors.join(' | '));
