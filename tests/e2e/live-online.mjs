@@ -15,7 +15,7 @@ const BASE = process.env.SITE_URL || NEW_SITE || OLD_URL;
 async function waitForBuild(browser) {
   const sha = process.env.GITHUB_SHA;
   if (!sha || !NEW_SITE) return;
-  const page = await browser.newPage();
+  const page = await browser.newPage({ locale: 'es-AR' });
   for (let i = 0; i < 40; i++) {
     const b = await page.goto(BASE, { waitUntil: 'domcontentloaded' }).then(() => page.evaluate(() => document.documentElement.dataset.build)).catch(() => null);
     if (b === sha) break;
@@ -39,7 +39,7 @@ const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gestur
 await waitForBuild(browser);
 
 async function computer(acc, query = '?test') {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, locale: 'es-AR' });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

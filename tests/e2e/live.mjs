@@ -13,7 +13,7 @@ const BASE = process.env.SITE_URL || NEW_SITE || OLD_URL;
 async function waitForBuild(browser) {
   const sha = process.env.GITHUB_SHA;
   if (!sha || !NEW_SITE) return;
-  const page = await browser.newPage();
+  const page = await browser.newPage({ locale: 'es-AR' });
   for (let i = 0; i < 40; i++) {
     const b = await page.goto(BASE, { waitUntil: 'domcontentloaded' }).then(() => page.evaluate(() => document.documentElement.dataset.build)).catch(() => null);
     if (b === sha) break;
@@ -34,7 +34,7 @@ const bad = (msg) => { failures++; console.log(`::error title=FALLA::${msg}`); }
 const check = (cond, msg, extra = '') => (cond ? ok(msg) : bad(`${msg} ${extra}`));
 
 async function openSite(browser, test = true) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, locale: 'es-AR' });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -73,7 +73,7 @@ await waitForBuild(browser);
 try {
   // 0) mudanza: el link viejo manda al nuevo
   if (MOVED) {
-    const pg = await browser.newPage();
+    const pg = await browser.newPage({ locale: 'es-AR' });
     await pg.goto(OLD_URL + '?sala=ABCDE').catch(() => {});
     await pg.waitForURL(BASE + '**', { timeout: 20000 }).catch(() => {});
     check(pg.url().startsWith(BASE), 'El link viejo redirige al link nuevo', pg.url());

@@ -17,9 +17,11 @@ export function botProfile(app, level) {
   const char = BOT_CHARS.filter((c) => c !== me.char)[Math.floor(Math.random() * 3)];
   return { name: level === 'idle' ? 'MUÑECO' : `BOT ${L.name.toUpperCase()}`, char, color: me.color?.toUpperCase() === L.color.toUpperCase() ? '#8C96B8' : L.color, acc: 'none', accountId: null, bot: level };
 }
-function players(app, level) {
+function players(app, level, solo = false) {
   const p0 = { ...app.profiles[0], acc: app.profiles[0].acc && typeof app.profiles[0].acc === 'object' ? { ...app.profiles[0].acc } : app.profiles[0].acc };
-  return [p0, botProfile(app, level)];
+  // modo solo: el otro lugar queda vacío (no se dibuja ningún rival)
+  const p1 = solo ? { name: '', char: '__none', color: '#2A2440', acc: 'none', accountId: null, bot: 'idle', hidden: true } : botProfile(app, level);
+  return [p0, p1];
 }
 function remember(app, entry) {
   const S = app.save.solo;
@@ -30,7 +32,7 @@ function remember(app, entry) {
 
 async function playVsBot(app, gameId, level, { label, practice = false, solo = false } = {}) {
   return app.runner.play(gameId, {
-    players: players(app, level),
+    players: players(app, level, solo),
     difficulty: 0.5,
     caos: false,
     event: null,
@@ -39,6 +41,7 @@ async function playVsBot(app, gameId, level, { label, practice = false, solo = f
     mode: practice ? 'practice' : 'bot',
     bot: level,
     solo,
+    goal: solo ? `Meta: ${SOLO_GOALS[gameId][2]}` : undefined,
   });
 }
 

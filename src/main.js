@@ -3,6 +3,8 @@ import '@fontsource/bangers/400.css';
 import '@fontsource/lilita-one/400.css';
 import '@fontsource-variable/nunito';
 import './style.css';
+import { installI18n } from './i18n.js';
+installI18n();
 import { App } from './core/gameManager.js';
 
 // Mudanza desde el link viejo (GitHub Pages): la página vieja manda la sesión, los ajustes y las estadísticas

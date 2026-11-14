@@ -1048,6 +1048,7 @@ let offIdx = 0;
  *   acc: id de accesorio de la versión anterior o {skin, hat, face, body}
  */
 export function drawCharacter(g, o) {
+  if (o.id === '__none') return; // jugador oculto (modo solo: no hay rival en pantalla)
   const ch = CHAR_BY_ID[o.id] || CHARACTERS[0];
   const t = o.t ?? performance.now() / 1000;
   const st = animState(o.anim || 'idle', t, (o.seed ?? 0) + ch.id.length * 0.37);
@@ -1231,6 +1232,7 @@ function halftone(g) {
 
 /** Retrato circular (para HUD y marcadores). */
 export function drawPortrait(g, x, y, r, profile, o = {}) {
+  if (profile?.char === '__none') return;
   g.save();
   g.beginPath(); g.arc(x, y, r, 0, TAU);
   g.fillStyle = o.bg || shade(profile.color, -0.6);
