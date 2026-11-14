@@ -15,7 +15,8 @@ import { BotInput } from './bots.js';
 import { handleExtAuth } from '../ui/extAuthFlow.js';
 let GameRunnerDots = null;
 const keyNameShort = (c) => ({ ShiftRight: 'SHIFT', NumpadEnter: 'ENTER' }[c] || keyName(c));
-import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel } from './utils.js';
+import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel, mulberry32 } from './utils.js';
+const fmtGhost = (v) => (Math.abs(v) >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10));
 import { UI } from '../ui/ui.js';
 import { introScreen } from '../ui/intro.js';
 import { pauseModal } from '../ui/pause.js';
@@ -210,8 +211,13 @@ export class MinigameRunner {
       this.bots = base === this.app.input ? [this.bot] : [base, this.bot];
       this.opts.input = this.bot;
     }
-    this.game = new this.Game(this.app, this.opts);
-    this.game.init();
+    // semilla fija (desafíos diario/semanal): el minijuego sale idéntico para todos los jugadores
+    this.rng = this.opts.seed != null ? mulberry32(this.opts.seed >>> 0) : null;
+    this.game = this.seeded(() => { const gm = new this.Game(this.app, this.opts); gm.init(); return gm; });
+    // fantasma: grabación (pose + puntaje cada 0,1 s) y reproducción
+    this.ghostRec = this.opts.ghostRec ? { v: 1, game: this.Game.meta.id, dt: 0.1, f: [] } : null;
+    this.ghostNext = 0;
+    this.ghostPlay = this.opts.ghost?.f?.length ? this.opts.ghost : null;
     for (const b of this.bots) b.attach(this.game);
     this.t = 0;
     this.endT = 0;
@@ -354,7 +360,8 @@ export class MinigameRunner {
       if (this.caos) this.updateCaos(dt);
       if (this.goFlash > 0) this.goFlash -= dt;
       for (const b of this.bots) b.tick(sdt);
-      game.update(sdt);
+      this.seeded(() => game.update(sdt));
+      if (this.ghostRec || this.ghostPlay) this.updateGhost();
       if (game.done) {
         this.state = 'ending';
         this.endT = 0;
@@ -380,6 +387,41 @@ export class MinigameRunner {
     }
     if (st !== 'paused') game.fx.update(dt);
     if (draw && this.game) this.render();
+  }
+
+  /** Corre fn con el azar de la semilla fija (si hay). */
+  seeded(fn) {
+    if (!this.rng) return fn();
+    const r = Math.random;
+    Math.random = this.rng;
+    try { return fn(); } finally { Math.random = r; }
+  }
+  updateGhost() {
+    const game = this.game, t = game.time;
+    if (this.ghostRec && t >= this.ghostNext) {
+      this.ghostNext = t + this.ghostRec.dt;
+      const p = game.ghostPose?.(0), sc = game.ghostScore?.(0);
+      // cuadro compacto: [t, puntaje, x, y, extra] con 1 decimal
+      const r1 = (v) => (v == null ? null : Math.round(v * 10) / 10);
+      this.ghostRec.f.push(p ? [r1(t), r1(sc), r1(p.x), r1(p.y), r1(p.a ?? p.face ?? 0)] : [r1(t), r1(sc)]);
+      if (this.ghostRec.f.length > 6000) this.ghostRec = null; // más de 10 minutos: no se guarda
+    }
+    if (this.ghostPlay) {
+      const F = this.ghostPlay.f;
+      let i = this.ghostIdx || 0;
+      while (i < F.length - 2 && F[i + 1][0] <= t) i++;
+      this.ghostIdx = i;
+      const a = F[i], b = F[Math.min(i + 1, F.length - 1)];
+      const k = b[0] > a[0] ? Math.min(1, Math.max(0, (t - a[0]) / (b[0] - a[0]))) : 0;
+      const L = (j) => (a[j] == null ? null : b[j] == null ? a[j] : a[j] + (b[j] - a[j]) * k);
+      game.ghost = a.length > 2 && t <= F[F.length - 1][0] + 0.5 ? { x: L(2), y: L(3), a: L(4), face: a[4] } : null;
+      game.ghostScoreNow = L(1);
+    }
+  }
+  /** Datos del fantasma grabado en esta partida (o null). */
+  takeGhost() {
+    const g = this.ghostRec;
+    return g && g.f.length > 5 ? g : null;
   }
 
   updateInvert(dt) {
@@ -472,6 +514,7 @@ export class MinigameRunner {
     game.renderHUD(g);
     game.fx.renderFlash(g);
     this.renderOverlays(g);
+    if (this.ghostPlay && this.game) this.renderGhostHud(g);
   }
 
   renderControls(g) {
@@ -500,6 +543,21 @@ export class MinigameRunner {
     }
   }
 
+  renderGhostHud(g) {
+    const game = this.game, gs = game.ghostScoreNow, me = game.ghostScore?.(0);
+    if (gs == null || me == null) return;
+    const lower = this.opts.ghostLower;
+    const diff = Math.round((me - gs) * 10) / 10;
+    const ahead = lower ? diff < 0 : diff > 0;
+    g.save();
+    g.translate(W / 2, H - 46);
+    g.rotate(-0.02);
+    g.fillStyle = '#0D0B14'; g.fillRect(-176, -22, 360, 50);
+    g.fillStyle = ahead ? '#2c5e47' : '#8a2a3a'; g.fillRect(-180, -26, 360, 50);
+    text(g, `FANTASMA ${fmtGhost(gs)}`, -90, -1, { size: 22, color: '#E9E4FF' });
+    text(g, `${diff > 0 ? '+' : ''}${fmtGhost(diff)}`, 100, -1, { size: 26, color: ahead ? '#C6F04A' : '#FFB3B3' });
+    g.restore();
+  }
   renderOverlays(g) {
     const game = this.game;
     const t = game.realTime;

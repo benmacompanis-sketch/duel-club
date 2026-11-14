@@ -347,6 +347,7 @@ export default class BlockBattle extends BaseGame {
     g.globalAlpha = 1;
   }
 
+  ghostScore(p) { return this.boards?.[p]?.score ?? 0; }
   render(g) {
     const t = this.realTime;
     this.arenaBG(g, '#140F33', '#0B0A20');

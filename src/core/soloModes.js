@@ -7,7 +7,10 @@ import { GAMES, GAME_BY_ID } from '../games/index.js';
 import { BOT_LEVELS } from './bots.js';
 import { resultsScreen } from '../ui/results.js';
 import { h, icon } from '../ui/dom.js';
-import { shuffle } from './utils.js';
+import { shuffle, mulberry32 } from './utils.js';
+import { DIFFS } from './tournamentManager.js';
+import { SP_GAMES, ENDLESS, GHOST_GAMES, spStars } from '../data/spModes.js';
+import { EVENTS } from './events.js';
 
 const BOT_CHARS = ['volt', 'mochi', 'pico', 'brik'];
 
@@ -30,18 +33,22 @@ function remember(app, entry) {
   app.persist();
 }
 
-async function playVsBot(app, gameId, level, { label, practice = false, solo = false } = {}) {
+async function playVsBot(app, gameId, level, { label, practice = false, solo = false, event = null, diff = 'normal', seed = null, ghost = null, ghostRec = false, goal } = {}) {
   return app.runner.play(gameId, {
     players: players(app, level, solo),
-    difficulty: 0.5,
-    caos: false,
-    event: null,
-    options: app.save.gameOptions[gameId] || {},
+    difficulty: DIFFS[diff]?.v ?? 0.5,
+    caos: !!DIFFS[diff]?.caos,
+    event,
+    seed,
+    ghost,
+    ghostRec,
+    ghostLower: SP_GAMES[gameId]?.[0] === 'lower',
+    options: seed != null ? {} : app.save.gameOptions[gameId] || {},
     label,
     mode: practice ? 'practice' : 'bot',
     bot: level,
     solo,
-    goal: solo ? `Meta: ${SOLO_GOALS[gameId][2]}` : undefined,
+    goal: goal || (solo && SOLO_GOALS[gameId] ? `Meta: ${SOLO_GOALS[gameId][2]}` : undefined),
   });
 }
 
@@ -229,3 +236,170 @@ export async function runLadder(app, back) {
   app.audio.playMusic('menu');
   back({ ladderEnd: { stage: done, secs, record, complete: done >= 16 } });
 }
+
+// ------------------------------------------------------------------- DAILY CHAOS y WEEKLY CHALLENGE
+const fmtVal = (gameId, v) => (v == null ? '—' : GAME_BY_ID[gameId].meta.record?.format ? GAME_BY_ID[gameId].meta.record.format(v) : String(Math.round(v * 10) / 10));
+const evName = (id) => (id ? EVENTS[id]?.short || id : 'Sin modificador');
+
+/** Juega el desafío del día o de la semana (spec viene del servidor: mismo minijuego, modificador y semilla para todos). */
+export async function runSpChallenge(app, kind, spec, back) {
+  const meta = GAME_BY_ID[spec.game].meta;
+  for (;;) {
+    let res;
+    try {
+      res = await playVsBot(app, spec.game, 'idle', {
+        label: kind === 'daily' ? 'DAILY CHAOS' : 'WEEKLY CHALLENGE', practice: true, solo: true,
+        event: spec.event, diff: spec.diff, seed: spec.seed,
+        goal: `Meta: ★ ${fmtVal(spec.game, spec.goals[0])} · ★★ ${fmtVal(spec.game, spec.goals[1])} · ★★★ ${fmtVal(spec.game, spec.goals[2])}`,
+      });
+    } catch (e) {
+      if (e?.cancelled) { app.audio.playMusic('menu'); return back(); }
+      throw e;
+    }
+    const v = typeof res.records?.[0] === 'number' ? res.records[0] : null;
+    const stars = spStars(spec.game, spec.goals, v);
+    let srv = null, err = null;
+    if (app.accounts.slotAccount(0) && v != null) {
+      try { srv = await app.accounts.spSubmit(kind, spec.key, spec.game, v, { secs: Math.round(res.playSeconds || 0) }); } catch (e) { err = e; }
+    }
+    const action = await app.ui.ask(resultsScreen, {
+      session: null, res, rec: { newRecords: [false, false], server: null },
+      info: {
+        quick: true, practice: true, label: kind === 'daily' ? 'DAILY CHAOS' : 'WEEKLY CHALLENGE',
+        actions: (choose) => h('div.res-actions',
+          h('div.solo-result',
+            kind === 'daily' ? h('span.sr-stars', [1, 2, 3].map((i) => h('i' + (i <= stars ? '.on' : ''), '★'))) : null,
+            h('span', `${fmtVal(spec.game, v)}${srv?.improved ? ' · ¡NUEVO RÉCORD PERSONAL!' : srv ? ` · récord: ${fmtVal(spec.game, srv.best)}` : ''}`),
+            srv ? h('span.muted', `Puesto ${srv.rank}${srv.xp ? ` · +${srv.xp} XP` : ''}${srv.pies ? ` · +${srv.pies} PIES` : ''}${srv.status === 'review' ? ' · en revisión' : ''}`)
+              : h('span.muted', app.accounts.slotAccount(0) ? (err ? 'No se pudo guardar el resultado.' : '') : 'Como invitado no entrás al ranking.')),
+          h('button.btn', { nav: true, onclick: () => choose('menu') }, 'VOLVER'),
+          h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => choose('rematch') }, icon('play'), 'OTRA VEZ')),
+      },
+    });
+    app.runner.close();
+    if (action === 'rematch') continue;
+    app.audio.playMusic('menu');
+    return back();
+  }
+}
+
+// ------------------------------------------------------------------- ENDLESS CLUB
+export async function runEndless(app, back) {
+  const seed = (Date.now() & 0x7fffffff) >>> 0;
+  const rng = mulberry32(seed);
+  const ids = Object.keys(SP_GAMES);
+  let bag = [];
+  const run = { stage: 0, lives: ENDLESS.lives, score: 0, mult: 1, t0: Date.now(), games: [] };
+  for (;;) {
+    if (!bag.length) bag = shuffle(ids, rng);
+    const gid = bag.shift();
+    const stage = run.stage + 1;
+    const goal = ENDLESS.goal(gid, stage);
+    const event = ENDLESS.event(gid, stage, rng);
+    const lower = SP_GAMES[gid][0] === 'lower';
+    let res;
+    try {
+      res = await playVsBot(app, gid, 'idle', {
+        label: `ENDLESS CLUB · ETAPA ${stage} · ${'♥'.repeat(run.lives)} · x${run.mult.toFixed(2)}`, practice: true, solo: true, event,
+        goal: `Meta de la etapa: ${lower ? 'menos de' : 'al menos'} ${fmtVal(gid, goal)}`,
+      });
+    } catch (e) {
+      if (e?.cancelled) break;
+      throw e;
+    }
+    const v = typeof res.records?.[0] === 'number' ? res.records[0] : null;
+    const passed = v != null && (lower ? v <= goal : v >= goal);
+    let msg;
+    if (passed) {
+      run.stage = stage;
+      const pts = Math.round(100 * run.mult);
+      run.score += pts;
+      run.mult = Math.min(3, run.mult + 0.25);
+      msg = `¡ETAPA ${stage} SUPERADA! +${pts} puntos · multiplicador x${run.mult.toFixed(2)}`;
+    } else {
+      run.lives--;
+      run.mult = 1;
+      msg = run.lives > 0 ? `No llegaste a la meta: perdés una vida (quedan ${run.lives}).` : 'Sin vidas: fin de la maratón.';
+    }
+    run.games.push(gid);
+    const action = await app.ui.ask(resultsScreen, {
+      session: null, res, rec: { newRecords: [false, false], server: null },
+      info: {
+        quick: true, practice: true, label: `ENDLESS CLUB · ETAPA ${stage}`,
+        actions: (choose) => h('div.res-actions',
+          h('span.ladder-msg', msg, h('br'), `Puntos: ${run.score} · Etapas superadas: ${run.stage}`),
+          run.lives > 0
+            ? [h('button.btn.ghost', { nav: true, onclick: () => choose('quit') }, 'TERMINAR'), h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => choose('continue') }, icon('play'), 'SEGUIR')]
+            : h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => choose('quit') }, 'VER RESULTADO')),
+      },
+    });
+    app.runner.close();
+    if (action !== 'continue' || run.lives <= 0) break;
+  }
+  const secs = Math.round((Date.now() - run.t0) / 1000);
+  let srv = null;
+  if (app.accounts.slotAccount(0) && run.stage > 0) {
+    try { srv = await app.accounts.spSubmit('endless', 'all', null, run.score, { stages: run.stage, secs }); } catch {}
+  }
+  const S = app.save.solo;
+  S.endless ||= { best: 0, stage: 0, runs: 0 };
+  S.endless.runs++;
+  const record = run.score > S.endless.best;
+  if (record) { S.endless.best = run.score; S.endless.stage = run.stage; }
+  app.persist();
+  app.audio.playMusic('menu');
+  back({ endlessEnd: { ...run, secs, record, srv } });
+}
+
+// ------------------------------------------------------------------- GHOST RUN
+export async function runGhost(app, gameId, ghost, back) {
+  const meta = GAME_BY_ID[gameId].meta;
+  const lower = SP_GAMES[gameId][0] === 'lower';
+  for (;;) {
+    let res;
+    try {
+      res = await playVsBot(app, gameId, 'idle', {
+        label: 'GHOST RUN', practice: true, solo: true, ghost: ghost?.data || null, ghostRec: true,
+        goal: ghost ? `Superá a tu fantasma: ${fmtVal(gameId, ghost.value)}` : 'Primera vuelta: grabá tu fantasma.',
+      });
+    } catch (e) {
+      if (e?.cancelled) { app.audio.playMusic('menu'); return back(); }
+      throw e;
+    }
+    const v = typeof res.records?.[0] === 'number' ? res.records[0] : null;
+    const data = app.runner.takeGhost();
+    const beat = ghost && v != null && (lower ? v < ghost.value : v > ghost.value);
+    let srv = null;
+    const local = (app.save.solo.ghosts ||= {});
+    if (v != null && data) {
+      const prev = local[gameId];
+      if (!prev || (lower ? v < prev.value : v > prev.value)) local[gameId] = { label: 'best', value: v, data };
+      local[gameId + ':last'] = { label: 'last', value: v, data };
+      app.persist();
+      if (app.accounts.slotAccount(0)) {
+        try {
+          await app.accounts.ghostSave(gameId, v, data);
+          srv = await app.accounts.spSubmit('ghost', gameId, gameId, v, { secs: Math.round(res.playSeconds || 0) });
+        } catch {}
+      }
+    }
+    const action = await app.ui.ask(resultsScreen, {
+      session: null, res, rec: { newRecords: [false, false], server: null },
+      info: {
+        quick: true, practice: true, label: 'GHOST RUN',
+        actions: (choose) => h('div.res-actions',
+          h('div.solo-result',
+            h('b', ghost ? (beat ? '¡LE GANASTE A TU FANTASMA!' : 'EL FANTASMA GANÓ ESTA VEZ') : '¡FANTASMA GRABADO!'),
+            h('span', `Vos: ${fmtVal(gameId, v)}${ghost ? ` · Fantasma: ${fmtVal(gameId, ghost.value)}` : ''}`),
+            srv?.xp ? h('span.muted', `+${srv.xp} XP · +${srv.pies} PIES`) : null),
+          h('button.btn', { nav: true, onclick: () => choose('menu') }, 'VOLVER'),
+          h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => choose('rematch') }, icon('play'), 'CONTRA EL MEJOR')),
+      },
+    });
+    app.runner.close();
+    if (action === 'rematch') { ghost = local[gameId] || ghost; continue; }
+    app.audio.playMusic('menu');
+    return back();
+  }
+}
+export { GHOST_GAMES, evName, fmtVal };

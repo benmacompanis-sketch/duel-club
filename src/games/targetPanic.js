@@ -243,6 +243,7 @@ export default class TargetPanic extends BaseGame {
   }
 
   // ------------------------------------------------------------------ dibujo
+  ghostScore(p) { return this.score[p]; }
   render(g) {
     const t = this.realTime;
     // galería de tiro

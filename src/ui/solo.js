@@ -3,7 +3,10 @@ import { h, icon } from './dom.js';
 import { header, gameIcon } from './widgets.js';
 import { GAMES, GAME_BY_ID } from '../games/index.js';
 import { BOT_LEVELS, BOT_ORDER } from '../core/bots.js';
-import { runVsBot, runPractice, runLadder, runSolo, LADDER_LEVEL, SOLO_GOALS, dailySolo } from '../core/soloModes.js';
+import { runVsBot, runPractice, runLadder, runSolo, LADDER_LEVEL, SOLO_GOALS, dailySolo, runSpChallenge, runEndless, runGhost, GHOST_GAMES, evName, fmtVal } from '../core/soloModes.js';
+import { DIFFS } from '../core/tournamentManager.js';
+import { loading, errorBox } from './kit.js';
+import { errorText } from '../net/api.js';
 import { fmtN } from './kit.js';
 
 const fmtSecs = (s) => (s >= 60 ? `${Math.floor(s / 60)} min ${s % 60} s` : `${s} s`);
@@ -22,7 +25,7 @@ export function soloScreen(ui, params = {}) {
   const tabsEl = h('div.solo-tabs');
 
   function renderTabs() {
-    tabsEl.replaceChildren(...[['solo', 'SOLO', 'star'], ['vs', 'VS BOT', 'duel'], ['ladder', 'ESCALERA', 'trophy'], ['practice', 'PRÁCTICA', 'target']].map(([id, name, ic]) =>
+    tabsEl.replaceChildren(...[['solo', 'SOLO', 'star'], ['daily', 'DAILY CHAOS', 'flame'], ['weekly', 'SEMANAL', 'crown'], ['endless', 'ENDLESS CLUB', 'arrow'], ['ghost', 'GHOST RUN', 'user'], ['vs', 'VS BOT', 'duel'], ['ladder', 'ESCALERA', 'trophy'], ['practice', 'PRÁCTICA', 'target']].map(([id, name, ic]) =>
       h('button.solo-tab' + (tab === id ? '.on' : ''), { nav: true, onclick: () => { tab = id; app.audio.play('click'); renderTabs(); render(); } }, icon(ic), name)));
   }
 
@@ -37,8 +40,86 @@ export function soloScreen(ui, params = {}) {
     }));
   }
 
+  // ---------------------------------------------------------------- modos con servidor
+  let specs = null;
+  async function getSpecs() {
+    if (specs) return specs;
+    specs = await app.accounts.spSpecs();
+    const pay = specs.weekly_payout;
+    if (pay?.pies) ui.toast({ kind: 'ok', title: 'Desafío semanal', text: `Terminaste en el puesto ${pay.rank} de ${pay.total}: +${pay.pies} PIES.` });
+    return specs;
+  }
+  const board = (list, gameId, empty) => h('div.sp-board', h('h3', 'RANKING'),
+    list.length ? list.map((r) => h('div.sp-row' + (r.mine ? '.me' : ''), h('b', `#${r.pos}`), h('span', { style: { color: r.color || '#fff' } }, r.name), h('i', gameId ? fmtVal(gameId, r.best) : String(Math.round(r.best)))))
+      : h('p.muted', empty));
+  async function spView(kind) {
+    body.replaceChildren(loading());
+    let d, b;
+    try { d = await getSpecs(); b = kind === 'endless' ? await app.accounts.spBoard('endless', 'all') : await app.accounts.spBoard(kind, d[kind].key); }
+    catch (e) { body.replaceChildren(errorBox(errorText(e), () => spView(kind))); return; }
+    if (tab !== kind) return;
+    const acc = app.accounts.slotAccount(0);
+    if (kind === 'endless') {
+      const mine = d.mine?.endless;
+      const end = params.endlessEnd;
+      body.replaceChildren(
+        h('div.solo-side',
+          h('h3', 'ENDLESS CLUB'),
+          h('p', 'Maratón infinita: minijuegos al azar con metas que suben, modificadores CAOS desde la etapa 5 y 3 vidas. Cada etapa superada suma puntos y sube el multiplicador.'),
+          h('div.ss-total', h('b', mine ? fmtN(mine.best) : app.save.solo.endless?.best ? fmtN(app.save.solo.endless.best) : '—'), h('small', 'TU MEJOR PUNTAJE')),
+          h('div.solo-note', acc ? 'Cada maratón da XP y PIES según las etapas (hasta 3 por día).' : 'Como invitado no entrás al ranking ni ganás recompensas.'),
+          h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => { app.audio.play('confirm'); runEndless(app, (x) => again(x)); } }, icon('play'), 'EMPEZAR MARATÓN')),
+        h('div.solo-main',
+          end ? h('div.ladder-end' + (end.record ? '.win' : ''), h('b', `${fmtN(end.score)} puntos · ${end.stage} etapas`), h('span', `${fmtSecs(end.secs)}${end.record ? ' · ¡NUEVO RÉCORD!' : ''}${end.srv?.xp ? ` · +${end.srv.xp} XP · +${end.srv.pies} PIES` : ''}`)) : null,
+          board(b.top || [], null, 'Todavía nadie jugó la maratón. ¡Sé el primero!')));
+      return;
+    }
+    const spec = d[kind];
+    const m = GAME_BY_ID[spec.game].meta;
+    const mine = d.mine?.[kind];
+    const ends = new Date(spec.ends_at);
+    const left = Math.max(0, ends - Date.now());
+    const leftTxt = left > 86400000 ? `${Math.floor(left / 86400000)} d ${Math.floor((left % 86400000) / 3600000)} h` : `${Math.floor(left / 3600000)} h ${Math.floor((left % 3600000) / 60000)} min`;
+    body.replaceChildren(
+      h('div.solo-side',
+        h('h3', kind === 'daily' ? 'DAILY CHAOS' : 'WEEKLY CHALLENGE'),
+        h('div.sp-game', { style: { '--c': m.color } }, gameIcon(ui, scr, m, 64), h('div', h('b', m.name), h('span', evName(spec.event)), kind === 'weekly' ? h('span', `Dificultad: ${DIFFS[spec.diff]?.label || spec.diff}`) : null)),
+        h('div.sp-goals', spec.goals.map((g, i) => h('span', `${'★'.repeat(i + 1)} ${fmtVal(spec.game, g)}`))),
+        h('p.muted.small', kind === 'daily' ? `El mismo desafío para todos, hoy. Cambia en ${leftTxt}.` : `El mismo desafío para todos durante la semana. Intentos ilimitados: cuenta tu mejor resultado. Termina en ${leftTxt}.`),
+        mine ? h('div.ss-total', h('b', fmtVal(spec.game, mine.best)), h('small', kind === 'daily' ? `TU MEJOR · ${'★'.repeat(mine.stars || 0) || 'sin estrellas'}` : `TU MEJOR · ${mine.attempts} intentos`)) : null,
+        h('div.solo-note', acc ? (kind === 'daily' ? 'Cada estrella nueva da XP y PIES.' : 'Participar da XP y PIES. Al terminar la semana, premio en PIES según tu puesto (top 1, 3, 10 y 25 %).') : 'Como invitado podés jugar, pero no entrás al ranking.'),
+        h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => { app.audio.play('confirm'); runSpChallenge(app, kind, spec, () => { specs = null; again(); }); } }, icon('play'), 'JUGAR')),
+      h('div.solo-main', board(b.top || [], spec.game, 'Todavía nadie jugó este desafío. ¡Sé el primero!')));
+  }
+  let ghostGame = GHOST_GAMES[game] ? game : 'race';
+  async function ghostView() {
+    const acc = app.accounts.slotAccount(0);
+    const local = app.save.solo.ghosts || {};
+    let list = [];
+    body.replaceChildren(loading());
+    if (acc) { try { list = await app.accounts.ghostList(ghostGame); } catch {} }
+    if (tab !== 'ghost') return;
+    if (!list.length) list = [local[ghostGame], local[ghostGame + ':last']].filter(Boolean);
+    const names = { best: 'TU MEJOR', last: 'ÚLTIMO INTENTO', prev: 'MEJOR ANTERIOR' };
+    const grid = h('div.solo-grid', Object.keys(GHOST_GAMES).map((id) => {
+      const m = GAME_BY_ID[id].meta;
+      return h('button.solo-game' + (id === ghostGame ? '.sel' : ''), { nav: true, style: { '--c': m.color }, onclick: () => { ghostGame = id; app.audio.play('click'); ghostView(); } }, gameIcon(ui, scr, m, 54), h('span', m.name));
+    }));
+    const go = (gh) => { app.audio.play('confirm'); runGhost(app, ghostGame, gh, () => again()); };
+    body.replaceChildren(
+      h('div.solo-side',
+        h('h3', 'GHOST RUN'),
+        h('p', GHOST_GAMES[ghostGame] === 'pose' ? 'Corré contra tu propio fantasma: ves tu intento anterior moviéndose a tu lado.' : 'Competí contra tu fantasma: abajo ves en vivo si vas ganando o perdiendo contra tu intento anterior.'),
+        list.length ? h('div.gh-list', list.map((gh) => h('button.gh-item', { nav: true, onclick: () => go(gh) }, h('small', names[gh.label] || gh.label), h('b', fmtVal(ghostGame, gh.value)), h('span', 'JUGAR CONTRA ESTE'))))
+          : h('p.muted', 'Todavía no tenés fantasmas en este minijuego.'),
+        h('button.btn.primary.big', { nav: true, 'data-autofocus': true, onclick: () => go(list.find((x) => x.label === 'best') || null) }, icon('play'), list.length ? 'CONTRA MI MEJOR' : 'GRABAR MI FANTASMA')),
+      h('div.solo-main', h('h3', 'MINIJUEGO'), grid));
+  }
+
   function render() {
     const acc = app.accounts.slotAccount(0);
+    if (tab === 'daily' || tab === 'weekly' || tab === 'endless') { spView(tab); return; }
+    if (tab === 'ghost') { ghostView(); return; }
     if (tab === 'solo') {
       const R = (S.solo ||= {});
       const day = dailySolo();

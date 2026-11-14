@@ -430,8 +430,21 @@ export default class MicroRace extends BaseGame {
     // autos (el que va atrás se dibuja primero)
     const order = this.cars[0].prog < this.cars[1].prog ? [0, 1] : [1, 0];
     for (const p of order) this.drawCar(g, p, t);
+    if (this.ghost) this.drawGhost(g, this.ghost);
   }
 
+  ghostPose(p) { const c = this.cars[p]; return { x: c.x, y: c.y, a: c.ang }; }
+  ghostScore(p) { return this.cars[p].prog; }
+  drawGhost(g, gh) {
+    g.save();
+    g.globalAlpha = 0.45;
+    g.translate(gh.x, gh.y);
+    g.rotate(gh.a || 0);
+    g.fillStyle = '#E9E4FF';
+    roundRect(g, -18, -10, 36, 20, 7); g.fill();
+    g.strokeStyle = '#0D0B14'; g.lineWidth = 3; g.setLineDash([5, 4]); g.stroke();
+    g.restore();
+  }
   drawCar(g, p, t) {
     const c = this.cars[p];
     const col = this.color(p);

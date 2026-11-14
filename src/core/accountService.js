@@ -431,6 +431,29 @@ export class AccountService {
    * Envía el resultado de un minijuego. Solo cuenta para los jugadores con cuenta.
    * Devuelve una promesa con la respuesta del servidor (o null si nadie tiene cuenta).
    */
+  // ------------------------------------------------------------------ singleplayer (diario, semanal, endless, fantasma)
+  async spSpecs() {
+    const tok = this.slotToken(0);
+    const out = await rpc('dc_sp_specs', { p_token: tok || null });
+    if (out?.weekly_payout?.pies) this.refresh(this.slotUser(0)).catch(() => {});
+    return out;
+  }
+  async spSubmit(kind, period, game, value, meta = {}) {
+    const out = await this._call(this.slotUser(0), 'dc_sp_submit', { p_kind: kind, p_period: period, p_game: game, p_value: value, p_meta: meta });
+    if (out?.me) this._setMe(out.me);
+    return out;
+  }
+  spBoard(kind, period) {
+    return rpc('dc_sp_board', { p_kind: kind, p_period: period, p_token: this.slotToken(0) || null });
+  }
+  ghostSave(game, value, data) {
+    return this._call(this.slotUser(0), 'dc_ghost_save', { p_game: game, p_value: value, p_data: JSON.stringify(data) });
+  }
+  async ghostList(game) {
+    const list = await this._call(this.slotUser(0), 'dc_ghost_list', { p_game: game });
+    return (list || []).map((g) => { try { return { ...g, data: JSON.parse(g.data) }; } catch { return null; } }).filter(Boolean);
+  }
+
   // ------------------------------------------------------------------ competitivo local (ELO global)
   /** Abre una sesión competitiva con las cuentas de J1 y J2 (los dos ya confirmaron en pantalla). */
   async rankedOpen(compId = null) {

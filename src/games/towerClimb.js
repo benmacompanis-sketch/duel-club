@@ -238,6 +238,8 @@ export default class TowerClimb extends BaseGame {
   // ------------------------------------------------------------------ dibujo
   sx(P, x) { return P.p * HALF + PAD + x; }
   sy(P, y) { return H - 40 - (y - P.cam); }
+  ghostPose(p) { const P = this.pl[p]; return { x: P.x, y: P.y, face: P.face }; }
+  ghostScore(p) { return Math.round(this.pl[p].best / 10); }
   render(g) {
     const t = this.realTime;
     for (const P of this.pl) {
@@ -341,6 +343,12 @@ export default class TowerClimb extends BaseGame {
       drawCharacter(g, { id: this.players[P.p].char, x: this.sx(P, P.x), y: this.sy(P, P.y), s: 0.6, color: this.color(P.p), anim: P.finished != null ? 'celebrate' : anim, t: t + P.p, facing: P.face, acc: this.players[P.p].acc });
     } else {
       text(g, '¡A LA BANDERA!', x0 + HALF / 2, H / 2, { size: 26, color: '#fff', glow: this.color(P.p) });
+    }
+    // fantasma (Ghost Run): tu intento anterior, translúcido
+    if (this.ghost && P.p === 0) {
+      g.save(); g.globalAlpha = 0.38;
+      drawCharacter(g, { id: this.players[0].char, x: this.sx(P, this.ghost.x), y: this.sy(P, this.ghost.y), s: 0.6, color: '#E9E4FF', anim: 'idle', t, facing: this.ghost.face >= 0 ? 1 : -1, acc: 'none' });
+      g.restore();
     }
     // altura
     panel(g, x0 + HALF / 2 - 70, H - 46, 140, 34, { r: 17, fill: 'rgba(11,16,32,0.8)', stroke: this.color(P.p) });

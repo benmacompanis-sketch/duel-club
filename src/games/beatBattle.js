@@ -262,6 +262,7 @@ export default class BeatBattle extends BaseGame {
   }
 
   // ------------------------------------------------------------------ dibujo
+  ghostScore(p) { return this.score[p]; }
   render(g) {
     const t = this.realTime;
     const beat = this.songTime * (this.song.bpm / 60);

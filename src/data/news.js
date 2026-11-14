@@ -4,6 +4,27 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-14-singleplayer-411',
+    date: '2026-11-14',
+    version: '4.11',
+    title: 'Singleplayer: Daily Chaos, Semanal, Endless y Ghost Run',
+    tag: 'v4.11',
+    color: '#3DDC97',
+    intro: 'Cuatro modos nuevos para jugar solo, con rankings mundiales y recompensas.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        'DAILY CHAOS: cada día un minijuego con un modificador CAOS y metas de 3 estrellas. Igual para todos.',
+        'WEEKLY CHALLENGE: un desafío por semana con ranking mundial; al terminar la semana, premio en PIES según tu puesto.',
+        'ENDLESS CLUB: maratón infinita de minijuegos con metas que suben, vidas y multiplicador.',
+        'GHOST RUN: competí contra tu propio fantasma (en Tower Climb y Micro Race lo ves moverse; en los de puntos, la diferencia en vivo).',
+      ] },
+      { kind: 'mejora', items: [
+        'Los desafíos cambian solos todos los días y todas las semanas: siempre hay algo nuevo para jugar.',
+        'Dan XP y PIES (y suben el CLUB PASS). Nunca dan ELO.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-14-local-ranked-410',
     date: '2026-11-14',
     version: '4.10',

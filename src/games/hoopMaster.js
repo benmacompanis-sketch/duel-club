@@ -276,6 +276,7 @@ export default class HoopMaster extends BaseGame {
   }
 
   // ------------------------------------------------------------------ dibujo
+  ghostScore(p) { return this.score[p]; }
   render(g) {
     const t = this.realTime;
     // gimnasio nocturno

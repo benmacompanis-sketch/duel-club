@@ -252,6 +252,7 @@ export default class FishFrenzy extends BaseGame {
   }
 
   // ------------------------------------------------------------------ dibujo
+  ghostScore(p) { return this.score[p]; }
   render(g) {
     const t = this.realTime;
     for (const z of this.zones) {
