@@ -4,6 +4,29 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-15-online-sin-lag',
+    date: '2026-11-15',
+    version: '4.2',
+    title: 'Online sin lag y Desafíos Solo',
+    tag: 'v4.2',
+    color: '#25CFE6',
+    intro: 'Tu personaje responde al instante en el online, y hay desafíos para jugar sin rival.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'Online: tus teclas se aplican al instante y la partida corrige sola si el rival hizo otra cosa. Casi sin trabones, incluso con mala conexión.',
+        'Personajes con más volumen y luz.',
+      ] },
+      { kind: 'nuevo', items: [
+        'DESAFÍOS SOLO: metas de tres estrellas en 11 minijuegos y un desafío nuevo cada día.',
+        'Nuevos cosméticos: entradas, victorias y fondos de perfil.',
+      ] },
+      { kind: 'arreglo', items: [
+        'La nariz de payaso y el bigote ahora quedan en su lugar en todos los personajes.',
+      ] },
+    ],
+    action: { label: 'DESAFÍOS SOLO', go: 'solo', tab: 'solo' },
+  },
+  {
     id: '2026-11-14-gran-actualizacion',
     date: '2026-11-14',
     version: '4.0',

@@ -16,6 +16,7 @@ function key(type, code) {
 
 export async function netTest(app, { slot, channel, game, seed = 1234, speed = 4, D = 3, maxFrames = 3600, botSeed = 99, caos = false, renderTwice = false, netSim = null, rtt = 20 }) {
   const log = [];
+  const logMap = new Map();
   // mala conexión simulada (al recibir): demora, altibajos, pérdida y picos
   const recv = (m) => round?.onMessage(m);
   const onMessage = !netSim ? recv : (m) => {
@@ -52,8 +53,11 @@ export async function netTest(app, { slot, channel, game, seed = 1234, speed = 4
   // registrar la huella cada 60 frames
   const origStep = round.step.bind(round);
   round.step = () => {
+    const fr = round.f;
+    const confirmed = round.inp[1 - round.slot].has(fr) && !(round.pendingBefore && round.pendingBefore(fr));
     origStep();
-    if (round.f % 60 === 0) log.push([round.f, stateHash(runner)]);
+    // solo estados confirmados (con rollback, un frame predicho puede diferir un instante y después se corrige)
+    if (round.f % 60 === 0 && confirmed) logMap.set(round.f, stateHash(runner));
     if (round.f >= maxFrames && round.running) round.finish('max');
   };
   // fluidez medida desde afuera: cuadros en los que la partida no pudo avanzar y saltos de más de 2 frames
@@ -74,7 +78,7 @@ export async function netTest(app, { slot, channel, game, seed = 1234, speed = 4
   let result = null;
   if (end.reason === 'done') result = await playP.catch(() => null);
   const out = {
-    reason: end.reason, frame: end.frame, log,
+    reason: end.reason, frame: end.frame, log: [...logMap.entries()].sort((x, y) => x[0] - y[0]),
     result: result && { winner: result.winner, scores: result.scores, display: result.display, playSeconds: result.playSeconds, flags: result.flags, records: result.records },
     received: link.received,
     stats: { dUp: 0, dDown: 0, ...(round.stats || {}), ...m, D: round.D, rtt: round.rtt == null ? null : Math.round(round.rtt) },
