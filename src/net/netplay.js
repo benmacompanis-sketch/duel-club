@@ -337,28 +337,27 @@ export function stateHash(runner) {
       case 'undefined': mix(7); return;
       case 'object': {
         if (v === null) { mix(11); return; }
+        // solo se evitan los ciclos (objetos en el camino actual): la huella depende de los valores, no de si dos
+        // partes del juego comparten el mismo objeto (eso cambia después de un rollback sin cambiar la partida)
         if (depth > 7 || seen.has(v) || skipObj(v)) return;
         seen.add(v);
         if (Array.isArray(v) || ArrayBuffer.isView(v)) {
           mix(v.length);
           for (let i = 0; i < v.length; i++) walk(v[i], depth + 1);
-          return;
-        }
-        if (v instanceof Map) {
+        } else if (v instanceof Map) {
           mix(v.size);
           for (const [k, x] of v) { walk(k, depth + 1); walk(x, depth + 1); }
-          return;
-        }
-        if (v instanceof Set) {
+        } else if (v instanceof Set) {
           mix(v.size);
           for (const x of v) walk(x, depth + 1);
-          return;
+        } else {
+          for (const k of Object.keys(v)) {
+            if (SKIP_KEYS.has(k) || k.charCodeAt(0) === 95 /* _ */) continue;
+            mix(k.length);
+            walk(v[k], depth + 1);
+          }
         }
-        for (const k of Object.keys(v)) {
-          if (SKIP_KEYS.has(k) || k.charCodeAt(0) === 95 /* _ */) continue;
-          mix(k.length);
-          walk(v[k], depth + 1);
-        }
+        seen.delete(v);
         return;
       }
       default:
@@ -372,10 +371,56 @@ export function stateHash(runner) {
   return h >>> 0;
 }
 
+// ----------------------------------------------------------------------------------------------------
+// ROLLBACK: copia y restauración del estado de la simulación (minijuego + estado del runner + azar).
+// Lo visual/local (efectos, audio, lienzos, claves "_") no se copia: se mantiene el objeto vivo.
+export const KEEP_REF = new Set(['app', 'audio', 'fx', 'players', 'inputs', 'opts', 'options', 'player', 'input', 'meta']);
+export function cloneVal(v, memo) {
+  if (typeof v === 'function' && v.__rng) {
+    // generador de azar propio de un minijuego: se copia su estado
+    const m = memo.get(v);
+    if (m !== undefined) return m;
+    const c = mulberry32(0);
+    c.s = v.s;
+    memo.set(v, c);
+    return c;
+  }
+  if (v === null || typeof v !== 'object') return v;
+  if (skipObj(v)) return v;
+  const m = memo.get(v);
+  if (m !== undefined) return m;
+  let out;
+  if (Array.isArray(v)) {
+    out = new Array(v.length);
+    memo.set(v, out);
+    for (let i = 0; i < v.length; i++) out[i] = cloneVal(v[i], memo);
+  } else if (ArrayBuffer.isView(v)) {
+    out = v.slice();
+    memo.set(v, out);
+  } else if (v instanceof Map) {
+    out = new Map();
+    memo.set(v, out);
+    for (const [k, x] of v) out.set(cloneVal(k, memo), cloneVal(x, memo));
+  } else if (v instanceof Set) {
+    out = new Set();
+    memo.set(v, out);
+    for (const x of v) out.add(cloneVal(x, memo));
+  } else {
+    out = Object.create(Object.getPrototypeOf(v));
+    memo.set(v, out);
+    for (const k of Object.keys(v)) out[k] = KEEP_REF.has(k) || k.charCodeAt(0) === 95 ? v[k] : cloneVal(v[k], memo);
+  }
+  return out;
+}
+export const RUNNER_KEYS = ['state', 't', 'playSeconds', 'lastCount', 'endT', 'prevState', 'invert', 'goFlash', 'cd', 'caos', 'baseTimeScale'];
+const NOFX = new Proxy({}, { get: () => () => {} });
+
 // =====================================================================================================
-export const PROTO = 2; // versión del protocolo entre compus (si no coincide, hay que recargar la página)
+export const PROTO = 3; // versión del protocolo entre compus (si no coincide, hay que recargar la página)
 const D_MIN = 2;
 const D_MAX = 12; // retardo de entrada máximo: 12 frames = 200 ms
+const MAX_PRED = 8; // rollback: hasta 8 frames (133 ms) por delante de las teclas del rival
+const RB_DELAY = 2; // rollback: retardo fijo de las teclas propias (33 ms, reduce las correcciones visibles)
 
 /**
  * Una ronda (un minijuego) sincronizada entre las dos compus.
@@ -432,7 +477,11 @@ export class NetRound {
     this.peerBufMin = 99;
     this.peerBufSince = performance.now();
     this.lastBump = 0;
-    this.stats = { stallFrames: 0, stallMs: 0, maxStall: 0, bursts: 0, steps: 0, dUp: 0, dDown: 0 };
+    this.stats = { stallFrames: 0, stallMs: 0, maxStall: 0, bursts: 0, steps: 0, dUp: 0, dDown: 0, rollbacks: 0, rbFrames: 0, predFrames: 0 };
+    // rollback: se simula por delante de las teclas del rival (predichas) y se corrige si llegan distintas
+    this.rb = app.noRollback ? 0 : MAX_PRED;
+    this.snaps = new Map(); // frame -> estado antes de simular ese frame (solo frames predichos)
+    this.pred = new Map(); // frame -> teclas del rival que se predijeron
     this.unsubKey = app.input.on((e) => this.onKey(e));
   }
 
@@ -440,7 +489,7 @@ export class NetRound {
   setReady(D) {
     if (this.ready) return;
     this.ready = true;
-    this.D = Math.max(D_MIN, Math.min(D_MAX, Math.round(D) || 3));
+    this.D = this.rb ? RB_DELAY : Math.max(D_MIN, Math.min(D_MAX, Math.round(D) || 3));
     const hs = () => {
       if (this.ended || (this.started && (this.gotRemoteInput || this.slot === 1))) return clearInterval(this.hsTimer);
       const m = { t: 'r', r: this.r, v: PROTO };
@@ -477,7 +526,14 @@ export class NetRound {
     const rm = this.inp[1 - this.slot];
     this.remoteNext = 0;
     while (rm.has(this.remoteNext)) this.remoteNext++;
-    this.rng = mulberry32(this.seed);
+    this.rngS = this.seed >>> 0;
+    this.rng = () => {
+      const st = (this.rngS = (this.rngS + 0x6d2b79f5) >>> 0);
+      let t = st;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
     runner.opts.input = this.input;
     runner.opts.clock = () => this.simMs;
     runner.opts.inputLag = (D_MAX + 1) * TICK; // constante: tiene que ser igual en las dos compus
@@ -559,14 +615,20 @@ export class NetRound {
     let stalled = false;
     // si quedó tiempo acumulado (hubo que esperar teclas), se recupera de a un frame extra por cuadro: sin saltos
     const maxSteps = hidden ? 70 : (Math.max(1, Math.ceil(dt / TICK)) + 1) * Math.max(1, Math.round(this.speed));
+    if (this.rb && this.pred.size) this.reconcile();
     while (this.acc >= TICK && steps < maxSteps && this.running) {
       while (this.localNext <= this.f + this.D) {
         this.captureLocal(this.localNext++);
         this.dirty = true;
       }
       if (!this.inp[1 - this.slot].has(this.f)) {
-        stalled = true;
-        break;
+        if (!this.canPredict()) {
+          stalled = true;
+          break;
+        }
+        this.snaps.set(this.f, this.snapshot());
+        this.pred.set(this.f, this.predicted());
+        this.stats.predFrames++;
       }
       try {
         this.step();
@@ -619,8 +681,10 @@ export class NetRound {
   step() {
     const f = this.f;
     const runner = this.app.runner;
-    this.input.cur[0] = this.fixTimes(this.inp[0].get(f), f);
-    this.input.cur[1] = this.fixTimes(this.inp[1].get(f), f);
+    const rs = 1 - this.slot;
+    const confirmed = this.inp[rs].has(f);
+    this.input.cur[this.slot] = this.fixTimes(this.inp[this.slot].get(f), f);
+    this.input.cur[rs] = confirmed ? this.fixTimes(this.inp[rs].get(f), f) : this.pred.get(f) || EMPTY;
     this.simMs = f * TICK_MS;
     this.withSim(() => runner.frame(TICK, false));
     this.f = f + 1;
@@ -629,8 +693,95 @@ export class NetRound {
       this.inp[0].delete(old);
       this.inp[1].delete(old);
     }
-    if (f % 60 === 30) this.checkHash(f);
+    if (f % 60 === 30 && confirmed && !this.pendingBefore(f)) this.checkHash(f);
     if (runner.state === 'done' || !runner.active) this.finish('done');
+  }
+
+  // ------------------------------------------------------------------ rollback
+  /** ¿Hay frames anteriores a f simulados con teclas predichas (estado todavía no confirmado)? */
+  pendingBefore(f) {
+    for (const fr of this.pred.keys()) if (fr < f) return true;
+    return false;
+  }
+  /** ¿Se puede simular este frame sin las teclas del rival? (nunca cerca del final ni muy adelante) */
+  canPredict() {
+    if (!this.rb || !this.gotRemoteInput) return false;
+    if (this.f >= this.remoteNext + this.rb) return false;
+    const r = this.app.runner;
+    if (r.state === 'done' || (r.state === 'ending' && r.endT + TICK * (this.rb + 2) > 1.7)) return false;
+    return true;
+  }
+  /** Predicción: el rival sigue apretando lo mismo que en su última tecla conocida, sin pulsaciones nuevas. */
+  predicted() {
+    const last = this.inp[1 - this.slot].get(this.remoteNext - 1);
+    return [last ? last[0] : 0, 0, null];
+  }
+  snapshot() {
+    const r = this.app.runner;
+    const memo = new Map();
+    const game = cloneVal(r.game, memo);
+    const run = {};
+    for (const k of RUNNER_KEYS) run[k] = cloneVal(r[k], memo);
+    return { game, run, rngS: this.rngS };
+  }
+  restore(snap) {
+    const r = this.app.runner;
+    const live = r.game;
+    const memo = new Map([[snap.game, live]]);
+    for (const k of Object.keys(live)) if (!(k in snap.game) && !KEEP_REF.has(k) && k.charCodeAt(0) !== 95) delete live[k];
+    for (const k of Object.keys(snap.game)) {
+      if (KEEP_REF.has(k) || k.charCodeAt(0) === 95) continue;
+      live[k] = cloneVal(snap.game[k], memo);
+    }
+    for (const k of RUNNER_KEYS) r[k] = cloneVal(snap.run[k], memo);
+    this.rngS = snap.rngS;
+  }
+  /** Llegaron teclas del rival: si alguna predicción falló, se vuelve atrás y se recalcula (sin sonidos ni efectos). */
+  reconcile() {
+    const rm = this.inp[1 - this.slot];
+    let first = Infinity;
+    for (const [fr, p] of this.pred) {
+      const a = rm.get(fr);
+      if (a && (a[0] !== p[0] || a[1])) first = Math.min(first, fr);
+    }
+    if (first === Infinity) {
+      // todo lo confirmado coincidió: se descartan esas copias (y se hace la verificación de sincronía que quedó pendiente)
+      for (const fr of [...this.pred.keys()].sort((a, b) => a - b)) {
+        if (!(rm.has(fr) && fr < this.remoteNext)) break;
+        if (fr % 60 === 30) {
+          const nx = this.snaps.get(fr + 1);
+          if (nx) this.checkHash(fr, { game: nx.game, state: nx.run.state, cd: nx.run.cd, playSeconds: nx.run.playSeconds, caos: nx.run.caos });
+        }
+        this.pred.delete(fr);
+        this.snaps.delete(fr);
+      }
+      return;
+    }
+    const target = this.f;
+    this.restore(this.snaps.get(first));
+    for (const fr of [...this.pred.keys()]) if (fr >= first || (rm.has(fr) && fr < this.remoteNext)) { this.pred.delete(fr); this.snaps.delete(fr); }
+    this.f = first;
+    this.stats.rollbacks++;
+    this.stats.rbFrames += target - first;
+    const audio = this.app.audio;
+    const play = audio.play;
+    const game = this.app.runner.game;
+    const fx = game.fx;
+    audio.play = () => {};
+    game.fx = NOFX;
+    try {
+      while (this.f < target && this.running) {
+        if (!rm.has(this.f)) {
+          if (!this.canPredict()) break;
+          this.snaps.set(this.f, this.snapshot());
+          this.pred.set(this.f, this.predicted());
+        }
+        this.step();
+      }
+    } finally {
+      audio.play = play;
+      game.fx = fx;
+    }
   }
 
   sendInputs(now, linger = false) {
@@ -653,7 +804,7 @@ export class NetRound {
 
   /** Ajusta el retardo de MIS teclas según cuánto margen le queda al rival. */
   tuneDelay(b, now) {
-    if (!this.running || this.f < 45) return;
+    if (!this.running || this.f < 45 || this.rb) return;
     if (b < this.peerBufMin) this.peerBufMin = b;
     if (b <= 0 && this.D < D_MAX && now - this.lastBump > 450) {
       // al rival le llegan justas (o tarde): más retardo
@@ -715,8 +866,8 @@ export class NetRound {
     }
   }
 
-  checkHash(f) {
-    const h = stateHash(this.app.runner);
+  checkHash(f, src = null) {
+    const h = stateHash(src || this.app.runner);
     this.hashes.set(f, h);
     if (this.hashes.size > 30) this.hashes.delete(this.hashes.keys().next().value);
     this.link.send({ t: 'h', r: this.r, f, h });

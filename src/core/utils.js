@@ -38,14 +38,17 @@ export function shuffle(arr, rng = Math.random) {
 
 // RNG con semilla: permite que ambos jugadores reciban exactamente la misma secuencia (justicia).
 export function mulberry32(seed) {
-  let s = seed >>> 0;
-  return function () {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
+  // el estado queda en f.s para poder copiarlo y restaurarlo (rollback del modo online)
+  const f = function () {
+    f.s = (f.s + 0x6d2b79f5) >>> 0;
+    let t = f.s;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+  f.s = seed >>> 0;
+  f.__rng = true;
+  return f;
 }
 export const newSeed = () => (Math.random() * 2 ** 31) | 0;
 

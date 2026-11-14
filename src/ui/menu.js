@@ -51,7 +51,7 @@ export function titleScreen(ui) {
       h('div.press-start', 'PULSÁ CUALQUIER TECLA PARA EMPEZAR'),
       h('div.title-feats',
         ...[['16', 'minijuegos'], ['ONLINE', 'competitivo'], ['VS BOT', '4 dificultades'], ['PASE', 'temporada 1']].map(([a, b]) => h('div.tf', h('b', a), h('small', b))))),
-    h('div.title-foot', h('span', 'v4.0'), h('span', '2 jugadores · 1 teclado · o cada uno en su compu')));
+    h('div.title-foot', h('span', 'v4.2'), h('span', '2 jugadores · 1 teclado · o cada uno en su compu')));
   scr.nav = false;
   scr.onKey = (e) => {
     if (e.code === 'F11' || e.code === 'F5' || e.code === 'F12') return false;
