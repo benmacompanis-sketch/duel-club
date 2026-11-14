@@ -106,7 +106,8 @@ export function hubScreen(ui, params = {}) {
       h('div.tb-mid',
         h('button.icon-btn.tb-bell' + (unread ? '.has' : ''), { nav: true, title: 'Notificaciones', onclick: () => anyAcc ? ui.modal(notificationsModal, { onChange: renderTop }) : openAccount(0) },
           icon('bell'), unread ? h('span.tb-badge', String(unread > 99 ? '99+' : unread)) : null),
-        h('div.tb-status.' + svc.status, h('span.tb-led'), svc.status === 'online' ? 'EN LÍNEA' : svc.status === 'offline' ? 'SIN CONEXIÓN' : 'CONECTANDO')),
+        h('div.tb-status.' + svc.status, { title: svc.presence ? `${svc.presence.online} conectados ahora · ${svc.presence.playing} jugando` : '' }, h('span.tb-led'),
+          svc.status === 'online' ? (svc.presence ? `${svc.presence.online} EN LÍNEA` : 'EN LÍNEA') : svc.status === 'offline' ? 'SIN CONEXIÓN' : 'CONECTANDO')),
       slotBox(1));
   }
   function openAccount(p) {
@@ -167,6 +168,7 @@ export function hubScreen(ui, params = {}) {
   open(section, params.sectionParams || {}, true);
   // cartel de novedades (una vez por actualización)
   setTimeout(() => { if (!scr.disposed) maybeShowNews(ui, (tab) => open('news', { tab })); }, 900);
+  svc.startPresence();
   const unsub = svc.on(() => { if (!scr.disposed) renderTop(); });
   scr.destroy = () => {
     unsub();

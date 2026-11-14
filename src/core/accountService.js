@@ -218,6 +218,28 @@ export class AccountService {
   async checkUsername(username) {
     return rpc('dc_check_username', { p_username: username });
   }
+  async rename(p, name) {
+    const out = await rpc('dc_rename', { p_token: this.slotToken(p), p_name: name });
+    return this._setMe(out.me);
+  }
+  // ------------------------------------------------------------------ presencia (usuarios en línea de verdad)
+  startPresence() {
+    if (this._presT) return;
+    let cid = null;
+    try { cid = localStorage.getItem('dc_client'); } catch {}
+    if (!cid) { cid = 'c' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36); try { localStorage.setItem('dc_client', cid); } catch {} }
+    const beat = async () => {
+      if (document.hidden) return;
+      const place = this.app.online?.active || this.app.online?.view ? 'online' : this.app.runner?.active ? 'match' : 'menu';
+      try {
+        this.presence = await rpc('dc_presence', { p_client: cid, p_token: this.slotToken(0) || this.slotToken(1) || null, p_place: place });
+        this.emit();
+      } catch {}
+    };
+    beat();
+    this._presT = setInterval(beat, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+  }
   async changePassword(p, oldPass, newPass) {
     return rpc('dc_change_password', { p_token: this.slotToken(p), p_old: oldPass, p_new: newPass });
   }
