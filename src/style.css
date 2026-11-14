@@ -1843,3 +1843,31 @@ body { font-weight: 600; }
 .ctrl-box.bot-box .ctrl-row { opacity: .8; }
 .set-body .lang-card { grid-column: 1 / -1; }
 .set-body .lang-card .opt { margin: 0; }
+
+/* ===================== CLUB PASS (250 niveles + prestigio) ===================== */
+.pass-body { display: flex; flex-direction: column; gap: 14px; }
+.ph-bonus { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; padding: 6px 12px; background: #FF8E3C; color: #0D0B14; font-weight: 800; font-size: 13px;
+  border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transform: skewX(-6deg); align-self: flex-start; }
+.ph-bonus svg { width: 16px; height: 16px; }
+.pass-next { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pass-next > small { font-family: var(--display); letter-spacing: 1.5px; font-size: 14px; color: var(--muted); }
+.pn-item { display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; background: #221c33; color: #fff; text-align: left; cursor: pointer;
+  border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); clip-path: polygon(0 0, 100% 4%, 98% 100%, 2% 96%); }
+.pn-item.premium { background: linear-gradient(100deg, #6b4a00, #221c33); }
+.pn-item b { display: block; font-family: var(--display); font-size: 16px; letter-spacing: .5px; }
+.pn-item span { font-size: 12px; opacity: .8; }
+.pass-segs { display: flex; gap: 6px; flex-wrap: wrap; }
+.pass-seg { font-family: var(--display); font-size: 15px; letter-spacing: .5px; padding: 6px 12px; cursor: pointer; color: #fff; background: #2a2440;
+  border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transform: skewX(-8deg); }
+.pass-seg.done { background: #2c5e47; }
+.pass-seg.cur { background: #2E7BFF; }
+.pass-seg.prest { background: #6b2fa8; }
+.pass-seg.on { background: #FFD23F; color: #0D0B14; transform: skewX(-8deg) translateY(-2px); box-shadow: 4px 5px 0 var(--ink); }
+.pass-col.milestone .pc-lv { background: #FFD23F; color: #0D0B14; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.pass-col.milestone .pass-cell { border-width: 3px; }
+.prest-box { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.prest-info { padding: 12px 16px; background: #3a1e8a; border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); color: #fff; }
+.prest-info b { font-family: var(--display); font-size: 24px; letter-spacing: 1px; }
+.prest-info p { margin: 4px 0 0; font-size: 14px; opacity: .9; }
+.pass-scroll:has(.prest-box) { display: block; }
+.prest-row { display: flex; gap: 8px; align-items: stretch; }

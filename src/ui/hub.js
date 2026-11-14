@@ -217,13 +217,12 @@ function homeSection(ui, owner, ctx) {
   }
   function passSummary() {
     const me = svc.slotAccount(ctx.viewer);
-    if (!me) return [h('p.muted', 'Con una cuenta subís el Pase de Batalla y completás desafíos diarios y semanales.'), h('button.btn', { nav: true, onclick: () => ctx.login(ctx.viewer) }, 'INICIAR SESIÓN')];
+    if (!me) return [h('p.muted', 'Con una cuenta subís el CLUB PASS y completás desafíos diarios y semanales.'), h('button.btn', { nav: true, onclick: () => ctx.login(ctx.viewer) }, 'INICIAR SESIÓN')];
     const P = me.pass;
     const out = [];
     if (P) {
-      const into = P.level >= P.levels ? P.xp_per_level : P.xp % P.xp_per_level;
-      out.push(h('div.hp-row', h('b', P.name), h('span', `Nivel ${P.level} / ${P.levels}${P.premium ? ' · PREMIUM' : ''}`)),
-        h('div.ph-bar', h('i', { style: { width: `${(into / P.xp_per_level) * 100}%` } })));
+      out.push(h('div.hp-row', h('b', P.name), h('span', passLabel(P))),
+        h('div.ph-bar', h('i', { style: { width: `${passPct(P)}%` } })));
     } else out.push(h('p.muted', 'No hay una temporada activa en este momento.'));
     const ready = (P?.ready || 0) + (me.challenges_ready || 0);
     out.push(h('button.btn' + (ready ? '.primary' : ''), { nav: true, onclick: () => ctx.goto('pass', { tab: P?.ready || !me.challenges_ready ? 'pass' : 'challenges' }) },
@@ -264,4 +263,14 @@ function playSection(ui, owner, ctx) {
       h('div', h('b', 'DIFICULTAD CAOS'), h('p.muted', 'Turbo, cámara lenta, controles al revés, apagón y terremoto. Iguales para los dos.')),
       h('button.btn', { nav: true, onclick: () => { app.audio.play('click'); ui.show(playerSelectScreen, { title: 'JUGADORES', subtitle: 'Elegí personaje y color', onDone: () => ui.show(hubScreen, { section: 'play' }), onBack: () => ui.show(hubScreen, { section: 'play' }) }); } }, icon('user'), 'ELEGIR PERSONAJES')));
   return { el };
+}
+
+/** Texto y porcentaje del resumen del pase (curva del CLUB PASS o pase lineal archivado). */
+export function passLabel(P) {
+  const prest = P.permanent ? Math.max(0, P.level - P.levels) : 0;
+  return (prest ? `Prestigio ${prest} · nivel ${P.level}` : `Nivel ${P.level} / ${P.levels}`) + (P.premium ? ' · PREMIUM' : '');
+}
+export function passPct(P) {
+  if (P.xp_next != null && P.xp_level != null) return Math.min(100, ((P.xp - P.xp_level) / Math.max(1, P.xp_next - P.xp_level)) * 100);
+  return P.level >= P.levels ? 100 : ((P.xp % P.xp_per_level) / P.xp_per_level) * 100;
 }

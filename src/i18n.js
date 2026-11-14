@@ -6,6 +6,7 @@
 // Lo que no está en el diccionario queda en español (nunca rompe nada).
 
 import { DATA_EN, DATA_RULES } from './i18n-data.js';
+import { ALL_ITEMS } from './data/catalog.js';
 
 const KEY = 'duelclub.lang';
 export const LANGS = [['es', 'Español'], ['en', 'English']];
@@ -150,7 +151,7 @@ const D = {
   'Iniciá sesión para sumar amigos.': 'Log in to add friends.', 'Iniciá sesión para tener tu perfil.': 'Log in to have a profile.', 'Iniciá sesión para ver y equipar tus objetos.': 'Log in to see and equip your items.',
   'Iniciá sesión para desbloquear logros: se guardan en tu cuenta.': 'Log in to unlock achievements: they’re saved to your account.', 'Iniciá sesión para sumar dominio en este minijuego.': 'Log in to earn mastery in this minigame.',
   'Entrá con tu cuenta para subir el pase y hacer desafíos.': 'Log in to level up the pass and do challenges.',
-  'Con una cuenta subís el Pase de Batalla y completás desafíos diarios y semanales.': 'With an account you level up the Battle Pass and complete daily and weekly challenges.',
+  'Con una cuenta subís el Pase de Batalla y completás desafíos diarios y semanales.': 'With an account you level up the Battle Pass and complete daily and weekly challenges.', 'Con una cuenta subís el CLUB PASS y completás desafíos diarios y semanales.': 'With an account you level up the CLUB PASS and complete daily and weekly challenges.',
   'Bloqueado · Iniciá sesión para desbloquear personajes': 'Locked · Log in to unlock characters', 'Personaje bloqueado': 'Locked character', 'ELEGIR PERSONAJES': 'CHOOSE CHARACTERS',
   'JUGADOR 1': 'PLAYER 1', 'JUGADOR 2': 'PLAYER 2', 'Jugador 1': 'Player 1', 'Jugador 2': 'Player 2', 'JUGADOR': 'PLAYER', 'JUGADORES': 'PLAYERS', 'Jugadores': 'Players',
   'JUGÁS COMO': 'PLAYING AS', 'VOS · J1': 'YOU · P1', 'VOS · J2': 'YOU · P2', 'VOS · J2 ▶': 'YOU · P2 ▶', '◀ VOS · J1': '◀ YOU · P1', 'VOS ·': 'YOU ·', 'RIVAL · J1': 'OPPONENT · P1', 'RIVAL · J2': 'OPPONENT · P2',
@@ -326,7 +327,7 @@ const D = {
   'RESULTADOS': 'RESULTS', 'RESUMEN': 'SUMMARY', 'Resumen': 'Summary', 'General': 'Overall', 'Serie': 'Series', 'Rondas': 'Rounds', 'Ganador': 'Winner', 'Ganaste': 'You won', 'GANASTE': 'YOU WON',
   'PERDISTE': 'YOU LOST', '¡GANASTE!': 'YOU WIN!', '¡GANASTE LA SERIE!': 'YOU WON THE SERIES!', 'PERDISTE LA SERIE': 'YOU LOST THE SERIES', 'SERIE EMPATADA': 'SERIES TIED', 'EMPATADOS': 'TIED',
   'RONDA ANULADA': 'ROUND VOIDED', 'Ronda anulada': 'Round voided', 'Anulada': 'Voided', 'RONDA EMPATADA': 'ROUND TIED', 'SE REPITE': 'REPLAY', 'La ronda no se pudo completar.': 'The round couldn’t be completed.',
-  'No cuenta para nadie: se juega otra ronda.': 'It doesn’t count for anyone: another round is played.', 'PARTIDA CANCELADA': 'MATCH CANCELLED', 'TERMINADA': 'FINISHED', 'EN CURSO': 'IN PROGRESS',
+  'No cuenta para nadie: se juega otra ronda.': 'It doesn’t count for anyone: another round is played.', 'PARTIDA CANCELADA': 'MATCH CANCELLED', 'TERMINADA': 'FINISHED', 'PASE PERMANENTE · SIN TEMPORADAS NI REINICIOS': 'PERMANENT PASS · NO SEASONS, NO RESETS', 'PRÓXIMAS RECOMPENSAS': 'UPCOMING REWARDS', '★ PRESTIGIO': '★ PRESTIGE', 'PRESTIGIO': 'PRESTIGE', 'Archivo': 'Archive', 'ARCHIVADA': 'ARCHIVED', 'No hay pases archivados.': 'No archived passes.', 'LIBRE': 'FREE', 'Libre': 'Free', 'Si lo comprás más tarde, recibís todo lo de los niveles que ya alcanzaste.': 'If you buy it later, you get everything from the levels you already reached.', 'Tarjeta de perfil del CLUB PASS.': 'CLUB PASS profile card.', 'Skin del CLUB PASS.': 'CLUB PASS skin.', 'Marco de perfil del CLUB PASS.': 'CLUB PASS profile frame.', 'Emote del CLUB PASS.': 'CLUB PASS emote.', 'Título del CLUB PASS.': 'CLUB PASS title.', 'CLUB PASS · Prestigio': 'CLUB PASS · Prestige', 'EN CURSO': 'IN PROGRESS',
   'Ronda para tu rival. Seguimos…': 'Round to your opponent. Moving on…', 'Ronda para vos. Seguimos…': 'Round to you. Moving on…', 'Seguimos…': 'Moving on…', 'Se definió en MUERTE SÚBITA.': 'Decided in SUDDEN DEATH.',
   'DESEMPATE · MUERTE SÚBITA': 'TIEBREAK · SUDDEN DEATH', 'MUERTE SÚBITA': 'SUDDEN DEATH', '¡MUERTE SÚBITA!': 'SUDDEN DEATH!', 'Sorteando evento especial...': 'Drawing special event...',
   'Remontada de película. Nadie lo vio venir.': 'A movie-worthy comeback. Nobody saw it coming.', 'Esto se definió en el último suspiro.': 'This was decided at the very last breath.',
@@ -412,6 +413,14 @@ const D = {
 const N = '([\\d.,]+)';
 const RULES = [
   [/^(.+) no se puede asignar \(se usa para pausar o el navegador\)\.$/, (m) => `${m[1]} can’t be assigned (used for pause or by the browser).`],
+  [/^CLUB PASS · Nivel (\d+)( · Premium)?$/, (m) => `CLUB PASS · Level ${m[1]}${m[2] || ''}`], [/^PRESTIGIO (\d+)$/, (m) => `PRESTIGE ${m[1]}`], [/^Prestigio (\d+) · nivel (\d+)(.*)$/, (m) => `Prestige ${m[1]} · level ${m[2]}${m[3]}`], [/^nivel (\d+)$/, (m) => `level ${m[1]}`],
+  [/^Bono de regreso: tus próximos (.+) XP de pase cuentan doble\.$/, (m) => `Comeback bonus: your next ${m[1]} pass XP count double.`],
+  [/^Viendo el progreso de (.+)\. Toda la XP que ganás sube el CLUB PASS, para siempre\.$/, (m) => `Viewing ${m[1]}’s progress. All the XP you earn levels up the CLUB PASS, forever.`],
+  [/^Nivel (\d+) · (Libre|Premium)$/, (m) => `Level ${m[1]} · ${m[2] === 'Libre' ? 'Free' : 'Premium'}`], [/^(\d+)–(\d+)$/, (m) => m[0]],
+  [/^PASE PREMIUM · (.+)$/, (m) => `PREMIUM PASS · ${m[1]}`], [/^RECLAMAR TODO \((\d+)\)$/, (m) => `CLAIM ALL (${m[1]})`],
+  [/^Después del nivel (\d+) el pase sigue para siempre: cada nivel pide (.+) XP y cada 10 niveles hay premio\. Los niveles 300, 400, 500, 750 y 1000 dan títulos de prestigio\.$/, (m) => `After level ${m[1]} the pass keeps going forever: each level needs ${m[2]} XP and every 10 levels there’s a reward. Levels 300, 400, 500, 750 and 1000 give prestige titles.`],
+  [/^Cuesta (.+) PIES \(te quedarían (.+)\)\. Es para siempre: se compra una sola vez y no vence\. Las recompensas Premium de los (\d+) niveles que ya alcanzaste quedan para reclamar\.$/, (m) => `Costs ${m[1]} PIES (you’d have ${m[2]} left). It’s forever: bought once, never expires. The Premium rewards of the ${m[3]} levels you already reached become claimable.`],
+  [/^(\d+) recompensas reclamadas$/, (m) => `${m[1]} rewards claimed`],
   [/^Etapa (\d+)$/, (m) => `Stage ${m[1]}`], [/^Etapa (\d+) · más difícil$/, (m) => `Stage ${m[1]} · harder`], [/^Llegaste a la etapa (\d+)$/, (m) => `You reached stage ${m[1]}`],
   [/^(\d+) superadas · (.+)$/, (m) => `${m[1]} cleared · ${tr(m[2])}`], [/^(\d+) etapas superadas · (.+)$/, (m) => `${m[1]} stages cleared · ${tr(m[2])}`], [/^(\d+) \/ 16 etapas$/, (m) => `${m[1]} / 16 stages`],
   [/^ESCALERA · ETAPA (.+)$/, (m) => `LADDER · STAGE ${m[1]}`], [/^Perdiste una vida · quedan (\d+)\. Se repite la etapa\.$/, (m) => `You lost a life · ${m[1]} left. The stage repeats.`],
@@ -421,7 +430,7 @@ const RULES = [
   [/^Todavía no jugaste (.+) contra el bot (.+)\.$/, (m) => `You haven’t played ${m[1]} against the ${tr(m[2])} bot yet.`],
   [/^Con la cuenta de J1 \((.+)\) ganás XP y PIES reducidos y sumás desafíos\. Nunca da ELO\.$/, (m) => `With P1’s account (${m[1]}) you earn reduced XP and PIES and progress challenges. Never gives ELO.`],
   [/^BOT (.+)$/, (m) => `BOT ${tr(m[1])}`], [/^Bot (.+)$/, (m) => `${tr(m[1])} bot`], [/^VS BOT · (.+)$/, (m) => `VS BOT · ${tr(m[1])}`], [/^VS BOT (.+)$/, (m) => `VS BOT ${tr(m[1])}`],
-  [/^Nivel (\d+)$/, (m) => `Level ${m[1]}`], [/^Nivel (\d+) \/ (\d+)(.*)$/, (m) => `Level ${m[1]} / ${m[2]}${tr(m[3])}`], [/^Nivel (\d+) · (.+) ELO · (.+) partidas$/, (m) => `Level ${m[1]} · ${m[2]} ELO · ${m[3]} matches`],
+  [/^Nivel (\d+)$/, (m) => `Level ${m[1]}`], [/^Nivel (\d+) del CLUB PASS \(prestigio\)\.$/, (m) => `CLUB PASS level ${m[1]} (prestige).`], [/^Nivel (\d+) \/ (\d+)(.*)$/, (m) => `Level ${m[1]} / ${m[2]}${tr(m[3])}`], [/^Nivel (\d+) · (.+) ELO · (.+) partidas$/, (m) => `Level ${m[1]} · ${m[2]} ELO · ${m[3]} matches`],
   [/^Nivel (\d+) · (.+) partidas hoy$/, (m) => `Level ${m[1]} · ${m[2]} matches today`], [/^NV (\d+)$/, (m) => `LV ${m[1]}`], [/^NV$/, () => 'LV'],
   [/^Jugador (\d)$/, (m) => `Player ${m[1]}`], [/^J(\d)$/, (m) => `P${m[1]}`], [/^Puesto J(\d)$/, (m) => `Seat P${m[1]}`], [/^J(\d) · (.+)$/, (m) => `P${m[1]} · ${tr(m[2])}`], [/^Nombre del jugador (\d)$/, (m) => `Player ${m[1]} name`],
   [/^Entraste como J(\d)\.$/, (m) => `You joined as P${m[1]}.`], [/^Jugando como J(\d)\.$/, (m) => `Playing as P${m[1]}.`], [/^Conectado como (.+) \(J(\d)\)$/, (m) => `Connected as ${m[1]} (P${m[2]})`],
@@ -472,6 +481,11 @@ const RULES = [
   [/^(\d+) minijuegos?$/, (m) => `${m[1]} minigame${m[1] === '1' ? '' : 's'}`], [/^(\d+) rondas?$/, (m) => `${m[1]} round${m[1] === '1' ? '' : 's'}`], [/^(\d+) vidas?$/, (m) => `${m[1]} li${m[1] === '1' ? 'fe' : 'ves'}`],
 ];
 for (const [k, v] of Object.entries(DATA_EN)) if (!(k in D)) D[k] = v;
+// objetos generados (CLUB PASS): traen su nombre en inglés
+for (const it of ALL_ITEMS) {
+  if (it.en && !(it.name in D)) D[it.name] = it.en;
+  if (it.text && it.textEn && !(it.text in D)) D[it.text] = it.textEn;
+}
 RULES.push(...DATA_RULES,
   [/^Logro: (.+)$/, (m) => `Achievement: ${tr(m[1])}`], [/^Maestría: (.+)$/, (m) => `Mastery: ${m[1]}`], [/^"(.+?)"(\.?)$/, (m) => `"${tr(m[1])}"${m[2]}`]);
 // palabras cortas que aparecen pegadas a números ("3 vueltas", "Nivel 4"...)

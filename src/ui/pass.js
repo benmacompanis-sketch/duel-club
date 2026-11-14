@@ -7,6 +7,7 @@ import { h, icon } from './dom.js';
 import { ITEM_BY_ID, RARITIES } from '../data/catalog.js';
 import { tabs, loading, errorBox, empty, itemPreview, piesIcon, fmtN, rarityChip } from './kit.js';
 import { errorText } from '../net/api.js';
+import { prestigeReward } from '../data/clubPass.js';
 
 const fmtDate = (s) => new Date(s).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
 function timeLeft(s) {
@@ -30,11 +31,11 @@ export function passSection(ui, owner, ctx) {
   }
   let tab = ctx.params?.tab || 'pass';
   const body = h('div.pass-body');
-  const head = h('div.sec-head', h('h2', 'PASE Y DESAFÍOS'), h('p', `Viendo el progreso de ${me.name}. Toda la XP que ganás en la temporada sube el pase.`));
+  const head = h('div.sec-head', h('h2', 'PASE Y DESAFÍOS'), h('p', `Viendo el progreso de ${me.name}. Toda la XP que ganás sube el CLUB PASS, para siempre.`));
   const tabBar = h('div');
   const el = h('div.pass-page', head, tabBar, body);
   function renderTabs() {
-    tabBar.replaceChildren(tabs([['pass', 'Pase de Batalla'], ['challenges', 'Desafíos'], ['archive', 'Temporadas']], tab, (t) => { tab = t; renderTabs(); show(); }));
+    tabBar.replaceChildren(tabs([['pass', 'CLUB PASS'], ['challenges', 'Desafíos'], ['archive', 'Archivo']], tab, (t) => { tab = t; renderTabs(); show(); }));
   }
   function show() {
     body.replaceChildren(loading());
@@ -44,40 +45,92 @@ export function passSection(ui, owner, ctx) {
   }
 
   // ---------------------------------------------------------------- pase
+  let seg = null; // tramo visible (0..9 = niveles de a 25, 10 = prestigio)
   async function passView(seasonId) {
     let d;
     try { d = await svc.pass(p, seasonId); } catch (e) { if (!owner.disposed) body.replaceChildren(errorBox(errorText(e), () => passView(seasonId))); return; }
     if (owner.disposed) return;
-    if (!d.season) { body.replaceChildren(empty('No hay ninguna temporada activa ahora. ¡Volvé pronto!', 'trophy')); return; }
+    if (!d.season) { body.replaceChildren(empty('No hay ninguna temporada activa en este momento.', 'trophy')); return; }
     const S = d.season;
     const live = S.current;
-    const into = d.level >= S.levels ? S.xp_per_level : d.xp % S.xp_per_level;
+    const perm = !!S.permanent;
+    const lvShown = Math.min(d.level, S.levels);
+    const prest = perm ? Math.max(0, d.level - S.levels) : 0;
+    const into = d.xp - (d.xp_level ?? 0), need = Math.max(1, (d.xp_next ?? 1) - (d.xp_level ?? 0));
     const claimed = { free: new Set(d.claimed_free), premium: new Set(d.claimed_premium) };
     const byLevel = {};
     for (const r of d.rewards) (byLevel[r.level] ||= {})[r.track] = r;
-    const ready = d.rewards.filter((r) => r.level <= d.level && (r.item || r.pies) && !claimed[r.track].has(r.level) && (r.track === 'free' || d.premium)).length;
+    const ready = d.ready ?? 0;
+    const SEG = 25, NSEG = Math.ceil(S.levels / SEG);
+    if (seg == null || seasonId) seg = perm && prest > 0 ? NSEG : Math.min(NSEG - 1, Math.floor((lvShown - 1) / SEG));
 
     const header = h('div.pass-head' + (d.premium ? '.prem' : ''),
       h('div.ph-left',
-        h('small', live ? `TEMPORADA ACTUAL · TERMINA EN ${timeLeft(S.ends_at).toUpperCase()}` : `TEMPORADA TERMINADA · ${fmtDate(S.starts_at)} – ${fmtDate(S.ends_at)}`),
+        h('small', perm ? 'PASE PERMANENTE · SIN TEMPORADAS NI REINICIOS' : `TEMPORADA ARCHIVADA · ${fmtDate(S.starts_at)} – ${fmtDate(S.ends_at)}`),
         h('h3', S.name),
-        h('div.ph-level', h('b', `NIVEL ${d.level}`), h('span', `de ${S.levels}`)),
-        h('div.ph-bar', h('i', { style: { width: `${Math.min(100, (into / S.xp_per_level) * 100)}%` } })),
-        h('small.muted', d.level >= S.levels ? '¡Pase completo!' : `${fmtN(into)} / ${fmtN(S.xp_per_level)} XP para el nivel ${d.level + 1}`)),
+        h('div.ph-level', h('b', prest ? `PRESTIGIO ${prest}` : `NIVEL ${d.level}`), h('span', prest ? `nivel ${d.level}` : `de ${S.levels}`)),
+        h('div.ph-bar', h('i', { style: { width: `${Math.min(100, (into / need) * 100)}%` } })),
+        h('small.muted', `${fmtN(into)} / ${fmtN(need)} XP para el nivel ${d.level + 1}`),
+        perm && d.bonus_left > 0 ? h('div.ph-bonus', icon('flame'), h('span', `Bono de regreso: tus próximos ${fmtN(d.bonus_left)} XP de pase cuentan doble.`)) : null),
       h('div.ph-right',
         d.premium
           ? h('div.ph-prem-on', icon('crown'), h('b', 'PREMIUM ACTIVO'))
           : live ? h('button.btn.gold', { nav: true, onclick: () => buy(S, d) }, icon('crown'), `PASE PREMIUM · ${fmtN(S.premium_price)}`, piesIcon()) : null,
         live && ready ? h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => claim(null, null) }, `RECLAMAR TODO (${ready})`) : null,
-        !d.premium && live ? h('p.muted.small', 'Incluye todo lo de los niveles que ya tenés.') : null));
+        !d.premium && live ? h('p.muted.small', 'Si lo comprás más tarde, recibís todo lo de los niveles que ya alcanzaste.') : null));
 
-    const lane = h('div.pass-lane');
-    for (let L = 1; L <= S.levels; L++) {
-      const row = byLevel[L] || {};
-      const reached = L <= d.level;
-      lane.append(h('div.pass-col' + (reached ? '.reached' : '') + (L === d.level ? '.current' : ''),
-        h('div.pc-lv', L),
-        cell(row.free, 'free', reached), cell(row.premium, 'premium', reached)));
+    // próximas recompensas con objeto (una por fila)
+    const nextOf = (track) => d.rewards.find((r) => r.track === track && r.level > d.level && r.item);
+    const nextBox = h('div.pass-next',
+      h('small', 'PRÓXIMAS RECOMPENSAS'),
+      ...['free', 'premium'].map((track) => {
+        const r = nextOf(track);
+        if (!r) return null;
+        const it = ITEM_BY_ID[r.item];
+        return it ? h('button.pn-item.' + track, { nav: true, onclick: () => ui.modal(itemInfo, { it }) },
+          itemPreview(ui, owner, it, 44, svc.slotAccount(p)?.color || '#3985FF', null, true),
+          h('div', h('b', it.name), h('span', `Nivel ${r.level} · ${track === 'free' ? 'Libre' : 'Premium'}`))) : null;
+      }));
+
+    // tramos
+    const segBar = h('div.pass-segs', Array.from({ length: NSEG + (perm ? 1 : 0) }, (_, i) => {
+      const isP = i === NSEG;
+      const a = i * SEG + 1, b = Math.min(S.levels, (i + 1) * SEG);
+      const done = !isP && d.level >= b;
+      const cur = isP ? prest > 0 : d.level >= a && d.level <= b;
+      return h('button.pass-seg' + (i === seg ? '.on' : '') + (done ? '.done' : '') + (cur ? '.cur' : '') + (isP ? '.prest' : ''),
+        { nav: true, onclick: () => { seg = i; renderLane(); segBar.querySelectorAll('.pass-seg').forEach((x, j) => x.classList.toggle('on', j === i)); } },
+        isP ? '★ PRESTIGIO' : `${a}–${b}`);
+    }));
+    const laneBox = h('div.pass-scroll');
+    function renderLane() {
+      if (perm && seg === NSEG) { laneBox.replaceChildren(prestigeView()); return; }
+      const lane = h('div.pass-lane');
+      const a = seg * SEG + 1, b = Math.min(S.levels, (seg + 1) * SEG);
+      for (let L = a; L <= b; L++) {
+        const row = byLevel[L] || {};
+        const reached = L <= d.level;
+        lane.append(h('div.pass-col' + (reached ? '.reached' : '') + (L === d.level ? '.current' : '') + (L % 50 === 0 ? '.milestone' : ''),
+          h('div.pc-lv', L),
+          cell(row.free, 'free', reached), cell(row.premium, 'premium', reached)));
+      }
+      laneBox.replaceChildren(h('div.pass-legend', h('span.lg.free', 'LIBRE'), h('span.lg.premium', 'PREMIUM')), lane);
+      requestAnimationFrame(() => lane.querySelector('.current')?.scrollIntoView({ inline: 'center', block: 'nearest' }));
+    }
+    function prestigeView() {
+      const first = S.levels + 10;
+      const top = Math.max(first + 40, Math.ceil((d.level + 30) / 10) * 10);
+      const lane = h('div.pass-lane.prest');
+      for (let L = first; L <= top; L += 10) {
+        const reached = L <= d.level;
+        const pr = (track) => { const x = prestigeReward(L, track); return x ? { level: L, track, item: x.item, pies: x.pies } : null; };
+        lane.append(h('div.pass-col' + (reached ? '.reached' : '') + (L % 50 === 0 ? '.milestone' : ''),
+          h('div.pc-lv', L), cell(pr('free'), 'free', reached), cell(pr('premium'), 'premium', reached)));
+      }
+      return h('div.prest-box',
+        h('div.prest-info', h('b', prest ? `PRESTIGIO ${prest}` : 'PRESTIGIO'),
+          h('p', `Después del nivel ${S.levels} el pase sigue para siempre: cada nivel pide ${fmtN(S.prestige_xp || 900)} XP y cada 10 niveles hay premio. Los niveles 300, 400, 500, 750 y 1000 dan títulos de prestigio.`)),
+        h('div.prest-row', h('div.pass-legend', h('span.lg.free', 'LIBRE'), h('span.lg.premium', 'PREMIUM')), lane));
     }
     function cell(r, track, reached) {
       if (!r || (!r.item && !r.pies)) return h('div.pass-cell.none');
@@ -86,18 +139,15 @@ export function passSection(ui, owner, ctx) {
       const locked = track === 'premium' && !d.premium;
       const can = live && reached && !got && !locked;
       const R = it ? RARITIES[it.rarity] : null;
-      const c = h('button.pass-cell.' + track + (got ? '.got' : '') + (can ? '.can' : '') + (locked ? '.locked' : ''),
+      return h('button.pass-cell.' + track + (got ? '.got' : '') + (can ? '.can' : '') + (locked ? '.locked' : ''),
         { nav: true, style: R ? { '--rc': R.color } : null, title: it ? `${it.name} · ${R.name}` : `${r.pies} PIES`,
           onclick: () => (can ? claim(r.level, track) : it ? ui.modal(itemInfo, { it }) : null) },
         it ? h('div.pcell-prev', itemPreview(ui, owner, it, 64, svc.slotAccount(p)?.color || '#3985FF', null, true)) : h('div.pcell-pies', piesIcon(), h('b', fmtN(r.pies))),
         h('small', it ? it.name : 'PIES'),
         got ? h('span.pcell-tag.ok', icon('check')) : locked ? h('span.pcell-tag', icon('lock')) : can ? h('span.pcell-tag.go', 'RECLAMAR') : null);
-      return c;
     }
-    const legend = h('div.pass-legend', h('span.lg.free', 'LIBRE'), h('span.lg.premium', 'PREMIUM'));
-    body.replaceChildren(header, h('div.pass-scroll', legend, lane));
-    // centrar el nivel actual
-    requestAnimationFrame(() => lane.querySelector('.current')?.scrollIntoView({ inline: 'center', block: 'nearest' }));
+    renderLane();
+    body.replaceChildren(header, nextBox, segBar, laneBox);
   }
 
   async function buy(S, d) {
@@ -106,7 +156,7 @@ export function passSection(ui, owner, ctx) {
       ui.toast({ kind: 'warn', title: 'No te alcanzan los PIES', text: `Cuesta ${fmtN(S.premium_price)} PIES y tenés ${fmtN(acc?.pies ?? 0)}.` });
       return;
     }
-    const ok = await ui.confirm({ title: '¿Comprar el Pase Premium?', text: `Cuesta ${fmtN(S.premium_price)} PIES (te quedarían ${fmtN(acc.pies - S.premium_price)}). Es para ${S.name} y se compra una sola vez. Las recompensas Premium de los ${d.level} niveles que ya alcanzaste quedan para reclamar.`, yes: 'Comprar', no: 'Cancelar', danger: false });
+    const ok = await ui.confirm({ title: '¿Comprar el Pase Premium?', text: `Cuesta ${fmtN(S.premium_price)} PIES (te quedarían ${fmtN(acc.pies - S.premium_price)}). Es para siempre: se compra una sola vez y no vence. Las recompensas Premium de los ${d.level} niveles que ya alcanzaste quedan para reclamar.`, yes: 'Comprar', no: 'Cancelar', danger: false });
     if (!ok) return;
     try {
       await svc.passBuy(p);
@@ -175,8 +225,8 @@ export function passSection(ui, owner, ctx) {
     body.replaceChildren(list.length
       ? h('div.season-list', list.map((s) => h('button.season-row', { nav: true, onclick: () => { tab = 'pass'; renderTabs(); body.replaceChildren(loading()); passView(s.id); } },
           h('b', s.name), h('span', `${fmtDate(s.starts_at)} – ${fmtDate(s.ends_at)}`),
-          h('small', new Date(s.ends_at) > Date.now() ? 'EN CURSO' : 'TERMINADA'))))
-      : empty('Todavía no hay temporadas anteriores.', 'trophy'));
+          h('small', 'ARCHIVADA'))))
+      : empty('No hay pases archivados.', 'trophy'));
   }
 
   renderTabs();

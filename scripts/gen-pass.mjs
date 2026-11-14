@@ -1,7 +1,7 @@
 // Genera supabase/seed/pass.sql (temporadas, recompensas del pase, objetos del pase y desafíos) desde src/data.
 // Uso: node scripts/gen-pass.mjs
 import { writeFileSync } from 'node:fs';
-import { SEASONS, PASS_XP_PER_LEVEL } from '../src/data/pass.js';
+import { SEASONS, PASS_XP_PER_LEVEL, CLUB } from '../src/data/pass.js';
 import { PASS_ITEMS } from '../src/data/catalog.js';
 import { CHALLENGES } from '../src/data/challenges.js';
 
@@ -11,8 +11,9 @@ out.push('insert into public.catalog_items(id, category, rarity, price, min_leve
 out.push(PASS_ITEMS.map((x) => `(${q(x.id)}, ${q(x.category)}, ${q(x.rarity)}, null, 1, false)`).join(',\n'));
 out.push('on conflict (id) do update set category = excluded.category, rarity = excluded.rarity, price = null;');
 for (const se of SEASONS) {
-  out.push(`insert into public.seasons(id, name, starts_at, ends_at, premium_price, levels, xp_per_level) values (${q(se.id)}, ${q(se.name)}, ${q(se.starts)}, ${q(se.ends)}, ${se.premiumPrice}, ${se.levels}, ${PASS_XP_PER_LEVEL})`);
-  out.push('on conflict (id) do update set name = excluded.name, starts_at = excluded.starts_at, ends_at = excluded.ends_at, premium_price = excluded.premium_price, levels = excluded.levels, xp_per_level = excluded.xp_per_level;');
+  const perm = !!se.permanent;
+  out.push(`insert into public.seasons(id, name, starts_at, ends_at, premium_price, levels, xp_per_level, xp_base, xp_growth, prestige_xp, permanent) values (${q(se.id)}, ${q(se.name)}, ${q(se.starts)}, ${q(se.ends)}, ${se.premiumPrice}, ${se.levels}, ${PASS_XP_PER_LEVEL}, ${perm ? CLUB.xpBase : 'null'}, ${perm ? CLUB.xpGrowth : 0}, ${perm ? CLUB.prestigeXp : 'null'}, ${perm})`);
+  out.push('on conflict (id) do update set name = excluded.name, starts_at = excluded.starts_at, ends_at = excluded.ends_at, premium_price = excluded.premium_price, levels = excluded.levels, xp_per_level = excluded.xp_per_level, xp_base = excluded.xp_base, xp_growth = excluded.xp_growth, prestige_xp = excluded.prestige_xp, permanent = excluded.permanent;');
   out.push('insert into public.pass_rewards(season_id, level, track, item_id, pies) values');
   out.push(se.rewards.map((r) => `(${q(se.id)}, ${r.level}, ${q(r.track)}, ${q(r.item)}, ${r.pies})`).join(',\n'));
   out.push('on conflict (season_id, level, track) do update set item_id = excluded.item_id, pies = excluded.pies;');

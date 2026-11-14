@@ -1,6 +1,8 @@
 // Cosméticos dibujados con Canvas: skins (paleta + patrón), sombreros, máscaras/gafas, accesorios de
 // cuerpo y efectos de entrada/victoria. Ninguno cambia el tamaño de colisión ni la jugabilidad.
 import { TAU, shade, mix, rgba, roundRect, quality } from './utils.js';
+import { ALL_ITEMS } from '../data/catalog.js';
+import { PALETTE_BY_ID } from '../data/clubPass.js';
 
 const star = (g, x, y, r, n = 5, inner = 0.45) => {
   g.beginPath();
@@ -282,6 +284,41 @@ export const SKINS = {
     },
   },
 };
+// skins del CLUB PASS: color de la paleta + patrón (generados desde src/data/clubPass.js)
+for (const it of ALL_ITEMS) {
+  if (it.category !== 'skin' || !it.palette || SKINS[it.id]) continue;
+  const p = PALETTE_BY_ID[it.palette];
+  if (!p) continue;
+  const [, , , c1, c2, edge] = p;
+  const shine = it.rarity === 'legendary' || it.rarity === 'mythic';
+  SKINS[it.id] = {
+    tint: () => c1,
+    overlay: (g, t) => {
+      g.save();
+      if (it.pattern === 'rayas') stripes(g, rgba(c2, 0.45), 7, 20);
+      else if (it.pattern === 'damero') {
+        g.fillStyle = rgba(c2, 0.32);
+        for (let y = -140; y < 20; y += 14) for (let x = -84; x < 84; x += 14) if (((x + y) / 14) % 2 === 0) g.fillRect(x, y, 14, 14);
+      } else if (it.pattern === 'ondas') {
+        g.strokeStyle = rgba(edge, 0.5); g.lineWidth = 3.5;
+        for (let y = -130; y < 20; y += 18) { g.beginPath(); for (let x = -84; x <= 84; x += 6) g.lineTo(x, y + Math.sin(x / 14 + t * 2) * 4); g.stroke(); }
+      } else if (it.pattern === 'estrellas') {
+        g.fillStyle = edge;
+        for (let i = 0; i < 9; i++) { g.globalAlpha = 0.55 + Math.sin(t * 3 + i * 1.3) * 0.4; star(g, -64 + ((i * 47) % 128), -126 + ((i * 31) % 136), 3.6, 5, 0.42); g.fill(); }
+      } else {
+        g.fillStyle = rgba(c2, 0.4);
+        for (let y = -140; y < 20; y += 9) for (let x = -84 + ((y / 9) % 2 ? 4.5 : 0); x < 84; x += 9) { g.beginPath(); g.arc(x, y, 2.1 + (y + 140) / 90, 0, TAU); g.fill(); }
+      }
+      if (shine) {
+        const x = Math.sin(t * 1.2) * 60;
+        const grd = g.createLinearGradient(-60 + x, -140, 30 + x, 20);
+        grd.addColorStop(0, 'rgba(255,255,255,0)'); grd.addColorStop(0.5, rgba(edge, 0.45)); grd.addColorStop(1, 'rgba(255,255,255,0)');
+        g.globalAlpha = 1; g.fillStyle = grd; g.fillRect(-84, -140, 168, 160);
+      }
+      g.restore();
+    },
+  };
+}
 // skins de Maestría: dorado con franjas del color del minijuego
 const MASTERY_COL = { reaction: '#FFC93C', race: '#25CFE6', pong: '#9B6CFF', platform: '#48D597', hoop: '#FF8E3C', memory: '#FF5FA2', color: '#48D597', arena: '#FF654F', target: '#FFC93C', beat: '#FF5FA2', fish: '#25CFE6', blocks: '#9B6CFF', sneak: '#6F7CFF', tennis: '#C6F04A', tower: '#FF9E5E', blast: '#FF4D6D' };
 for (const [g, col] of Object.entries(MASTERY_COL)) {

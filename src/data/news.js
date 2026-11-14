@@ -4,6 +4,28 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-14-club-pass-49',
+    date: '2026-11-14',
+    version: '4.9',
+    title: 'Llegó el CLUB PASS: 250 niveles para siempre',
+    tag: 'v4.9',
+    color: '#FFD23F',
+    intro: 'El pase ya no tiene temporadas: 250 niveles permanentes y prestigio infinito después.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        'CLUB PASS: 250 niveles con fila libre y Premium. No vence, no se reinicia y nada desaparece.',
+        'Arrancás con toda la XP que ya ganaste: tu nivel del pase se calculó con tu progreso.',
+        'Más de 160 cosméticos nuevos del pase: tarjetas, skins, marcos, títulos y emotes.',
+        'Prestigio: después del 250 el pase sigue para siempre, con premios cada 10 niveles y títulos en 300, 400, 500, 750 y 1000.',
+        'Bono de regreso: si volvés después de 2 días, tus próximos 300 XP de pase cuentan doble.',
+      ] },
+      { kind: 'mejora', items: [
+        'El Premium se compra una sola vez con PIES y entrega todo lo de los niveles que ya alcanzaste. Si tenías el Premium de la Temporada 1, lo conservás.',
+        'Todas las recompensas de la Temporada 1 siguen disponibles dentro del CLUB PASS.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-15-idiomas-48',
     date: '2026-11-15',
     version: '4.8',

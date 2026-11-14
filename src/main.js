@@ -5,6 +5,8 @@ import '@fontsource-variable/nunito';
 import './style.css';
 import { installI18n } from './i18n.js';
 installI18n();
+import { installClubStyles } from './ui/clubStyles.js';
+installClubStyles();
 import { App } from './core/gameManager.js';
 
 // Mudanza desde el link viejo (GitHub Pages): la página vieja manda la sesión, los ajustes y las estadísticas

@@ -1,5 +1,6 @@
 // Perfil competitivo: tarjeta, nivel, título, XP, ELO, PIES (solo el propio), cosméticos,
 // estadísticas, minijuegos favoritos, récords, historial de 50 partidas, dominio, logros, colección y rivales.
+import { passLabel, passPct } from './hub.js';
 import { h, icon } from './dom.js';
 import { profileCard, tabs, loading, errorBox, empty, timeAgo, gameChip, fmtN, pies, resist, tierName, MASTERY_NAMES, MASTERY_COLORS, rarityChip, xp } from './kit.js';
 import { GAME_IDS, GAME_NAMES, GAME_COLORS, ITEM_BY_ID, ALL_ITEMS, RARITIES, CATEGORIES, MASTERY_RANKS, masteryPoints, levelInfo } from '../data/catalog.js';
@@ -87,8 +88,8 @@ export function profileSection(ui, owner, ctx) {
       profileCard(ui, owner, d, { anim: 'idle' }),
       own ? h('div.prof-wallet', pies(mine.pies, 'big'), xp(mine.xp)) : null,
       own && mine.pass ? h('button.prof-pass' + (mine.pass.premium ? '.prem' : ''), { nav: true, onclick: () => ctx.goto('pass') },
-        h('small', mine.pass.premium ? 'PASE PREMIUM' : 'PASE DE BATALLA'), h('b', `Nivel ${mine.pass.level} / ${mine.pass.levels}`),
-        h('div.ph-bar', h('i', { style: { width: `${((mine.pass.level >= mine.pass.levels ? mine.pass.xp_per_level : mine.pass.xp % mine.pass.xp_per_level) / mine.pass.xp_per_level) * 100}%` } }))) : null,
+        h('small', mine.pass.premium ? 'CLUB PASS · PREMIUM' : 'CLUB PASS'), h('b', passLabel({ ...mine.pass, premium: false })),
+        h('div.ph-bar', h('i', { style: { width: `${passPct(mine.pass)}%` } }))) : null,
       h('div.prof-meta',
         h('span', `Miembro desde ${new Date(d.created_at).toLocaleDateString('es-AR')}`),
         h('span', d.online ? 'En línea ahora' : `Última actividad: ${timeAgo(d.last_seen)}`),

@@ -2,7 +2,7 @@
 // El servidor recibe precios, rarezas y desbloqueos desde este archivo (scripts/gen-seed.mjs).
 // Ningún cosmético da ventajas: solo cambian el aspecto.
 
-import { SEASONS } from './pass.js';
+import { SEASONS, ITEM_PASS_LEVEL } from './pass.js';
 
 export const RARITIES = {
   common: { name: 'Común', color: '#A7B0C8', price: 100, order: 0 },
@@ -345,8 +345,9 @@ export const CREATOR_ITEMS = [
 ].map(([id, category, rarity, name, desc]) => ({ id, category, rarity, name, desc, unlock: 'Exclusivo del creador de DUEL CLUB · no se vende', sale: false, creator: true }));
 
 // Objetos exclusivos del Pase de Batalla (no se venden)
-export const PASS_ITEMS = SEASONS.flatMap((se) => Object.entries(se.items).map(([id, [category, rarity, name, desc]]) =>
-  ({ id, category, rarity, name, desc, unlock: `Pase de Batalla · ${se.name}`, sale: false, pass: se.id })));
+export const PASS_ITEMS = SEASONS.flatMap((se) => Object.entries(se.items).map(([id, [category, rarity, name, desc, x]]) =>
+  ({ id, category, rarity, name, desc, unlock: ITEM_PASS_LEVEL[id] ? `CLUB PASS · Nivel ${ITEM_PASS_LEVEL[id].level}${ITEM_PASS_LEVEL[id].track === 'premium' ? ' · Premium' : ''}` : 'CLUB PASS · Prestigio', sale: false, pass: 'club',
+    ...(x ? { palette: x.palette, pattern: x.pattern, style: x.style, text: x.text, en: x.en, textEn: x.textEn } : {}) })));
 
 export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS, ...PASS_ITEMS, ...CREATOR_ITEMS].map((x) => {
   const sale = x.sale && !ACH_ONLY.has(x.id);

@@ -59,11 +59,32 @@ export function buildRewards(levels = 40) {
   return out;
 }
 
+import { CLUB, buildClub, clubLevel } from './clubPass.js';
+
+const CLUB_DATA = buildClub(PASS_ITEMS_S1);
+// Objetos nuevos del CLUB PASS en el mismo formato [categoría, rareza, nombre, descripción, extra]
+const CLUB_ITEMS = Object.fromEntries(Object.values(CLUB_DATA.items).map((x) => [x.id,
+  [x.category, x.rarity, x.name, x.prestige ? `Nivel ${x.id.match(/p(\d+)/)[1]} del CLUB PASS (prestigio).` : clubDesc(x), x]]));
+function clubDesc(x) {
+  if (x.category === 'card') return 'Tarjeta de perfil del CLUB PASS.';
+  if (x.category === 'skin') return 'Skin del CLUB PASS.';
+  if (x.category === 'frame') return 'Marco de perfil del CLUB PASS.';
+  if (x.category === 'emote') return 'Emote del CLUB PASS.';
+  return 'Título del CLUB PASS.';
+}
+
 export const SEASONS = [
   {
-    id: 's1', name: 'Temporada 1 · Club Caótico', starts: '2026-11-14T00:00:00Z', ends: '2027-02-01T00:00:00Z',
-    premiumPrice: 1500, levels: 40, rewards: buildRewards(40), items: PASS_ITEMS_S1,
+    id: CLUB.id, name: CLUB.name, starts: '2026-11-14T17:00:00Z', ends: 'infinity', permanent: true,
+    premiumPrice: CLUB.premiumPrice, levels: CLUB.levels, rewards: CLUB_DATA.rewards, items: CLUB_ITEMS,
+  },
+  {
+    id: 's1', name: 'Temporada 1 · Club Caótico', starts: '2026-11-14T00:00:00Z', ends: '2026-11-14T17:00:00Z',
+    premiumPrice: 1500, levels: 40, rewards: buildRewards(40), items: PASS_ITEMS_S1, archived: true,
   },
 ];
 
-export const passLevel = (xp) => Math.min(40, 1 + Math.floor((xp || 0) / PASS_XP_PER_LEVEL));
+/** id de objeto → { level, track } dentro del CLUB PASS */
+export const ITEM_PASS_LEVEL = Object.fromEntries(CLUB_DATA.rewards.filter((r) => r.item).map((r) => [r.item, { level: r.level, track: r.track }]));
+export const passLevel = (xp) => clubLevel(xp).level;
+export { CLUB, clubLevel };
