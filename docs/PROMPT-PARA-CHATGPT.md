@@ -115,6 +115,11 @@ Hay que definir:
 - **Página de inicio / sección Jugar:** en la tarjeta **"VS BOT"** se sale una parte naranjita por fuera de la forma y queda feo. Revisar que **ninguna tarjeta de color se salga de su recorte**.
 - **El logo "DUEL CLUB" se superpone con la tarjeta del jugador** de arriba a la izquierda. Acomodar para que no se pise con nada.
 - **Menú de la izquierda (viñetas):** la idea es que las viñetas **encastren una con otra**, como piezas que se calzan (los bordes de una siguen la forma de la de al lado, sin huecos raros). Las figuras tienen que ser **un poquito más exageradas** (más inclinación y ángulos más marcados), pero que se sigan leyendo bien.
+- **Llevar el estilo cómic adentro de los minijuegos.** Hoy los menús están en estilo historieta, pero al entrar a un juego vuelve el estilo viejo (azul oscuro, neón, brillos). Ejemplo: la pantalla de presentación de Hoop Master tiene paneles azul oscuro translúcidos, título con brillo naranja y bordes finos, nada de cómic. Hay que pasar al estilo historieta (tinta gruesa, sombras duras, tramado de puntos, viñetas de colores, letra Bangers):
+  - la **presentación** de cada minijuego (título, descripción, meta, panel de controles y "listo"), en los 16;
+  - el **marcador / HUD** durante la partida (puntajes, tiempo, nombres, avisos tipo "¡GOL!", "¡TIEMPO!");
+  - los **escenarios** de cada minijuego (fondos, pistas, canchas, objetos), con contorno de tinta y tramado;
+  - la **cuenta regresiva**, la **pausa**, los **carteles de evento CAOS** y la **pantalla de resultados**.
 - Hacer una **revisión visual completa** de todas las pantallas y minijuegos buscando cosas encimadas, textos cortados, sombras raras o formas mal dibujadas, y corregirlas.
 
 ### D. Nombre y logo
