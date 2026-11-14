@@ -4,11 +4,11 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
-    id: '2026-11-15-nueva-identidad-comic',
+    id: '2026-11-15-identidad-comic-45',
     date: '2026-11-15',
-    version: '4.4',
+    version: '4.5',
     title: 'DUEL CLUB tiene nueva cara',
-    tag: 'v4.4',
+    tag: 'v4.5',
     color: '#FFD23F',
     intro: 'Nuevo logo, nuevos colores y una pantalla dividida azul contra rojo.',
     blocks: [
@@ -16,6 +16,7 @@ export const NEWS = [
         'Nueva identidad visual estilo cómic: tinta gruesa, sombras duras y colores fuertes.',
         'Personajes redibujados en estilo historieta, con contorno y tramado de puntos.',
         'Nuevas tipografías, fondo de duelo y portada nueva.',
+        'Menú ordenado por grupos y minijuegos con textura de historieta.',
       ] },
     ],
   },

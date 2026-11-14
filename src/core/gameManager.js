@@ -13,6 +13,7 @@ import { EVENTS } from './events.js';
 import { keyName } from './inputManager.js';
 import { BotInput } from './bots.js';
 import { handleExtAuth } from '../ui/extAuthFlow.js';
+let GameRunnerDots = null;
 const keyNameShort = (c) => ({ ShiftRight: 'SHIFT', NumpadEnter: 'ENTER' }[c] || keyName(c));
 import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel } from './utils.js';
 import { UI } from '../ui/ui.js';
@@ -568,6 +569,27 @@ export class MinigameRunner {
     }
     // controles de cada jugador: durante la cuenta regresiva y los primeros segundos (y en pausa)
     if (!this.opts?.online) this.renderControls(g);
+    // textura de impresión de historieta (tramado de puntos) y marco de viñeta alrededor de la pantalla de juego
+    g.save();
+    if (quality.level !== 'low') {
+      if (!GameRunnerDots) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 9;
+        const d = c.getContext('2d');
+        d.fillStyle = 'rgba(10,8,20,0.16)';
+        d.beginPath(); d.arc(2.2, 2.2, 1.4, 0, Math.PI * 2); d.arc(6.7, 6.7, 1.4, 0, Math.PI * 2); d.fill();
+        GameRunnerDots = g.createPattern(c, 'repeat');
+      }
+      g.fillStyle = GameRunnerDots;
+      g.fillRect(0, 0, W, H);
+    }
+    g.strokeStyle = '#0D0B14';
+    g.lineWidth = 12;
+    g.strokeRect(0, 0, W, H);
+    g.strokeStyle = '#FFF4E0';
+    g.lineWidth = 2;
+    g.strokeRect(8, 8, W - 16, H - 16);
+    g.restore();
     // partidas online: quién sos, conexión y avisos de espera
     this.opts?.netOverlay?.(g, this);
   }

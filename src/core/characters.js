@@ -1097,7 +1097,9 @@ export function drawCharacter(g, o) {
     }
     og.save();
     bodyTf(og, 1);
+    inkOn(og);
     DRAW[ch.id](og, st, c, t, ch);
+    inkOff(og);
     og.restore();
     og.globalCompositeOperation = 'source-atop';
     if (skin?.overlay) {
@@ -1165,6 +1167,51 @@ export function drawCharacter(g, o) {
     }
   }
   g.restore();
+}
+
+// LÍNEA DE HISTORIETA: mientras se dibuja el cuerpo, cada forma rellena lleva un trazo de tinta fino y cada
+// trazo grueso (brazos, piernas) lleva un borde de tinta por debajo. Así los 15 personajes quedan entintados igual.
+const INK = '#0D0B14';
+function inkOn(g) {
+  if (g.__inkFill) return;
+  const fill = g.fill, stroke = g.stroke;
+  g.__inkFill = fill; g.__inkStroke = stroke;
+  g.fill = function (...a) {
+    fill.apply(this, a);
+    if (this.globalAlpha < 0.5 || this.globalCompositeOperation !== 'source-over' || isLight(this.fillStyle)) return;
+    const lw = this.lineWidth, ss = this.strokeStyle, lj = this.lineJoin, sb = this.shadowBlur;
+    this.lineWidth = 2.4; this.strokeStyle = INK; this.lineJoin = 'round'; this.shadowBlur = 0;
+    if (a[0] instanceof Path2D) stroke.call(this, a[0]); else stroke.call(this);
+    this.lineWidth = lw; this.strokeStyle = ss; this.lineJoin = lj; this.shadowBlur = sb;
+  };
+  g.stroke = function (...a) {
+    if (this.lineWidth >= 4 && this.globalAlpha >= 0.5) {
+      const lw = this.lineWidth, ss = this.strokeStyle, lc = this.lineCap, sb = this.shadowBlur;
+      this.lineWidth = lw + 4.4; this.strokeStyle = INK; this.shadowBlur = 0;
+      stroke.apply(this, a);
+      this.lineWidth = lw; this.strokeStyle = ss; this.lineCap = lc; this.shadowBlur = sb;
+    }
+    stroke.apply(this, a);
+  };
+}
+// brillos y blancos de los ojos no llevan tinta (si no, los ojos se ven como manchas negras)
+function isLight(fs) {
+  if (typeof fs !== 'string') return false;
+  let r, gg, b, a = 1;
+  if (fs[0] === '#') {
+    const h = fs.length === 4 ? fs.slice(1).split('').map((x) => x + x).join('') : fs.slice(1, 7);
+    r = parseInt(h.slice(0, 2), 16); gg = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16);
+  } else {
+    const m = fs.match(/rgba?\(([^)]+)\)/);
+    if (!m) return false;
+    [r, gg, b, a = 1] = m[1].split(',').map(Number);
+  }
+  return a < 0.6 || (0.299 * r + 0.587 * gg + 0.114 * b) / 255 > 0.86;
+}
+function inkOff(g) {
+  if (!g.__inkFill) return;
+  delete g.fill; delete g.stroke;
+  g.__inkFill = null; g.__inkStroke = null;
 }
 
 // tramado de puntos (para las sombras estilo cómic)

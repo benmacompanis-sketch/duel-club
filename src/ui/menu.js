@@ -14,22 +14,17 @@ export function duoStage(ui, owner, w, hgt, opts = {}) {
   return ui.preview(owner, w, hgt, (g, W, H, t) => {
     const [a, b] = ui.app.profiles;
     const cy = H * 0.86;
-    // plataforma
-    const grd = g.createRadialGradient(W / 2, cy, 10, W / 2, cy, W * 0.5);
-    grd.addColorStop(0, 'rgba(155,108,255,0.35)');
-    grd.addColorStop(1, 'rgba(155,108,255,0)');
-    g.fillStyle = grd;
-    g.beginPath(); g.ellipse(W / 2, cy, W * 0.48, 34, 0, 0, TAU); g.fill();
     for (const [p, side] of [[a, -1], [b, 1]]) {
       const x = W / 2 + side * W * (opts.spread || 0.24);
-      const glow = g.createRadialGradient(x, cy - 90, 10, x, cy - 90, 170);
-      glow.addColorStop(0, rgba(p.color, 0.35));
-      glow.addColorStop(1, rgba(p.color, 0));
-      g.fillStyle = glow;
-      g.fillRect(x - 180, cy - 280, 360, 300);
-      g.strokeStyle = rgba(p.color, 0.8);
-      g.lineWidth = 3;
-      g.beginPath(); g.ellipse(x, cy, 70, 14, 0, 0, TAU); g.stroke();
+      // pedestal de historieta: sombra de tinta + disco del color del jugador con borde grueso
+      g.fillStyle = 'rgba(13,11,20,0.55)';
+      g.beginPath(); g.ellipse(x + 8, cy + 10, 82, 20, 0, 0, TAU); g.fill();
+      g.fillStyle = p.color;
+      g.strokeStyle = '#0D0B14';
+      g.lineWidth = 5;
+      g.beginPath(); g.ellipse(x, cy + 2, 78, 18, 0, 0, TAU); g.fill(); g.stroke();
+      g.fillStyle = 'rgba(255,255,255,0.25)';
+      g.beginPath(); g.ellipse(x - 18, cy - 3, 34, 6, 0, 0, TAU); g.fill();
       const anim = opts.anim ? opts.anim : Math.sin(t * 0.7 + (side > 0 ? 2 : 0)) > 0.85 ? 'celebrate' : 'idle';
       drawCharacter(g, { id: p.char, x, y: cy, s: opts.scale || 1.75, color: p.color, anim, t: t + (side > 0 ? 1.3 : 0), facing: -side, acc: p.acc });
     }
@@ -51,7 +46,7 @@ export function titleScreen(ui) {
       h('div.press-start', 'PULSÁ CUALQUIER TECLA PARA EMPEZAR'),
       h('div.title-feats',
         ...[['16', 'minijuegos'], ['ONLINE', 'competitivo'], ['VS BOT', '4 dificultades'], ['PASE', 'temporada 1']].map(([a, b]) => h('div.tf', h('b', a), h('small', b))))),
-    h('div.title-foot', h('span', 'v4.4'), h('span', '2 jugadores · 1 teclado · o cada uno en su compu')));
+    h('div.title-foot', h('span', 'v4.5'), h('span', '2 jugadores · 1 teclado · o cada uno en su compu')));
   scr.nav = false;
   scr.onKey = (e) => {
     if (e.code === 'F11' || e.code === 'F5' || e.code === 'F12') return false;
