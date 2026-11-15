@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 260" role="img" aria-label="DUEL CLUB">
+  <!-- Logo de DUEL CLUB (versión para fondo oscuro): estallido de historieta, letras con tinta gruesa y rayo -->
+  <defs>
+    <pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="2" fill="#0D0B14" opacity=".25"/></pattern>
+  </defs>
+  <g transform="rotate(-4 320 130)">
+    <polygon points="320,8 360,52 420,20 430,78 500,62 478,118 548,130 482,158 516,214 448,200 430,252 380,212 320,246 270,208 212,248 200,196 128,214 160,160 92,132 162,114 140,58 208,74 220,18 278,50" fill="#0D0B14" transform="translate(8 8)"/>
+    <polygon points="320,8 360,52 420,20 430,78 500,62 478,118 548,130 482,158 516,214 448,200 430,252 380,212 320,246 270,208 212,248 200,196 128,214 160,160 92,132 162,114 140,58 208,74 220,18 278,50" fill="#FFD23F" stroke="#0D0B14" stroke-width="7" stroke-linejoin="round"/>
+    <polygon points="320,8 360,52 420,20 430,78 500,62 478,118 548,130 482,158 516,214 448,200 430,252 380,212 320,246 270,208 212,248 200,196 128,214 160,160 92,132 162,114 140,58 208,74 220,18 278,50" fill="url(#dots)"/>
+    <g font-family="Bangers, 'Lilita One', Impact, sans-serif" font-size="104" text-anchor="middle" stroke-linejoin="round" paint-order="stroke fill">
+      <text x="206" y="166" fill="#0D0B14" transform="translate(7 7) skewX(-8)">DUEL</text>
+      <text x="206" y="166" fill="#2E7BFF" stroke="#0D0B14" stroke-width="12" transform="skewX(-8)">DUEL</text>
+      <text x="452" y="166" fill="#0D0B14" transform="translate(7 7) skewX(-8)">CLUB</text>
+      <text x="452" y="166" fill="#FF4B3E" stroke="#0D0B14" stroke-width="12" transform="skewX(-8)">CLUB</text>
+    </g>
+    <path d="M330 52 L290 140 L318 140 L300 214 L356 116 L326 116 L346 52 Z" fill="#FFF4E0" stroke="#0D0B14" stroke-width="7" stroke-linejoin="round"/>
+  </g>
+</svg>

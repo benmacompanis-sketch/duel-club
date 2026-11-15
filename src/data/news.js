@@ -4,6 +4,21 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-15-logo-50',
+    date: '2026-11-15',
+    version: '5.0',
+    title: 'DUEL CLUB 5.0: logo nuevo',
+    tag: 'v5.0',
+    color: '#FFD23F',
+    intro: 'Cerramos la gran actualización con un logo de historieta nuevo.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        'Logo nuevo de historieta en la portada y en la pestaña del navegador.',
+        'La portada ahora muestra el CLUB PASS y el Singleplayer.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-14-comic-ingame-413',
     date: '2026-11-14',
     version: '4.13',

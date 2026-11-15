@@ -1999,3 +1999,7 @@ body { font-weight: 600; }
 .stat-row .best { color: #1F8A57 !important; }
 .board { border-radius: 0 !important; background: #221C33 !important; border: 4px solid var(--ink) !important; box-shadow: 6px 6px 0 var(--ink); }
 .res-reward { border: 2px solid var(--ink) !important; box-shadow: 2px 2px 0 var(--ink); border-radius: 4px !important; }
+.logo-img { display: flex; flex-direction: column; align-items: center; }
+.logo-img img { width: min(560px, 70vw); height: auto; filter: drop-shadow(0 6px 0 rgba(13, 11, 20, 0.35)); animation: logoPop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1); user-select: none; }
+@keyframes logoPop { from { transform: scale(0.6) rotate(-8deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+.title-center:has(.logo-img)::before { display: none !important; }

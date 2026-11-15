@@ -148,6 +148,8 @@ export const DATA_EN = {
   'El menú de la izquierda encastra como una tira de historieta, con ángulos más marcados.': 'The left menu interlocks like a comic strip, with sharper angles.',
   'La tarjeta VS BOT (y las demás) ya no dejan asomar color por fuera del borde.': 'The VS BOT card (and the others) no longer show color outside their border.',
   'El logo ya no se encima con la tarjeta del jugador.': 'The logo no longer overlaps the player card.',
+  'DUEL CLUB 5.0: logo nuevo': 'DUEL CLUB 5.0: new logo', 'Cerramos la gran actualización con un logo de historieta nuevo.': 'We close the big update with a new comic logo.',
+  'Logo nuevo de historieta en la portada y en la pestaña del navegador.': 'New comic logo on the title screen and the browser tab.', 'La portada ahora muestra el CLUB PASS y el Singleplayer.': 'The title screen now shows the CLUB PASS and Singleplayer.',
   // --- novedades
   'DUEL CLUB tiene nueva cara': 'DUEL CLUB has a new look', 'Nuevo logo, nuevos colores y una pantalla dividida azul contra rojo.': 'New logo, new colors and a blue-vs-red split screen.', 'Online sin lag y Desafíos Solo': 'Lag-free online and Singleplayer Challenges',
   'Tu personaje responde al instante en el online, y hay desafíos para jugar sin rival.': 'Your character responds instantly online, and there are challenges to play without an opponent.', 'La gran actualización: bots, Pase de Batalla y más': 'The big update: bots, Battle Pass and more',

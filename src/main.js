@@ -7,6 +7,8 @@ import { installI18n } from './i18n.js';
 installI18n();
 import { installClubStyles } from './ui/clubStyles.js';
 installClubStyles();
+import { loadAssets } from './core/assets.js';
+loadAssets();
 import { App } from './core/gameManager.js';
 
 // Mudanza desde el link viejo (GitHub Pages): la página vieja manda la sesión, los ajustes y las estadísticas

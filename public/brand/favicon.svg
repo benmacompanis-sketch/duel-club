@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="DUEL CLUB">
+  <!-- Ícono de DUEL CLUB: estallido amarillo con "DC" en azul y rojo y el rayo; legible a 16 px -->
+  <polygon points="32,2 39,13 52,8 51,21 63,25 54,34 61,46 48,46 46,60 35,52 25,62 21,49 7,52 12,39 1,30 13,23 9,10 22,13" fill="#FFD23F" stroke="#0D0B14" stroke-width="3" stroke-linejoin="round"/>
+  <g font-family="Bangers, Impact, sans-serif" font-size="30" text-anchor="middle" stroke="#0D0B14" stroke-width="4" paint-order="stroke fill" stroke-linejoin="round">
+    <text x="22" y="42" fill="#2E7BFF">D</text>
+    <text x="43" y="42" fill="#FF4B3E">C</text>
+  </g>
+</svg>

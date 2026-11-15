@@ -2,9 +2,16 @@
 import { h, icon, toggleFullscreen } from './dom.js';
 import { drawCharacter } from '../core/characters.js';
 import { TAU, rgba } from '../core/utils.js';
+import { APP_VERSION } from '../config.js';
 
 export function logo(big = false) {
-  return h('div.logo' + (big ? '.big' : ''),
+  // portada: el logo de historieta (estallido + letras con tinta). En chico se mantiene el logo de texto.
+  if (big) {
+    return h('div.logo.big.logo-img',
+      h('img', { src: '/brand/logo-dark-transparent.png', alt: 'DUEL CLUB', width: 640, height: 260, draggable: false }),
+      h('div.logo-slogan', 'ONE CLUB. INFINITE DUELS.'));
+  }
+  return h('div.logo',
     h('div.logo-row', h('span.logo-duel', 'DUEL'), h('span.logo-bolt', icon('bolt')), h('span.logo-club', 'CLUB')),
     h('div.logo-slogan', 'ONE CLUB. INFINITE DUELS.'));
 }
@@ -45,8 +52,8 @@ export function titleScreen(ui) {
     h('div.title-center', logo(true),
       h('div.press-start', 'PULSÁ CUALQUIER TECLA PARA EMPEZAR'),
       h('div.title-feats',
-        ...[['16', 'minijuegos'], ['ONLINE', 'competitivo'], ['VS BOT', '4 dificultades'], ['PASE', 'temporada 1']].map(([a, b]) => h('div.tf', h('b', a), h('small', b))))),
-    h('div.title-foot', h('span', 'v4.7'), h('span', '2 jugadores · 1 teclado · o cada uno en su compu')));
+        ...[['16', 'minijuegos'], ['ONLINE', 'competitivo'], ['SINGLEPLAYER', 'diario y semanal'], ['CLUB PASS', '250 niveles']].map(([a, b]) => h('div.tf', h('b', a), h('small', b))))),
+    h('div.title-foot', h('span', 'v' + APP_VERSION), h('span', '2 jugadores · 1 teclado · o cada uno en su compu')));
   scr.nav = false;
   scr.onKey = (e) => {
     if (e.code === 'F11' || e.code === 'F5' || e.code === 'F12') return false;

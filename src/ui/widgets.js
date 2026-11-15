@@ -1,4 +1,5 @@
 // Componentes de UI reutilizables: encabezados, grupos de opciones, interruptores e íconos de juego.
+import { ASSETS } from '../core/assets.js';
 import { h, icon } from './dom.js';
 
 export function header(ui, title, sub, onBack, extra = null) {
@@ -46,6 +47,9 @@ export function rangeRow(label, sub, min, max, step, get, set, fmt = (v) => Math
 /** Canvas animado con el ícono de un minijuego. */
 export function gameIcon(ui, owner, meta, size) {
   return ui.preview(owner, size, size, (g, w, hh, t) => {
+    // portada generada (si está en el manifiesto y cargó); si no, el dibujo por código
+    const img = ASSETS.covers.get(meta.id);
+    if (img) { g.drawImage(img, 0, 0, w, hh); return; }
     g.save();
     g.scale(w / 200, hh / 200);
     meta.drawIcon(g, t);
