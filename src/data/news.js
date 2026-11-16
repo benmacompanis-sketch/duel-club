@@ -4,6 +4,26 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-16-fluidez-51',
+    date: '2026-11-16',
+    version: '5.1',
+    title: 'Todo más fluido',
+    tag: 'v5.1',
+    color: '#3DDC97',
+    intro: 'El juego va mucho más fluido, la tienda ya no se traba y el menú se ve mejor.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'Los personajes se dibujan mucho más rápido: los minijuegos van más fluidos (Pong pasó de 19 a 55 cuadros por segundo en nuestras pruebas).',
+        'La tienda ya no se traba: los objetos se animan cuando pasás el mouse o los seleccionás.',
+        'El menú de la izquierda usa todo el espacio: viñetas más grandes.',
+        'Textos y nombres revisados para que sean para todas las edades.',
+      ] },
+      { kind: 'arreglo', items: [
+        'En pantallas chicas, el fondo de las ventanas se veía duplicado y espejado: arreglado.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-15-logo-50',
     date: '2026-11-15',
     version: '5.0',

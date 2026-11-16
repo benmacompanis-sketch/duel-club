@@ -132,7 +132,7 @@ export const ITEMS = [
   // ===================================================================== EMOTES (aparecen en los resultados)
   it('emo_gg', 'emote', 'common', '"GG"', 'Buen juego. A veces es sincero.', { theme: 'Retro' }),
   it('emo_jaja', 'emote', 'common', '"JAJA"', 'Se ríe en tu cara, con respeto.', { theme: 'Meme' }),
-  it('emo_vacio', 'emote', 'uncommon', 'Mirada de los mil metros', 'Tu personaje mira al horizonte procesando lo que pasó.', { theme: 'Meme', meme: true }),
+  it('emo_vacio', 'emote', 'uncommon', 'Mirada perdida', 'Tu personaje mira al horizonte procesando lo que pasó.', { theme: 'Meme', meme: true }),
   it('emo_signo', 'emote', 'uncommon', '"¿?"', 'Ni vos entendés cómo ganaste.', { theme: 'Meme' }),
   it('emo_cine', 'emote', 'rare', '"CINE ABSOLUTO"', 'Para las remontadas de película.', { theme: 'Meme', meme: true }),
   it('emo_contrato', 'emote', 'epic', 'Cartel del contrato', '"ESTO NO ESTABA EN EL CONTRATO".', { theme: 'Meme', meme: true }),
@@ -167,7 +167,7 @@ export const ITEMS = [
   it('card_npc', 'card', 'rare', 'NPC Premium', 'Beige corporativo con marca de agua "NPC".', { theme: 'Meme', meme: true }),
   it('card_diamante', 'card', 'epic', 'Diamante', 'Destellos que recorren la tarjeta.', { theme: 'Cristal' }),
   it('card_galaxia', 'card', 'epic', 'Galaxia', 'Un cielo estrellado de fondo.', { theme: 'Galaxia', sale: false, unlock: 'Nivel 20' }),
-  it('card_meme', 'card', 'epic', 'Meme Supremo', 'Impact blanco, fondo saturado. Peak de la comedia.', { theme: 'Meme', meme: true }),
+  it('card_meme', 'card', 'epic', 'Meme Supremo', 'Letras blancas, fondo de colores. Lo más gracioso del club.', { theme: 'Meme', meme: true }),
   it('card_oro', 'card', 'legendary', 'Oro', 'Dorada de verdad.', { theme: 'Oro', sale: false, unlock: 'Nivel 10' }),
   it('card_legendaria', 'card', 'legendary', 'Legendaria', 'Dorado con rayos de luz giratorios.', { theme: 'Oro' }),
   it('card_silla', 'card', 'legendary', 'Silla Legendaria', 'Una silla de plástico iluminada como una reliquia.', { theme: 'Absurdo', meme: true }),
@@ -196,7 +196,7 @@ export const ITEMS = [
   it('emo_serio', 'emote', 'rare', 'Modo serio', 'Una cara completamente seria. Demasiado seria.', { sale: false, unlock: 'Nivel 21' }),
   it('vic_icono', 'victory', 'legendary', 'Ícono del club', 'Tu silueta aparece en un cartel de neón gigante.', { sale: false, unlock: 'Nivel 75' }),
   it('frame_maestro', 'frame', 'legendary', 'Marco de Maestro', 'Bordes de máquina recreativa dorada.', { sale: false, unlock: 'Nivel 50' }),
-  it('frame_vida', 'frame', 'mythic', '¿Tenés vida?', 'Un marco que te mira con preocupación. Nivel 150.', { sale: false, unlock: 'Nivel 150' }),
+  it('frame_vida', 'frame', 'mythic', 'Fan número uno', 'Un marco que te mira con preocupación. Nivel 150.', { sale: false, unlock: 'Nivel 150' }),
   it('emo_empate', 'emote', 'epic', 'Empate eterno', '"Nadie quiso hacerse cargo."', { sale: false, unlock: 'Secreto' }),
 ];
 
@@ -219,17 +219,17 @@ export const TITLES = [
   tt('icono', 'Ícono del Club', 'legendary', 'Nivel 75'),
   tt('inmortal', 'INMORTAL', 'mythic', 'Nivel 100'),
   tt('leyenda_absoluta', 'Leyenda absoluta', 'mythic', 'Nivel 100'),
-  tt('tenes_vida', '¿Tenés vida?', 'mythic', 'Nivel 150'),
+  tt('tenes_vida', 'Fan número uno', 'mythic', 'Nivel 150'),
   tt('boton', 'Profesional del botón', 'rare', 'Logro: Profesional del botón'),
   tt('no_era_dificil', 'No era tan difícil', 'uncommon', 'Logro: No era tan difícil'),
   tt('sin_manos', 'Sin manos', 'legendary', 'Logro: Sin manos'),
   tt('el_de_67', 'El de los 67', 'epic', 'Logro: 67'),
-  tt('toque_pasto', 'Toque pasto', 'uncommon', 'Logro secreto'),
+  tt('toque_pasto', 'Hora del recreo', 'uncommon', 'Logro secreto'),
   tt('pixeles', 'Señor de los píxeles', 'legendary', 'Logro: Todoterreno'),
   tt('npc', 'NPC certificado', 'rare', 'Logro: NPC certificado'),
   tt('ultimo_cerebro', 'Último cerebro disponible', 'epic', 'Logro: Memoria fotográfica'),
   tt('tiempo_libre', 'Demasiado tiempo libre', 'legendary', 'Logro: Demasiado tiempo libre'),
-  tt('ceo_desastre', 'CEO del desastre', 'epic', 'Logro: CEO del desastre'),
+  tt('ceo_desastre', 'Rey del desastre', 'epic', 'Logro: Rey del desastre'),
   tt('no_me_salio', 'No me salió', 'common', 'Logro: No me salió'),
   tt('casualidad', 'Gané de casualidad', 'uncommon', 'Logro: Por un pelo'),
   tt('arquitecto', 'Arquitecto del caos', 'epic', 'Logro: Arquitecto del caos'),
@@ -240,7 +240,7 @@ export const TITLES = [
   tt('social', 'Alma del club', 'uncommon', 'Logro: Jugar con cinco amigos'),
   tt('aura', 'Main Character', 'epic', 'PIE STORE', { sale: true, meme: true }),
   tt('protagonista', 'Protagonista sin guion', 'rare', 'PIE STORE', { sale: true, meme: true }),
-  tt('ceo_teclado', 'CEO del teclado', 'uncommon', 'PIE STORE', { sale: true, meme: true }),
+  tt('ceo_teclado', 'Jefe del teclado', 'uncommon', 'PIE STORE', { sale: true, meme: true }),
   tt('cero_estres', 'Cero estrés (mentira)', 'common', 'PIE STORE', { sale: true, meme: true }),
 ];
 
@@ -296,7 +296,7 @@ export const LEVEL_REWARDS = [
 // Títulos de nivel (el que corresponde por nivel se muestra si no elegís otro)
 export const LEVEL_TITLES = [[1, 'Novato'], [5, 'Aspirante'], [10, 'Competidor'], [15, 'Veterano'], [20, 'Élite'], [30, 'Leyenda del Club'], [50, 'Maestro Arcade'], [67, 'EL ELEGIDO'], [75, 'Ícono del Club'], [100, 'Inmortal']];
 export const SPECIAL_LEVELS = {
-  6: 'Sos sospechoso', 21: 'Modo serio', 42: 'La respuesta', 67: 'EL ELEGIDO', 69: 'No preguntes', 100: 'Leyenda absoluta', 150: '¿Tenés vida?',
+  6: 'Sos sospechoso', 21: 'Modo serio', 42: 'La respuesta', 67: 'EL ELEGIDO', 69: 'No preguntes', 100: 'Leyenda absoluta', 150: 'Fan número uno',
 };
 
 // Rangos de ELO (rating competitivo)

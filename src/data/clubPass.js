@@ -76,7 +76,7 @@ const TITLES = [
   ['Recién llegado', 'Fresh arrival'], ['Calentando motores', 'Warming up'], ['Dedo rápido', 'Quick finger'], ['Sin miedo al ridículo', 'Fearless of embarrassment'],
   ['Habitué del club', 'Club regular'], ['Rey del rebote', 'Bounce king'], ['Puntería de feria', 'Fairground aim'], ['Siempre una más', 'Always one more'],
   ['Mano caliente', 'Hot hand'], ['El que no se rinde', 'Never gives up'], ['Experto en revanchas', 'Rematch expert'], ['Tiembla el tablero', 'Board shaker'],
-  ['Corazón de arcade', 'Arcade heart'], ['Domador del caos', 'Chaos tamer'], ['Sangre fría', 'Cold blooded'], ['Leyenda de barrio', 'Neighborhood legend'],
+  ['Corazón de arcade', 'Arcade heart'], ['Domador del caos', 'Chaos tamer'], ['Nervios de acero', 'Nerves of steel'], ['Leyenda de barrio', 'Neighborhood legend'],
   ['Viñeta principal', 'Main panel'], ['Protagonista', 'Protagonist'], ['Golpe de efecto', 'Plot twist'], ['Tinta indeleble', 'Indelible ink'],
   ['Héroe de historieta', 'Comic book hero'], ['Villano favorito', 'Favorite villain'], ['Última página', 'Last page'], ['Edición especial', 'Special edition'],
   ['Portada del mes', 'Cover of the month'], ['Número uno', 'Issue number one'], ['Coleccionable', 'Collectible'], ['Tirada limitada', 'Limited run'],

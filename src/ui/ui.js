@@ -205,7 +205,14 @@ export class UI {
     const c = h('canvas.preview' + (cls ? '.' + cls : ''));
     c.style.width = w + 'px';
     c.style.height = hgt + 'px';
-    const p = { owner, canvas: c, g: c.getContext('2d'), w, h: hgt, draw, px: 0 };
+    const p = { owner, canvas: c, g: c.getContext('2d'), w, h: hgt, draw, px: 0, visible: true, n: this.previews.size, acc: 0 };
+    // solo se dibujan las vistas previas que están en pantalla (en la tienda hay decenas a la vez)
+    if (typeof IntersectionObserver !== 'undefined') {
+      p.visible = false;
+      this.previewObs ||= new IntersectionObserver((ents) => { for (const e of ents) if (e.target._pv) e.target._pv.visible = e.isIntersecting; }, { rootMargin: '80px' });
+      c._pv = p;
+      this.previewObs.observe(c);
+    }
     this.previews.add(p);
     return c;
   }
@@ -213,15 +220,35 @@ export class UI {
     this.t += dt;
     const r = this.app.renderer;
     const px = r.scale * r.dpr;
+    // con muchas vistas previas en pantalla se animan a menos cuadros por segundo (siguen fluidas, gastan mucho menos)
+    let vis = 0;
+    for (const p of this.previews) if (p.visible && !p.static) vis++;
+    const step = vis > 24 ? 1 / 12 : vis > 8 ? 1 / 24 : 0;
     for (const p of this.previews) {
       if (p.owner.disposed) {
         this.previews.delete(p);
+        this.previewObs?.unobserve(p.canvas);
         continue;
       }
       if (!p.canvas.isConnected) {
         this.previews.delete(p); // el canvas fue reemplazado: liberar
+        this.previewObs?.unobserve(p.canvas);
         continue;
       }
+      if (!p.visible && p.px) continue;
+      // muchas vistas previas a la vez (tienda, inventario): quietas, y se anima la que tiene el mouse encima
+      if (!p.host) {
+        p.host = p.canvas.closest('button, .item-card, .pass-cell') || p.canvas;
+        p.host.addEventListener('mouseenter', () => { p.hover = true; });
+        p.host.addEventListener('mouseleave', () => { p.hover = false; });
+        p.host.addEventListener('focus', () => { p.hover = true; });
+        p.host.addEventListener('blur', () => { p.hover = false; });
+      }
+      if (vis > 10 && p.px && p.drawn && !p.hover) continue;
+      p.acc += dt;
+      if (step && p.px && p.acc < step && !p.hover) continue;
+      p.acc = 0;
+      p.drawn = true;
       if (p.px !== px) {
         p.canvas.width = Math.max(1, Math.round(p.w * px));
         p.canvas.height = Math.max(1, Math.round(p.h * px));

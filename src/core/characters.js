@@ -1081,10 +1081,13 @@ export function drawCharacter(g, o) {
   }
   const tf = g.getTransform();
   const px = Math.hypot(tf.a, tf.b) * s;
-  if (quality.level !== 'low' && px > 0.05 && px < 12) {
+  // casi transparente (personajes de fondo): no vale la pena el procesado de historieta, no se nota
+  const faint = g.globalAlpha < 0.35;
+  if (quality.level !== 'low' && !faint && px > 0.05 && px < 12) {
     // ESTILO CÓMIC: todo el personaje (con accesorios) se arma en un lienzo auxiliar, se le da sombra de un
     // solo corte con tramado de puntos y un brillo duro, y después se dibuja con contorno de tinta grueso.
-    const k = px;
+    // resolución del lienzo auxiliar con tope: más grande no se nota y cuesta mucho
+    const k = Math.min(px, 2.2);
     const W2 = Math.ceil(180 * k), H2 = Math.ceil(190 * k);
     const off = offCanvas(offIdx++ % 6, W2, H2);
     const og = off.g;
@@ -1143,9 +1146,9 @@ export function drawCharacter(g, o) {
     sg.globalCompositeOperation = 'source-over';
     const dx = -90 * s, dy = -170 * s, dw = 180 * s * (W2 - 1) / W2, dh = 190 * s * (H2 - 1) / H2;
     const ow = 3.2 * s;
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * TAU;
-      g.drawImage(sil, 0, 0, W2 - 1, H2 - 1, dx + Math.cos(a) * ow, dy + Math.sin(a) * ow, dw, dh);
+    // contorno de tinta: 4 pasadas en diagonal + 2 rectas (antes 8): mismo grosor visible, menos de la mitad del costo
+    for (const [ax, ay] of [[0.71, 0.71], [-0.71, 0.71], [0.71, -0.71], [-0.71, -0.71], [1, 0], [-1, 0]]) {
+      g.drawImage(sil, 0, 0, W2 - 1, H2 - 1, dx + ax * ow, dy + ay * ow, dw, dh);
     }
     g.drawImage(off, 0, 0, W2 - 1, H2 - 1, dx, dy, dw, dh);
   } else {

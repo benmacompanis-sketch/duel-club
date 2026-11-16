@@ -2003,3 +2003,16 @@ body { font-weight: 600; }
 .logo-img img { width: min(560px, 70vw); height: auto; filter: drop-shadow(0 6px 0 rgba(13, 11, 20, 0.35)); animation: logoPop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1); user-select: none; }
 @keyframes logoPop { from { transform: scale(0.6) rotate(-8deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
 .title-center:has(.logo-img)::before { display: none !important; }
+/* rendimiento: en grillas con muchos objetos, los brillos y fondos animados solo se mueven en la tarjeta
+   que tiene el mouse o el foco (redibujar decenas de sombras animadas por cuadro trababa la tienda) */
+.item-card:not(:hover):not(:focus-within) *, .item-card:not(:hover):not(:focus-within)::before, .item-card:not(:hover):not(:focus-within)::after,
+.store-featured *:not(:hover), .inv-grid .item-card:not(:hover) * { animation-play-state: paused !important; }
+/* sin desenfoques de fondo en ningún lado: en pantallas chicas el navegador espejaba la imagen detrás de las
+   ventanas (efecto caleidoscopio) y además es lo más pesado de dibujar en celulares */
+*, *::before, *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.modal-backdrop { background: radial-gradient(circle, rgba(13, 11, 20, 0.35) 1.6px, transparent 2px) 0 0 / 10px 10px, rgba(13, 11, 20, 0.72) !important; }
+/* menú lateral: las viñetas crecen para llenar todo el panel (sin espacio en blanco abajo) */
+.hub-side { display: flex !important; flex-direction: column; min-height: 0; }
+.sidenav { flex: 1 1 auto; display: flex !important; flex-direction: column; min-height: 0; }
+.sn-btn { flex: 1 1 46px; height: auto !important; min-height: 40px; max-height: 66px; font-size: 18.5px !important; }
+.sn-btn .sn-ico { width: 30px !important; height: 30px !important; }

@@ -115,7 +115,7 @@ const GENERAL = [
   A('tourn_3', 'competicion', 'hard', 'Tricampeón', 'Ganá 3 torneos.', 'crown', { t: 'stat', k: 'tournaments', gte: 3 }),
   A('duel_12', 'competicion', 'hard', 'Maratón de duelos', 'Ganá un DUEL MODE de 12 minijuegos.', 'duel', { t: 'comp', mode: 'duel', win: true, games_gte: 12 }, ['emo_cine']),
   A('duel_1pt', 'competicion', 'hard', 'Gané de casualidad', 'Ganá una competición por un solo punto.', 'hair', { t: 'comp', win: true, margin_eq: 1 }, ['title_casualidad']),
-  A('ceo_desastre', 'meme', 'normal', 'CEO del desastre', 'Perdé una competición por 10 puntos o más. Liderazgo.', 'arrow', { t: 'comp', lose: true, margin_gte: 10 }, ['title_ceo_desastre']),
+  A('ceo_desastre', 'meme', 'normal', 'Rey del desastre', 'Perdé una competición por 10 puntos o más. ¡La próxima sale!', 'arrow', { t: 'comp', lose: true, margin_gte: 10 }, ['title_ceo_desastre']),
   A('caos_win', 'competicion', 'normal', 'No era tan difícil', 'Ganá un minijuego en dificultad CAOS.', 'bolt', { t: 'diffwin', d: 'caos' }, ['title_no_era_dificil']),
   A('caos_tourn', 'competicion', 'legendary', 'Arquitecto del caos', 'Ganá un TOURNAMENT en dificultad CAOS.', 'bolt', { t: 'comp', mode: 'tournament', win: true, diff: 'caos' }, ['title_arquitecto']),
 
@@ -149,7 +149,7 @@ const GENERAL = [
   A('silla', 'secreto', 'legendary', 'La silla te eligió', 'Acumulá 10 empates. La silla de plástico, símbolo universal de la neutralidad, ahora es tuya.', 'crown', { t: 'stat', k: 'draws', gte: 10 }, ['char_silla'], { secret: true }),
   A('lose5', 'secreto', 'normal', 'No me salió', 'Perdé 5 minijuegos seguidos. Pasa.', 'arrow', { t: 'stat', k: 'loss_streak', gte: 5 }, ['title_no_me_salio'], { secret: true }),
   A('payaso', 'secreto', 'normal', 'Función completa', 'Perdé un minijuego sin sumar ni un punto.', 'star', { t: 'flag', k: 'score', op: 'eq', v: 0, lose: true }, ['face_payaso'], { secret: true }),
-  A('daily50', 'secreto', 'hard', 'Toque pasto', 'Jugá 50 minijuegos en un mismo día.', 'clock', { t: 'daily', gte: 50 }, ['title_toque_pasto'], { secret: true }),
+  A('daily50', 'secreto', 'hard', 'Hora del recreo', 'Jugá 50 minijuegos en un mismo día.', 'clock', { t: 'daily', gte: 50 }, ['title_toque_pasto'], { secret: true }),
   A('exact67', 'secreto', 'hard', '67', 'Terminá un minijuego con exactamente 67 puntos.', 'star', { t: 'flag', k: 'score', op: 'eq', v: 67 }, ['title_el_de_67'], { secret: true }),
   A('npc_win', 'meme', 'normal', 'NPC certificado', 'Ganá un minijuego jugando con Gerardo NPC.', 'user', { t: 'charwin', c: 'char_npc' }, ['title_npc', 'card_npc']),
   A('innecesario', 'meme', 'hard', 'Absolutamente innecesario', 'Ganá un minijuego dejando a tu rival en cero.', 'shield', { t: 'flag', k: 'opp', op: 'eq', v: 0, win: true }, ['title_innecesario']),
