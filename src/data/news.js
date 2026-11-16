@@ -4,6 +4,22 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-16-bots-52',
+    date: '2026-11-16',
+    version: '5.2',
+    title: 'Bots más accesibles',
+    tag: 'v5.2',
+    color: '#48D597',
+    intro: 'El bot Fácil ahora es fácil de verdad, y cada nivel bajó un escalón.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'Bot Fácil: reacciona más lento, se equivoca más y emboca menos. Ideal para empezar.',
+        'Normal y Difícil bajaron un escalón; Experto sigue siendo un desafío.',
+        'La Escalera arranca más tranquila porque sus primeras etapas usan el bot Fácil.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-16-fluidez-51',
     date: '2026-11-16',
     version: '5.1',

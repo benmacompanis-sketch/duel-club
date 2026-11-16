@@ -158,6 +158,10 @@ export const DATA_EN = {
   'La tienda ya no se traba: los objetos se animan cuando pasás el mouse o los seleccionás.': 'The shop no longer stutters: items animate when you hover or select them.',
   'El menú de la izquierda usa todo el espacio: viñetas más grandes.': 'The left menu uses all the space: bigger panels.', 'Textos y nombres revisados para que sean para todas las edades.': 'Texts and names reviewed to be suitable for all ages.',
   'En pantallas chicas, el fondo de las ventanas se veía duplicado y espejado: arreglado.': 'On small screens, the background behind windows looked duplicated and mirrored: fixed.',
+  'Bots más accesibles': 'More accessible bots', 'El bot Fácil ahora es fácil de verdad, y cada nivel bajó un escalón.': 'The Easy bot is now truly easy, and every level went down a notch.',
+  'Bot Fácil: reacciona más lento, se equivoca más y emboca menos. Ideal para empezar.': 'Easy bot: reacts slower, makes more mistakes and scores less. Perfect to start.',
+  'Normal y Difícil bajaron un escalón; Experto sigue siendo un desafío.': 'Normal and Hard went down a notch; Expert is still a challenge.',
+  'La Escalera arranca más tranquila porque sus primeras etapas usan el bot Fácil.': 'The Ladder starts calmer because its first stages use the Easy bot.',
   // --- novedades
   'DUEL CLUB tiene nueva cara': 'DUEL CLUB has a new look', 'Nuevo logo, nuevos colores y una pantalla dividida azul contra rojo.': 'New logo, new colors and a blue-vs-red split screen.', 'Online sin lag y Desafíos Solo': 'Lag-free online and Singleplayer Challenges',
   'Tu personaje responde al instante en el online, y hay desafíos para jugar sin rival.': 'Your character responds instantly online, and there are challenges to play without an opponent.', 'La gran actualización: bots, Pase de Batalla y más': 'The big update: bots, Battle Pass and more',

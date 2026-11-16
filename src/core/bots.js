@@ -4,10 +4,11 @@
 // Se usa en VS BOT, Singleplayer y Práctica. Las partidas contra bots nunca dan ELO.
 
 export const BOT_LEVELS = {
-  easy: { id: 'easy', name: 'Fácil', color: '#48D597', react: 0.42, noise: 1, slip: 0.2, speed: 0.6, hit: 0.62 },
-  normal: { id: 'normal', name: 'Normal', color: '#3985FF', react: 0.3, noise: 0.6, slip: 0.1, speed: 0.8, hit: 0.8 },
-  hard: { id: 'hard', name: 'Difícil', color: '#FF8E3C', react: 0.21, noise: 0.3, slip: 0.04, speed: 0.95, hit: 0.92 },
-  expert: { id: 'expert', name: 'Experto', color: '#FF3B5C', react: 0.15, noise: 0.12, slip: 0.012, speed: 1, hit: 0.985 },
+  // (v5.2) más accesible: el Fácil es para chicos que recién empiezan, cada nivel bajó un escalón
+  easy: { id: 'easy', name: 'Fácil', color: '#48D597', react: 0.75, noise: 1.7, slip: 0.38, speed: 0.45, hit: 0.35 },
+  normal: { id: 'normal', name: 'Normal', color: '#3985FF', react: 0.45, noise: 1, slip: 0.2, speed: 0.62, hit: 0.6 },
+  hard: { id: 'hard', name: 'Difícil', color: '#FF8E3C', react: 0.3, noise: 0.6, slip: 0.1, speed: 0.8, hit: 0.8 },
+  expert: { id: 'expert', name: 'Experto', color: '#FF3B5C', react: 0.19, noise: 0.25, slip: 0.03, speed: 0.97, hit: 0.95 },
 };
 export const BOT_ORDER = ['easy', 'normal', 'hard', 'expert'];
 
