@@ -227,6 +227,9 @@ export class MinigameRunner {
     this.ghostRec = this.opts.ghostRec ? { v: 1, game: this.Game.meta.id, dt: 0.1, f: [] } : null;
     this.ghostNext = 0;
     this.ghostPlay = this.opts.ghost?.f?.length ? this.opts.ghost : null;
+    // reglas de Puzzle Club / Historia: límites que se revisan en cada cuadro (tiros, errores, saltos…)
+    this.rule = this.opts.rule || null;
+    this.ruleOut = null;
     for (const b of this.bots) b.attach(this.game);
     this.t = 0;
     this.endT = 0;
@@ -371,6 +374,7 @@ export class MinigameRunner {
       for (const b of this.bots) b.tick(sdt);
       this.seeded(() => game.update(sdt));
       if (this.ghostRec || this.ghostPlay) this.updateGhost();
+      if (this.rule && !game.done) this.checkRule(game);
       if (game.done) {
         this.state = 'ending';
         this.endT = 0;
@@ -386,6 +390,7 @@ export class MinigameRunner {
       if (this.endT > 1.7) {
         this.state = 'done';
         const res = { ...game.result, gameId: this.gameId, event: game.event, playSeconds: this.playSeconds, players: this.opts.players };
+        if (this.rule) res.rule = this.ruleOut || this.rule.end?.(game, res) || { win: false, text: '' };
         const resolve = this._resolve;
         this._resolve = this._reject = null;
         resolve?.(res);
@@ -524,6 +529,7 @@ export class MinigameRunner {
     game.fx.renderFlash(g);
     this.renderOverlays(g);
     if (this.ghostPlay && this.game) this.renderGhostHud(g);
+    if (this.rule?.hud && this.game) this.renderRuleHud(g);
   }
 
   renderControls(g) {
@@ -553,6 +559,30 @@ export class MinigameRunner {
       text(g, txt, x + w / 2, H - 29, { size: 12.5, body: true, weight: 800, color: '#15121F' });
       g.restore();
     }
+  }
+
+  /** Regla especial: puede ganar o perder la partida antes de tiempo (p. ej. «te quedaste sin tiros»). */
+  checkRule(game) {
+    const r = this.rule.tick?.(game);
+    if (!r) return;
+    this.ruleOut = r;
+    const sc = game.ghostScore?.(0) ?? 0;
+    game.finish({ winner: r.win ? 0 : 1, scores: [sc, 0], display: [String(sc), ''], banner: r.win ? '¡LOGRADO!' : '¡UFA!', summary: r.text });
+  }
+  renderRuleHud(g) {
+    const txt = this.rule.hud?.(this.game);
+    if (!txt || this.state === 'intro') return;
+    g.save();
+    // mientras se ven los controles (primeros segundos) va un poco más arriba para no taparlos
+    const early = this.state === 'countdown' || (this.state === 'playing' && this.game.time < 4);
+    g.translate(W / 2, early ? H - 96 : H - 46);
+    g.rotate(-0.015);
+    const w = Math.max(260, 30 + txt.length * 11);
+    g.fillStyle = '#0D0B14'; g.fillRect(-w / 2 + 5, -21, w, 46);
+    g.fillStyle = '#FFE45C'; g.fillRect(-w / 2, -25, w, 46);
+    g.strokeStyle = '#0D0B14'; g.lineWidth = 3; g.strokeRect(-w / 2, -25, w, 46);
+    text(g, txt, 0, -2, { size: 20, color: '#15121F' });
+    g.restore();
   }
 
   renderGhostHud(g) {

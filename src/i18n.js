@@ -7,6 +7,19 @@
 
 import { DATA_EN, DATA_RULES } from './i18n-data.js';
 import { ALL_ITEMS } from './data/catalog.js';
+import { STORY_EN } from './data/story.js';
+import { PUZZLE_EN } from './data/puzzles.js';
+// textos de la interfaz de HISTORIA y PUZZLE CLUB
+const STORY_UI_EN = {
+  'SIGUIENTE': 'NEXT', 'EMPEZAR': 'START', 'CONTINUAR': 'CONTINUE', 'REPETIR': 'REPLAY', 'SEGUIR': 'CONTINUE', 'BLOQUEADO': 'LOCKED', 'FINAL': 'FINAL',
+  'REINTENTAR': 'RETRY', '¡LOGRADO!': 'DONE!', 'CASI…': 'SO CLOSE…', '¡UFA!': 'OH NO!', '¡CAPÍTULO COMPLETO!': 'CHAPTER COMPLETE!', 'ETAPA SUPERADA': 'STAGE CLEARED',
+  'PUZZLE RESUELTO': 'PUZZLE SOLVED', '✔ RESUELTO': '✔ SOLVED', 'Desafío en solitario': 'Solo challenge', 'MODO CAOS': 'CHAOS MODE', 'RECOMPENSA DEL CAPÍTULO': 'CHAPTER REWARD',
+  'Desafíos armados a mano: siempre la misma partida, con límites. Todos tienen solución.': 'Hand-made challenges: always the same match, with limits. Every one has a solution.',
+  'Como invitado se guarda tu avance, pero no hay recompensas.': 'As a guest your progress is saved, but there are no rewards.',
+  '¡Meta cumplida!': 'Goal reached!', 'Se terminó el tiempo.': 'Time is up.', '¡Lo lograste!': 'You did it!', '¡Ganaste!': 'You won!', 'El rival ganó la partida.': 'The rival won the match.',
+  'Empate: hay que ganar.': 'Draw: you need to win.', '¡Tocaste una mina!': 'You touched a mine!', 'Pelotas': 'Balls', 'Disparos': 'Shots', 'Canastas': 'Baskets', 'Metros': 'Meters',
+  'Saltos': 'Jumps', 'Errores': 'Slips', 'Fallos': 'Misses', 'Salidas en falso': 'False starts', 'Combo máximo': 'Max combo', 'Cristales': 'Crystals', 'Pintado %': 'Painted %', 'Minas': 'Mines',
+};
 
 const KEY = 'duelclub.lang';
 export const LANGS = [['es', 'Español'], ['en', 'English']];
@@ -425,6 +438,16 @@ const D = {
 // ------------------------------------------------------------------ reglas para textos con variables
 const N = '([\\d.,]+)';
 const RULES = [
+  // HISTORIA y PUZZLE CLUB
+  [/^CAPÍTULO (\d+)(?: · (.+))?$/, (m) => `CHAPTER ${m[1]}${m[2] ? ' · ' + m[2] : ''}`], [/^Etapa (\d+) de (\d+) · (.+)$/, (m) => `Stage ${m[1]} of ${m[2]} · ${tr(m[3])}`],
+  [/^(\d+) \/ (\d+) etapas$/, (m) => `${m[1]} / ${m[2]} stages`], [/^(\d+) \/ (\d+) resueltos$/, (m) => `${m[1]} / ${m[2]} solved`], [/^(\d+) intentos$/, (m) => `${m[1]} attempts`],
+  [/^Rival: (.+)$/, (m) => `Rival: ${m[1]}`], [/^Cada capítulo completo: \+(\d+) XP y \+(\d+) PIES\.$/, (m) => `Each completed chapter: +${m[1]} XP and +${m[2]} PIES.`],
+  [/^\+(\d+) XP · \+(\d+) PIES \(con tu cuenta, una sola vez\)$/, (m) => `+${m[1]} XP · +${m[2]} PIES (with your account, only once)`],
+  [/^([A-Za-zÁÉÍÓÚáéíóúñ %]+) (\d+) ?\/ ?(\d+)(?: · ([A-Za-zÁÉÍÓÚáéíóúñ ]+) (\d+)\/(\d+))?$/, (m) => (STORY_UI_EN[m[1]] ? `${STORY_UI_EN[m[1]]} ${m[2]}/${m[3]}${m[4] ? ` · ${STORY_UI_EN[m[4]] || m[4]} ${m[5]}/${m[6]}` : ''}` : null)],
+  [/^¡Lo lograste con (\d+) (.+)!$/, (m) => `You did it with ${m[1]} ${(STORY_UI_EN[m[2][0].toUpperCase() + m[2].slice(1)] || m[2]).toLowerCase()}!`],
+  [/^Te pasaste de (\d+) (.+)\.$/, (m) => `You went over ${m[1]} ${(STORY_UI_EN[m[2][0].toUpperCase() + m[2].slice(1)] || m[2]).toLowerCase()}.`],
+  [/^Se terminaron los (.+)\.$/, (m) => `You ran out of ${(STORY_UI_EN[m[1][0].toUpperCase() + m[1].slice(1)] || m[1]).toLowerCase()}.`],
+  [/^Demasiados (.+) \(máximo (\d+)\)\.$/, (m) => `Too many ${(STORY_UI_EN[m[1][0].toUpperCase() + m[1].slice(1)] || m[1]).toLowerCase()} (max ${m[2]}).`],
   [/^(.+) no se puede asignar \(se usa para pausar o el navegador\)\.$/, (m) => `${m[1]} can’t be assigned (used for pause or by the browser).`],
   [/^CLUB PASS · Nivel (\d+)( · Premium)?$/, (m) => `CLUB PASS · Level ${m[1]}${m[2] || ''}`], [/^PRESTIGIO (\d+)$/, (m) => `PRESTIGE ${m[1]}`], [/^Prestigio (\d+) · nivel (\d+)(.*)$/, (m) => `Prestige ${m[1]} · level ${m[2]}${m[3]}`], [/^nivel (\d+)$/, (m) => `level ${m[1]}`],
   [/^Bono de regreso: tus próximos (.+) XP de pase cuentan doble\.$/, (m) => `Comeback bonus: your next ${m[1]} pass XP count double.`],
@@ -434,7 +457,7 @@ const RULES = [
   [/^Después del nivel (\d+) el pase sigue para siempre: cada nivel pide (.+) XP y cada 10 niveles hay premio\. Los niveles 300, 400, 500, 750 y 1000 dan títulos de prestigio\.$/, (m) => `After level ${m[1]} the pass keeps going forever: each level needs ${m[2]} XP and every 10 levels there’s a reward. Levels 300, 400, 500, 750 and 1000 give prestige titles.`],
   [/^Cuesta (.+) PIES \(te quedarían (.+)\)\. Es para siempre: se compra una sola vez y no vence\. Las recompensas Premium de los (\d+) niveles que ya alcanzaste quedan para reclamar\.$/, (m) => `Costs ${m[1]} PIES (you’d have ${m[2]} left). It’s forever: bought once, never expires. The Premium rewards of the ${m[3]} levels you already reached become claimable.`],
   [/^(\d+) recompensas reclamadas$/, (m) => `${m[1]} rewards claimed`],
-  [/^ELO EN REVISIÓN \((.+)\)$/, (m) => `ELO UNDER REVIEW (${m[1]})`]
+  [/^ELO EN REVISIÓN \((.+)\)$/, (m) => `ELO UNDER REVIEW (${m[1]})`],
   [/^Meta: ★ (.+) · ★★ (.+) · ★★★ (.+)$/, (m) => `Goal: ★ ${m[1]} · ★★ ${m[2]} · ★★★ ${m[3]}`], [/^Meta de la etapa: (menos de|al menos) (.+)$/, (m) => `Stage goal: ${m[1] === 'menos de' ? 'under' : 'at least'} ${m[2]}`],
   [/^Superá a tu fantasma: (.+)$/, (m) => `Beat your ghost: ${m[1]}`], [/^ENDLESS CLUB · ETAPA (\d+)(.*)$/, (m) => `ENDLESS CLUB · STAGE ${m[1]}${m[2]}`],
   [/^¡ETAPA (\d+) SUPERADA! \+(\d+) puntos · multiplicador x(.+)$/, (m) => `STAGE ${m[1]} CLEARED! +${m[2]} points · multiplier x${m[3]}`], [/^No llegaste a la meta: perdés una vida \(quedan (\d+)\)\.$/, (m) => `You missed the goal: you lose a life (${m[1]} left).`],
@@ -506,6 +529,7 @@ const RULES = [
   [/^(\d+) minijuegos?$/, (m) => `${m[1]} minigame${m[1] === '1' ? '' : 's'}`], [/^(\d+) rondas?$/, (m) => `${m[1]} round${m[1] === '1' ? '' : 's'}`], [/^(\d+) vidas?$/, (m) => `${m[1]} li${m[1] === '1' ? 'fe' : 'ves'}`],
 ];
 for (const [k, v] of Object.entries(DATA_EN)) if (!(k in D)) D[k] = v;
+for (const [k, v] of Object.entries({ ...STORY_EN, ...PUZZLE_EN, ...STORY_UI_EN })) if (!(k in D)) D[k] = v;
 // objetos generados (CLUB PASS): traen su nombre en inglés
 for (const it of ALL_ITEMS) {
   if (it.en && !(it.name in D)) D[it.name] = it.en;
@@ -527,9 +551,11 @@ function core(b) {
     t = UP.get(b);
     if (t != null) return t;
   }
-  for (const [re, fn] of RULES) {
+  for (const r of RULES) {
+    if (!Array.isArray(r)) continue; // protección: una regla mal escrita no puede romper el juego
+    const [re, fn] = r;
     const m = re.exec(b);
-    if (m) return fn(m);
+    if (m) { const o = fn(m); if (o != null) return o; }
   }
   // símbolos o separadores al principio ("· CAOS", "★ ...")
   let m = /^([·★✓◀▶•\s]+)(.+)$/.exec(b);

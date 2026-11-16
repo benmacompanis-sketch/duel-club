@@ -4,6 +4,28 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-16-historia-53',
+    date: '2026-11-16',
+    version: '5.3',
+    title: 'Historia, Puzzle Club y online más fluido',
+    tag: 'v5.3',
+    color: '#FFC93C',
+    intro: 'Llegó la Historia del Club con 5 capítulos, 17 puzzles nuevos y un online que se traba mucho menos.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        'HISTORIA DEL CLUB: 5 capítulos, uno por personaje (Volt, Mochi, Pico, Brik y Nimbus), con diálogos, reglas especiales y un jefe final en cada uno.',
+        'PUZZLE CLUB: 17 desafíos armados a mano (memoria, puntería, ritmo, plataformas y contrarreloj). Todos tienen solución.',
+        'Recompensas de una sola vez: XP y PIES por cada etapa, capítulo y puzzle resuelto.',
+      ] },
+      { kind: 'mejora', items: [
+        'Online: con conexiones lentas el juego se traba muchísimo menos (se adapta a tu ping).',
+      ] },
+      { kind: 'arreglo', items: [
+        'En inglés, el juego a veces no cargaba. Ya está solucionado.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-16-bots-52',
     date: '2026-11-16',
     version: '5.2',

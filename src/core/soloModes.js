@@ -11,6 +11,10 @@ import { shuffle, mulberry32 } from './utils.js';
 import { DIFFS } from './tournamentManager.js';
 import { SP_GAMES, ENDLESS, GHOST_GAMES, spStars } from '../data/spModes.js';
 import { EVENTS } from './events.js';
+import { CHAR_BY_ID } from './characters.js';
+import { PUZZLE_BY_ID } from '../data/puzzles.js';
+import { STORY_BY_ID, STORY_REWARD } from '../data/story.js';
+import { storyScene } from '../ui/storyScene.js';
 
 const BOT_CHARS = ['volt', 'mochi', 'pico', 'brik'];
 
@@ -20,10 +24,16 @@ export function botProfile(app, level) {
   const char = BOT_CHARS.filter((c) => c !== me.char)[Math.floor(Math.random() * 3)];
   return { name: level === 'idle' ? 'MUÑECO' : `BOT ${L.name.toUpperCase()}`, char, color: me.color?.toUpperCase() === L.color.toUpperCase() ? '#8C96B8' : L.color, acc: 'none', accountId: null, bot: level };
 }
-function players(app, level, solo = false) {
+/** Rival con nombre y personaje propio (Historia). */
+export function rivalProfile(app, rival) {
+  const c = CHAR_BY_ID[rival.char] || CHAR_BY_ID.volt;
+  const col = c.accent?.toUpperCase() === app.profiles[0].color?.toUpperCase() ? c.accent2 : c.accent;
+  return { name: c.name.toUpperCase(), char: c.id, color: col, acc: 'none', accountId: null, bot: rival.level };
+}
+function players(app, level, solo = false, rival = null) {
   const p0 = { ...app.profiles[0], acc: app.profiles[0].acc && typeof app.profiles[0].acc === 'object' ? { ...app.profiles[0].acc } : app.profiles[0].acc };
   // modo solo: el otro lugar queda vacío (no se dibuja ningún rival)
-  const p1 = solo ? { name: '', char: '__none', color: '#2A2440', acc: 'none', accountId: null, bot: 'idle', hidden: true } : botProfile(app, level);
+  const p1 = solo ? { name: '', char: '__none', color: '#2A2440', acc: 'none', accountId: null, bot: 'idle', hidden: true } : rival ? rivalProfile(app, rival) : botProfile(app, level);
   return [p0, p1];
 }
 function remember(app, entry) {
@@ -33,9 +43,10 @@ function remember(app, entry) {
   app.persist();
 }
 
-async function playVsBot(app, gameId, level, { label, practice = false, solo = false, event = null, diff = 'normal', seed = null, ghost = null, ghostRec = false, goal } = {}) {
+async function playVsBot(app, gameId, level, { label, practice = false, solo = false, event = null, diff = 'normal', seed = null, ghost = null, ghostRec = false, goal, rule = null, options = null, rival = null } = {}) {
   return app.runner.play(gameId, {
-    players: players(app, level, solo),
+    players: players(app, level, solo, rival),
+    rule,
     difficulty: DIFFS[diff]?.v ?? 0.5,
     caos: !!DIFFS[diff]?.caos,
     event,
@@ -43,7 +54,7 @@ async function playVsBot(app, gameId, level, { label, practice = false, solo = f
     ghost,
     ghostRec,
     ghostLower: SP_GAMES[gameId]?.[0] === 'lower',
-    options: seed != null ? {} : app.save.gameOptions[gameId] || {},
+    options: options || (seed != null ? {} : app.save.gameOptions[gameId] || {}),
     label,
     mode: practice ? 'practice' : 'bot',
     bot: level,
@@ -403,3 +414,93 @@ export async function runGhost(app, gameId, ghost, back) {
   }
 }
 export { GHOST_GAMES, evName, fmtVal };
+
+// ------------------------------------------------------------------- PUZZLE CLUB e HISTORIA
+/** Juega una partida con regla especial y muestra el resultado (reintentar / volver / seguir). */
+async function playRuled(app, cfg, { label, nextLabel = null }) {
+  const solo = !cfg.rival && (!cfg.opp || cfg.opp === 'idle');
+  let res;
+  try {
+    res = await playVsBot(app, cfg.game, cfg.rival?.level || cfg.opp || 'idle', {
+      label, practice: true, solo, event: cfg.event || null, diff: cfg.diff || 'normal', seed: cfg.seed ?? null,
+      goal: cfg.goal, rule: cfg.rule(), options: cfg.options || {}, rival: cfg.rival || null,
+    });
+  } catch (e) {
+    if (e?.cancelled) return { action: 'menu', ok: false };
+    throw e;
+  }
+  const ok = !!res.rule?.win;
+  const action = await app.ui.ask(resultsScreen, {
+    session: null, res, rec: { newRecords: [false, false], server: null },
+    info: {
+      quick: true, practice: true, label,
+      actions: (choose) => h('div.res-actions',
+        h('div.solo-result.rule-' + (ok ? 'ok' : 'fail'), h('b', ok ? '¡LOGRADO!' : 'CASI…'), h('span', res.rule?.text || '')),
+        h('button.btn', { nav: true, onclick: () => choose('menu') }, 'VOLVER'),
+        ok && nextLabel ? h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => choose('next') }, icon('play'), nextLabel)
+          : h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => choose('rematch') }, icon('play'), ok ? 'OTRA VEZ' : 'REINTENTAR')),
+    },
+  });
+  app.runner.close();
+  return { action, ok, secs: Math.round(res.playSeconds || 0) };
+}
+
+export async function runPuzzle(app, id, back) {
+  const pz = PUZZLE_BY_ID[id];
+  const S = app.save.solo;
+  S.puzzles ||= {};
+  for (;;) {
+    const r = await playRuled(app, pz, { label: 'PUZZLE CLUB' });
+    const rec = (S.puzzles[id] ||= { done: false, tries: 0 });
+    rec.tries++;
+    let srv = null;
+    if (r.ok) {
+      const first = !rec.done;
+      rec.done = true;
+      rec.at ||= Date.now();
+      if (app.accounts.slotAccount(0)) { try { srv = await app.accounts.puzzleClear(id, r.secs); } catch {} }
+      if (srv?.xp) app.ui.toast({ kind: 'ok', title: 'PUZZLE RESUELTO', text: `+${srv.xp} XP · +${srv.pies} PIES` });
+      else if (first) app.ui.toast({ kind: 'ok', title: 'PUZZLE RESUELTO', text: pz.name });
+    }
+    app.persist();
+    if (r.action === 'rematch') continue;
+    app.audio.playMusic('menu');
+    return back();
+  }
+}
+
+/** Progreso local de la historia: S.story[cap] = etapas superadas (0–4). */
+export const storyDone = (app, ch) => app.save.solo.story?.[ch] || 0;
+
+export async function runStory(app, chId, back) {
+  const ch = STORY_BY_ID[chId];
+  const S = app.save.solo;
+  S.story ||= {};
+  // capítulo terminado: se vuelve a jugar desde el principio (sin recompensas repetidas)
+  let i = storyDone(app, chId) >= ch.stages.length ? 0 : storyDone(app, chId);
+  if (i === 0) { if ((await app.ui.ask(storyScene, { ch, lines: ch.intro, kind: 'intro' })) !== 'go') return back(); }
+  for (;;) {
+    const st = ch.stages[i];
+    if ((await app.ui.ask(storyScene, { ch, lines: st.say, kind: 'stage', stage: i })) !== 'go') { app.audio.playMusic('menu'); return back(); }
+    let r;
+    for (;;) {
+      r = await playRuled(app, { ...st, seed: null }, { label: `${ch.title} · ${i + 1}/${ch.stages.length}`, nextLabel: i < ch.stages.length - 1 ? 'SIGUIENTE' : 'FINAL' });
+      if (r.action !== 'rematch') break;
+    }
+    if (!r.ok) { app.audio.playMusic('menu'); return back(); }
+    const first = storyDone(app, chId) <= i;
+    if (first) S.story[chId] = i + 1;
+    app.persist();
+    let srv = null;
+    if (first && app.accounts.slotAccount(0)) { try { srv = await app.accounts.storyClear(chId, i, r.secs); } catch {} }
+    const last = i === ch.stages.length - 1;
+    if (srv?.xp) app.ui.toast({ kind: 'ok', title: last ? '¡CAPÍTULO COMPLETO!' : 'ETAPA SUPERADA', text: `+${srv.xp} XP · +${srv.pies} PIES` });
+    if (last) {
+      if (first) await app.ui.ask(storyScene, { ch, lines: ch.outro, kind: 'outro', reward: STORY_REWARD.chapter });
+      app.audio.playMusic('menu');
+      return back();
+    }
+    if (r.action !== 'next') { app.audio.playMusic('menu'); return back(); }
+    i++;
+  }
+}

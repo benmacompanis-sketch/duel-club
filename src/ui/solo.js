@@ -3,6 +3,11 @@ import { h, icon } from './dom.js';
 import { header, gameIcon } from './widgets.js';
 import { GAMES, GAME_BY_ID } from '../games/index.js';
 import { BOT_LEVELS, BOT_ORDER } from '../core/bots.js';
+import { runPuzzle, runStory, storyDone } from '../core/soloModes.js';
+import { STORY, STORY_REWARD } from '../data/story.js';
+import { PUZZLES, PUZZLE_CATS } from '../data/puzzles.js';
+import { avatar } from './kit.js';
+import { CHAR_BY_ID } from '../core/characters.js';
 import { runVsBot, runPractice, runLadder, runSolo, LADDER_LEVEL, SOLO_GOALS, dailySolo, runSpChallenge, runEndless, runGhost, GHOST_GAMES, evName, fmtVal } from '../core/soloModes.js';
 import { DIFFS } from '../core/tournamentManager.js';
 import { loading, errorBox } from './kit.js';
@@ -15,7 +20,7 @@ export function soloScreen(ui, params = {}) {
   const app = ui.app;
   const S = app.save.solo;
   const scr = {};
-  let tab = params.tab || 'solo';
+  let tab = params.tab || 'story';
   let level = BOT_LEVELS[S.level] ? S.level : 'normal';
   let practiceOpp = 'idle';
   let game = GAME_BY_ID[S.game] ? S.game : GAMES[0].meta.id;
@@ -25,7 +30,7 @@ export function soloScreen(ui, params = {}) {
   const tabsEl = h('div.solo-tabs');
 
   function renderTabs() {
-    tabsEl.replaceChildren(...[['solo', 'SOLO', 'star'], ['daily', 'DAILY CHAOS', 'flame'], ['weekly', 'SEMANAL', 'crown'], ['endless', 'ENDLESS CLUB', 'arrow'], ['ghost', 'GHOST RUN', 'user'], ['vs', 'VS BOT', 'duel'], ['ladder', 'ESCALERA', 'trophy'], ['practice', 'PRÁCTICA', 'target']].map(([id, name, ic]) =>
+    tabsEl.replaceChildren(...[['story', 'HISTORIA', 'crown'], ['puzzle', 'PUZZLE CLUB', 'target'], ['solo', 'SOLO', 'star'], ['daily', 'DAILY CHAOS', 'flame'], ['weekly', 'SEMANAL', 'crown'], ['endless', 'ENDLESS CLUB', 'arrow'], ['ghost', 'GHOST RUN', 'user'], ['vs', 'VS BOT', 'duel'], ['ladder', 'ESCALERA', 'trophy'], ['practice', 'PRÁCTICA', 'target']].map(([id, name, ic]) =>
       h('button.solo-tab' + (tab === id ? '.on' : ''), { nav: true, onclick: () => { tab = id; app.audio.play('click'); renderTabs(); render(); } }, icon(ic), name)));
   }
 
@@ -116,8 +121,61 @@ export function soloScreen(ui, params = {}) {
       h('div.solo-main', h('h3', 'MINIJUEGO'), grid));
   }
 
+  // progreso del servidor (Historia y Puzzle Club): se mezcla con el local, quedándose con lo más avanzado
+  let synced = false;
+  async function syncProgress() {
+    if (synced || !app.accounts.slotAccount(0)) return;
+    synced = true;
+    try {
+      const pr = await app.accounts.storyProgress();
+      S.story ||= {}; S.puzzles ||= {};
+      for (const [k, n] of Object.entries(pr.story || {})) S.story[k] = Math.max(S.story[k] || 0, n);
+      for (const id of pr.puzzles || []) (S.puzzles[id] ||= { done: false, tries: 0 }).done = true;
+      app.persist();
+      if (tab === 'story' || tab === 'puzzle') render();
+    } catch {}
+  }
+  function storyView() {
+    const unlocked = (i) => i === 0 || storyDone(app, STORY[i - 1].id) >= STORY[i - 1].stages.length;
+    const total = STORY.reduce((n, c) => n + Math.min(storyDone(app, c.id), c.stages.length), 0);
+    body.replaceChildren(h('div.story-list',
+      h('div.story-top', h('h3', 'HISTORIA DEL CLUB'), h('span', `${total} / ${STORY.length * 4} etapas`),
+        h('small.muted', app.accounts.slotAccount(0) ? `Cada capítulo completo: +${STORY_REWARD.chapter.xp} XP y +${STORY_REWARD.chapter.pies} PIES.` : 'Como invitado se guarda tu avance, pero no hay recompensas.')),
+      ...STORY.map((c, i) => {
+        const n = Math.min(storyDone(app, c.id), c.stages.length), open = unlocked(i), fin = n >= c.stages.length;
+        const hero = CHAR_BY_ID[c.hero];
+        return h('button.story-ch' + (open ? '' : '.locked') + (fin ? '.done' : ''), {
+          nav: true, style: { '--c': c.color }, disabled: !open,
+          onclick: () => { app.audio.play('confirm'); runStory(app, c.id, () => again()); },
+        },
+        avatar(ui, scr, { char: hero.id, color: c.color, acc: null }, 92, { static: !open }),
+        h('div.sc-main', h('small', `CAPÍTULO ${i + 1} · ${hero.name.toUpperCase()}`), h('b', c.title), h('span', c.theme),
+          h('div.sc-steps', c.stages.map((st, k) => h('i' + (k < n ? '.on' : '') + (st.boss ? '.boss' : ''), { title: st.name })))),
+        h('span.sc-go', open ? (fin ? 'REPETIR' : n ? 'SEGUIR' : 'JUGAR') : 'BLOQUEADO'));
+      })));
+    syncProgress();
+  }
+  function puzzleView() {
+    const P = (S.puzzles ||= {});
+    const solved = PUZZLES.filter((p) => P[p.id]?.done).length;
+    body.replaceChildren(h('div.puzzle-wrap',
+      h('div.story-top', h('h3', 'PUZZLE CLUB'), h('span', `${solved} / ${PUZZLES.length} resueltos`),
+        h('small.muted', 'Desafíos armados a mano: siempre la misma partida, con límites. Todos tienen solución.')),
+      ...PUZZLE_CATS.map((cat) => h('div.pz-cat', { style: { '--c': cat.color } },
+        h('h4', icon(cat.icon), cat.name),
+        h('div.pz-grid', PUZZLES.filter((p) => p.cat === cat.id).map((pz) => {
+          const m = GAME_BY_ID[pz.game].meta, r = P[pz.id];
+          return h('button.pz-card' + (r?.done ? '.done' : ''), { nav: true, style: { '--g': m.color }, onclick: () => { app.audio.play('confirm'); runPuzzle(app, pz.id, () => again()); } },
+            gameIcon(ui, scr, m, 48),
+            h('div.pz-main', h('b', pz.name), h('small', pz.goal), h('span.pz-meta', r?.done ? '✔ RESUELTO' : r?.tries ? `${r.tries} intentos` : m.name)));
+        }))))));
+    syncProgress();
+  }
+
   function render() {
     const acc = app.accounts.slotAccount(0);
+    if (tab === 'story') { storyView(); return; }
+    if (tab === 'puzzle') { puzzleView(); return; }
     if (tab === 'daily' || tab === 'weekly' || tab === 'endless') { spView(tab); return; }
     if (tab === 'ghost') { ghostView(); return; }
     if (tab === 'solo') {

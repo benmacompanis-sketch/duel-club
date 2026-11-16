@@ -443,6 +443,19 @@ export class AccountService {
     if (out?.me) this._setMe(out.me);
     return out;
   }
+  async puzzleClear(id, secs) {
+    const out = await this._call(this.slotUser(0), 'dc_puzzle_clear', { p_id: id, p_secs: secs });
+    if (out?.me) this._setMe(out.me);
+    return out;
+  }
+  async storyClear(chapter, stage, secs) {
+    const out = await this._call(this.slotUser(0), 'dc_story_clear', { p_chapter: chapter, p_stage: stage, p_secs: secs });
+    if (out?.me) this._setMe(out.me);
+    return out;
+  }
+  storyProgress() {
+    return this._call(this.slotUser(0), 'dc_story_progress', {});
+  }
   spBoard(kind, period) {
     return rpc('dc_sp_board', { p_kind: kind, p_period: period, p_token: this.slotToken(0) || null });
   }

@@ -419,8 +419,11 @@ const NOFX = new Proxy({}, { get: () => () => {} });
 export const PROTO = 3; // versión del protocolo entre compus (si no coincide, hay que recargar la página)
 const D_MIN = 2;
 const D_MAX = 12; // retardo de entrada máximo: 12 frames = 200 ms
-const MAX_PRED = 8; // rollback: hasta 8 frames (133 ms) por delante de las teclas del rival
-const RB_DELAY = 2; // rollback: retardo fijo de las teclas propias (33 ms, reduce las correcciones visibles)
+const MAX_PRED = 8; // rollback: al menos 8 frames (133 ms) por delante de las teclas del rival…
+const MAX_PRED_HI = 18; // …y hasta 18 (300 ms) si la conexión es lenta (la ventana se adapta al ping medido)
+const RB_DELAY = 2; // rollback: retardo de las teclas propias (33 ms, reduce las correcciones visibles)
+/** Retardo propio en rollback según el ping: con conexiones lentas, 1-2 frames más achican las correcciones. */
+const rbDelayFor = (rtt) => (rtt == null || rtt < 160 ? RB_DELAY : rtt < 300 ? RB_DELAY + 1 : RB_DELAY + 2);
 
 /**
  * Una ronda (un minijuego) sincronizada entre las dos compus.
@@ -489,7 +492,7 @@ export class NetRound {
   setReady(D) {
     if (this.ready) return;
     this.ready = true;
-    this.D = this.rb ? RB_DELAY : Math.max(D_MIN, Math.min(D_MAX, Math.round(D) || 3));
+    this.D = this.rb ? rbDelayFor(this.net?.()?.rtt) : Math.max(D_MIN, Math.min(D_MAX, Math.round(D) || 3));
     const hs = () => {
       if (this.ended || (this.started && (this.gotRemoteInput || this.slot === 1))) return clearInterval(this.hsTimer);
       const m = { t: 'r', r: this.r, v: PROTO };
@@ -704,11 +707,18 @@ export class NetRound {
     return false;
   }
   /** ¿Se puede simular este frame sin las teclas del rival? (nunca cerca del final ni muy adelante) */
+  /** Cuántos frames se puede ir por delante de las teclas del rival: lo justo para cubrir el ping medido. */
+  predWindow() {
+    const rtt = this.rtt ?? this.net?.()?.rtt;
+    if (rtt == null) return this.rb;
+    const need = Math.ceil((rtt / 2 + 35) / TICK_MS) - this.D + 3;
+    return Math.max(this.rb, Math.min(MAX_PRED_HI, need));
+  }
   canPredict() {
     if (!this.rb || !this.gotRemoteInput) return false;
-    if (this.f >= this.remoteNext + this.rb) return false;
+    if (this.f >= this.remoteNext + this.predWindow()) return false;
     const r = this.app.runner;
-    if (r.state === 'done' || (r.state === 'ending' && r.endT + TICK * (this.rb + 2) > 1.7)) return false;
+    if (r.state === 'done' || (r.state === 'ending' && r.endT + TICK * (this.predWindow() + 2) > 1.7)) return false;
     return true;
   }
   /** Predicción: el rival sigue apretando lo mismo que en su última tecla conocida, sin pulsaciones nuevas. */

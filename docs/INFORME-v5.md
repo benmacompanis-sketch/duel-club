@@ -91,6 +91,30 @@ Publicado en https://duelclub.vercel.app en etapas (4.9 → 5.0). En cada etapa:
 - **Guía de Gemini** actualizada al estilo cómic (`docs/IMAGENES-GEMINI.md`): tamaños, formatos, nombres, carpetas, prompts para personajes, accesorios y portadas de los 16 juegos.
 - **Imágenes listas para cargar:** hay un manifiesto (`public/assets/manifest.json`). Las portadas que agregues se usan solas y, si una falta, sigue el dibujo por código.
 
+### Online más fluido · v5.3
+- La ventana de predicción del rollback ahora se adapta al ping: antes podía adelantarse 8 cuadros (133 ms) y con ping alto el juego se frenaba a esperar; ahora llega hasta 18 cuadros (300 ms). Con ping alto también sube 1 o 2 cuadros el retardo propio, para que las correcciones se noten menos.
+- Medido entre dos navegadores con red simulada (15 s de partida):
+
+  | Red simulada | Trabones antes | Trabones después |
+  |---|---|---|
+  | 100 ms de demora, pérdida 3 %, picos | 0,4–1,1 s | 0,05–0,13 s |
+  | 160 ms de demora (ping ≈ 400 ms) | 8,3–8,8 s | 0,08–0,28 s |
+- Determinismo verificado con red mala en los 16 minijuegos (mismas huellas y mismo resultado en las dos compus).
+
+### HISTORIA DEL CLUB · v5.3
+- 5 capítulos, uno por personaje, cada uno con introducción en viñetas de diálogo, 4 etapas (la última es un jefe), regla especial, final y recompensa:
+  - **Volt · La Copa del Club:** serie de torneos (Pong, Hoop, Race y la final en Duel Arena contra Rex).
+  - **Mochi · Un día de CAOS:** todas las etapas con eventos CAOS (controles invertidos, velocidad, gravedad baja, modo CAOS completo).
+  - **Pico · Ojo de halcón:** precisión (pocos disparos, pocas pelotas, sin salidas en falso, tenis).
+  - **Brik · Memoria de piedra:** memoria (Memory War, secuencia de ritmo, sin olvidos, laberinto).
+  - **Nimbus · Reglas de tormenta:** reglas especiales (gravedad baja, espejo, puntos dobles, final a toda velocidad contra El Creador).
+- Cada capítulo se desbloquea al terminar el anterior. El servidor valida el orden (no se pueden saltear etapas ni capítulos) y entrega las recompensas una sola vez: +20 XP y +10 PIES por etapa, +250 XP y +100 PIES por capítulo.
+
+### PUZZLE CLUB · v5.3
+- 17 puzzles armados a mano en 5 categorías (memoria, puntería, ritmo, plataformas, contrarreloj). Cada uno usa siempre la misma partida (semilla fija) y una regla con límites que se ve en vivo abajo de la pantalla (p. ej. «Canastas 4/6 · Pelotas 7/12»). Si te pasás del límite, se corta al instante.
+- Todos se comprobaron con bots: cada puzzle lo resuelve al menos el bot Difícil o el Experto, y los límites se ajustaron con esas mediciones.
+- Primera vez que resolvés cada uno: +40 XP y +20 PIES (servidor, una sola vez).
+
 ### Idiomas
 - Todo lo nuevo está en español e inglés. Los objetos generados traen su nombre en inglés.
 
@@ -103,7 +127,7 @@ Publicado en https://duelclub.vercel.app en etapas (4.9 → 5.0). En cada etapa:
 ## PENDIENTE (con el porqué)
 1. **2v2 online:** el netcode actual (rollback) es de 2 computadoras; para 4 hay que rehacer la sincronización y las salas. También queda pendiente el ELO 2v2 independiente: no se implementa hasta poder validarlo, como pide el prompt.
 2. **Más minijuegos 2v2** (Micro Race, Target Panic, Blast Zone, Turbo Tennis): cada uno necesita su adaptación.
-3. **Story Mode y Puzzle Club:** necesitan contenido escrito por capítulo y estados armados a mano dentro de cada minijuego. Se pospusieron para hacerlos bien y no meter modos mediocres.
+3. ~~Story Mode y Puzzle Club~~: hechos en la v5.3 (ver arriba).
 4. **Rediseño de personajes, accesorios y portadas:** la arquitectura y la guía están listas. Lo ideal es hacerlo con las imágenes de Gemini, porque rehacer 15 personajes a mano en código es mucho trabajo y queda por debajo de una ilustración.
 5. **Escenarios propios por minijuego:** hoy tienen color, tramado y líneas de acción, pero los objetos de cada juego (paletas, autos, plataformas) mantienen su dibujo. Falta redibujarlos uno por uno.
 6. **CAOS:** falta un ícono y una animación de entrada propios para cada evento; hoy tiene cartel e indicador de duración.
