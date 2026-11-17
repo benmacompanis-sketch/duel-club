@@ -83,7 +83,7 @@ try {
   {
     const { ctx, page, errors, news } = await openSite(browser, false);
     check(await page.title() === 'DUEL CLUB · One club. Infinite duels.', 'El sitio publicado carga (título correcto)');
-    check(await page.locator('.sn-btn').count() === 13, 'Menú con 13 secciones visible para un invitado');
+    check(await page.locator('.sn-btn').count() === 14, 'Menú con 14 secciones visible para un invitado');
     check(news, 'El cartel de novedades aparece a un visitante nuevo');
     check(await page.locator('.news-banner').count() === 1, 'Cartel fijo de novedades en Inicio');
     const online = await page.waitForSelector('.tb-status.online', { timeout: 20000 }).then(() => 1).catch(() => 0);

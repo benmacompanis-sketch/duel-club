@@ -168,7 +168,18 @@ Está en Ranking → «Más jugados». Usa partidas reales de la tabla de partid
   - 18/18 con 3 navegadores separados (cuentas de las dos compus en los dos equipos, bot, chat, amistoso, competitivo y desconexión).
   - 7/7 con 4 cuentas en una sola compu: partida local, cada una con su ELO, y cerrar una sesión no cierra las otras.
   - Búsqueda: dos dúos se encuentran, confirman, juegan y se actualiza el ELO 2v2.
-- **Minijuegos con 2v2:** Pong (dobles: uno defiende y el otro juega adelante) y Color Control. En los demás no se forzó el 2v2.
+- **Minijuegos con 2v2 (6):**
+  - Pong: dobles, uno defiende y el otro juega adelante.
+  - Color Control.
+  - Target Panic: cada uno con su mira, puntos sumados por equipo.
+  - Turbo Tennis: dobles, cada uno cubre su mitad de la cancha.
+  - Blast Zone: el equipo pierde cuando caen sus dos jugadores.
+  - Micro Race: 4 autos; los puestos dan 4-3-2-1 puntos y gana el equipo que suma más.
+
+  Determinismo comprobado en los 6 juegos con los 5 repartos, también con red mala. Las versiones 1v1 de esos juegos siguen dando huellas idénticas.
+- **Insignias:** categoría nueva con 16 insignias (8 en la PIE STORE y 8 exclusivas de cofres). Se equipan y se ven al lado del nombre en el ranking, el perfil y la tarjeta. Pruebas: 9/9.
+- **Panel del creador → REPORTES DE CHAT:** muestra cada reporte (mensaje, quién lo mandó, quién reportó y dónde) y permite marcarlo revisado o descartado. Solo lo ve la cuenta admin.
+- **Fish Frenzy y Block Battle:** el fondo y la grilla se arman una sola vez. Fish subió de ~13 a ~17 cuadros por segundo en la misma máquina. En Block Battle no hubo diferencia medible, porque lo que más cuesta son los personajes.
 
 ### Visual
 - **MINIJUEGOS como página de historieta:**
@@ -194,14 +205,16 @@ Todo lo nuevo está en español y en inglés. La versión en inglés carga sin e
 - **Fluidez en un celular real:** medida solo en simulación.
 
 ## 3. PENDIENTE
-- **Instalar la migración 023 (2v2) en el servidor real.** Al aplicarla, Supabase pidió una aprobación que nadie contestó a tiempo. Hasta que se instale, la versión 6.0 no se publica, para que el 2v2 no falle en el sitio. Las migraciones 021 (cofres y precios) y 022 (Top 10, chat y bloqueos) ya están instaladas.
-- **Insignias** como categoría propia de cosméticos: no existe esa categoría en el inventario. Se cubrió con títulos, marcos y tarjetas exclusivas de cofres.
-- **Más minijuegos 2v2:** Micro Race, Target Panic, Blast Zone y Turbo Tennis necesitan reglas de equipo propias.
-- **Fondos propios** de Fish Frenzy y Block Battle armados una sola vez, como Hoop.
-- **Panel del creador** para revisar los reportes de chat. Hoy se guardan en `chat_reports` y se ven desde Supabase.
+- **Parte B de la migración 023 (salas 2v2 online) en el servidor real.**
+  - La parte A ya está instalada: tablas, ranking e historial 2v2, informe y confirmación de resultados.
+  - La parte B (crear, unirse, lugares, empezar, salir, buscar partida) necesita una aprobación de Supabase que no llega al celular.
+  - Mientras tanto, el 2v2 online muestra «2v2 online: casi listo» y abre el 2v2 en una compu, que funciona completo. No se rompe nada.
+- **Snake:** no se hizo, a pedido.
 
 ## 4. REQUIERE INFRAESTRUCTURA O TU INTERVENCIÓN
-- Aprobar la migración 023 cuando Supabase lo pida.
+- **Instalar la parte B**, de una de estas dos formas:
+  - Abrir `supabase/manual/023b_salas_2v2.sql` en GitHub, copiarlo entero y pegarlo en Supabase → SQL Editor → Run. Se puede correr más de una vez sin problema.
+  - O pedírmelo desde claude.ai en una computadora, donde la aprobación sí aparece.
 - **Publicación:** el juego ya es público en https://duelclub.vercel.app (Vercel + Supabase). No depende de Claude.
   - Las partidas y el chat usan conexión directa entre navegadores. Si una red la bloquea, se usa Supabase Realtime.
   - Con mucha gente a la vez, conviene revisar el plan de Supabase: la consulta de estado de sala es ~1 por segundo por compu en partida.
