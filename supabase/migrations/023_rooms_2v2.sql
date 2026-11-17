@@ -115,7 +115,7 @@ create or replace function dc.r2(p_acc uuid) returns integer language sql stable
   select coalesce((select rating from rating2 where account_id = p_acc), 1000)
 $$;
 -- juegos que existen en 2v2 (se validan en el servidor)
-create or replace function dc.team_games() returns text[] language sql immutable as $$ select array['pong', 'color'] $$;
+create or replace function dc.team_games() returns text[] language sql immutable as $$ select array['pong', 'color', 'target', 'tennis', 'blast', 'race'] $$;
 
 -- dispositivo que llama: valida sesión + clave de la pestaña
 create or replace function dc.room_dev(p_token text, p_room uuid, p_dev text) returns room_devices
@@ -451,7 +451,7 @@ begin
   end loop;
   if (select sum(size) from queue2 where room_id = any(grp)) <> 4 then return; end if;
   -- armar equipos: los dúos quedan juntos
-  insert into rooms(code, kind, mode, status, game, confirm_until) values (dc.room_code(), 'match', 'competitive', 'confirm', (dc.team_games())[1 + floor(random() * 2)::int], now() + interval '25 seconds') returning id into nr;
+  insert into rooms(code, kind, mode, status, game, confirm_until) values (dc.room_code(), 'match', 'competitive', 'confirm', (dc.team_games())[1 + floor(random() * 6)::int], now() + interval '25 seconds') returning id into nr;
   v_idx := 0; slot_t0 := 0; slot_t1 := 1;
   for parts in select x.room_id, x.size from queue2 x where x.room_id = any(grp) order by x.size desc, x.since loop
     -- equipo para esta sala: el que tenga lugar (azul primero)

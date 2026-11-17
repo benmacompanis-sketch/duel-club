@@ -105,5 +105,7 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
     if (e.player >= 0 && e.player < N && !botSet.has(e.player) && e.action === 'a') { setReady(e.player); return true; }
     return e.player >= 0;
   };
+  // todos los lugares son bots (por ejemplo, una sala amistosa para mirar): arranca solo
+  if (ready.every(Boolean)) setTimeout(start, 900);
   return scr;
 }

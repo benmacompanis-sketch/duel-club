@@ -124,11 +124,16 @@ export default class MicroRace extends BaseGame {
     this.boosts = def.boosts.map(([f, o]) => ({ ...sample(f, o), ang: this.track[Math.floor(f * this.N) % this.N].ang }));
     this.mud = def.mud.slice(0, this.diff >= 0.5 ? 2 : 1).map(([f, o]) => ({ ...sample(f, o), r: 34 }));
     const s0 = this.track[this.N - 10];
-    this.cars = [0, 1].map((p) => ({
-      x: s0.x + s0.nx * (p ? 20 : -20), y: s0.y + s0.ny * (p ? 20 : -20),
-      ang: s0.ang, vx: 0, vy: 0, speed: 0, idx: this.N - 10, prog: -10, lap: 0,
+    // 2v2: 4 autos; J3 y J4 largan una fila atrás. Los puntos van por puesto de llegada (4-3-2-1) y suma el equipo.
+    const LANE = this.team ? [-24, 24, -8, 8] : [-20, 20];
+    this.cars = Array.from({ length: this.np }, (_, p) => {
+      const s1 = p >= 2 ? this.track[this.N - 16] : s0;
+      return {
+      x: s1.x + s1.nx * LANE[p], y: s1.y + s1.ny * LANE[p],
+      ang: s1.ang, vx: 0, vy: 0, speed: 0, idx: p >= 2 ? this.N - 16 : this.N - 10, prog: p >= 2 ? -16 : -10, lap: 0,
       boost: 0, crashes: 0, spin: 0, lapStart: 0, lapTimes: [], bestLap: null, finished: null, offroad: false, topSpeed: 0, bumpCd: 0,
-    }));
+    };
+    });
     this.skids = [];
     this.raceTime = 0;
     this.limit = this.timed(140);
@@ -225,7 +230,7 @@ export default class MicroRace extends BaseGame {
   update(dt) {
     this.raceTime += dt;
     this.ambient(dt);
-    for (let p = 0; p < 2; p++) this.updateCar(p, dt);
+    for (let p = 0; p < this.np; p++) this.updateCar(p, dt);
     this.carCollision();
     // skids
     for (let i = this.skids.length - 1; i >= 0; i--) {
@@ -234,7 +239,11 @@ export default class MicroRace extends BaseGame {
     }
     // fin de carrera
     const fin = this.cars.map((c) => c.finished);
-    if (fin[0] != null || fin[1] != null || this.raceTime >= this.limit) this.end();
+    if (this.team) {
+      // por equipos: termina cuando llegan todos, o 12 s después del primero, o al límite
+      const first = Math.min(...fin.map((x) => (x == null ? Infinity : x)));
+      if (fin.every((x) => x != null) || (first < Infinity && this.raceTime - first >= 12) || this.raceTime >= this.limit) this.end();
+    } else if (fin[0] != null || fin[1] != null || this.raceTime >= this.limit) this.end();
   }
 
   updateCar(p, dt) {
@@ -347,7 +356,10 @@ export default class MicroRace extends BaseGame {
   }
 
   carCollision() {
-    const [a, b] = this.cars;
+    for (let i = 0; i < this.cars.length; i++) for (let j = i + 1; j < this.cars.length; j++) this.collidePair(i, j);
+  }
+  collidePair(ia, ib) {
+    const a = this.cars[ia], b = this.cars[ib];
     const dx = b.x - a.x, dy = b.y - a.y;
     const d = Math.hypot(dx, dy);
     if (d < 26 && d > 0) {
@@ -359,14 +371,29 @@ export default class MicroRace extends BaseGame {
         a.vx += rel * nx * 0.8; a.vy += rel * ny * 0.8;
         b.vx -= rel * nx * 0.8; b.vy -= rel * ny * 0.8;
         if (Math.abs(rel) > 60) {
-          this.crash(a, 0, (a.x + b.x) / 2, (a.y + b.y) / 2, 0.8);
-          this.crash(b, 1, (a.x + b.x) / 2, (a.y + b.y) / 2, 0.8);
+          this.crash(a, ia, (a.x + b.x) / 2, (a.y + b.y) / 2, 0.8);
+          this.crash(b, ib, (a.x + b.x) / 2, (a.y + b.y) / 2, 0.8);
         }
       }
     }
   }
 
+  /** Orden de carrera: primero los que llegaron (por tiempo), después por progreso. */
+  order() {
+    return this.cars.map((c, p) => p).sort((x, y) => {
+      const A = this.cars[x], B = this.cars[y];
+      if (A.finished != null || B.finished != null) return (A.finished ?? Infinity) - (B.finished ?? Infinity);
+      return B.prog - A.prog;
+    });
+  }
+  teamPoints() {
+    const pts = [0, 0];
+    this.order().forEach((p, i) => { pts[p % 2] += [4, 3, 2, 1][i]; });
+    return pts;
+  }
   end() {
+    if (this.done) return;
+    if (this.team) return this.endTeam();
     const [a, b] = this.cars;
     let winner;
     if (a.finished != null || b.finished != null) {
@@ -389,6 +416,30 @@ export default class MicroRace extends BaseGame {
       records: this.cars.map((c) => c.bestLap),
       flags: this.cars.map((c) => ({ crashes: c.crashes })),
       margin: null,
+    });
+  }
+
+  endTeam() {
+    const pts = this.teamPoints();
+    const ord = this.order();
+    // empate en puntos: gana el equipo del primero
+    const winner = pts[0] !== pts[1] ? (pts[0] > pts[1] ? 0 : 1) : ord[0] % 2;
+    const T = (f) => [0, 1].map((t) => this.cars.filter((c, p) => p % 2 === t).reduce((acc, c) => acc + f(c), 0));
+    const best = [0, 1].map((t) => Math.min(...this.cars.filter((c, p) => p % 2 === t).map((c) => c.bestLap ?? 999)));
+    this.finish({
+      winner,
+      scores: pts,
+      display: pts.map((x) => `${x} pts`),
+      scoreLabel: 'Puntos por puesto (4-3-2-1)',
+      banner: '¡META!',
+      stats: [
+        { label: 'Llegadas', values: [0, 1].map((t) => ord.map((p, i) => (p % 2 === t ? `${i + 1}º` : null)).filter(Boolean).join(' y ')) },
+        { label: 'Mejor vuelta', values: best.map((v) => (v >= 999 ? '—' : `${v.toFixed(2)} s`)), raw: best, better: 'low' },
+        { label: 'Choques', values: T((c) => c.crashes).map(String), raw: T((c) => c.crashes), better: 'low' },
+      ],
+      records: [null, null],
+      flags: [0, 1].map((t) => ({ crashes: T((c) => c.crashes)[t] })),
+      margin: Math.abs(pts[0] - pts[1]),
     });
   }
 
@@ -428,7 +479,7 @@ export default class MicroRace extends BaseGame {
       g.restore();
     }
     // autos (el que va atrás se dibuja primero)
-    const order = this.cars[0].prog < this.cars[1].prog ? [0, 1] : [1, 0];
+    const order = this.cars.map((c, p) => p).sort((x, y) => this.cars[x].prog - this.cars[y].prog);
     for (const p of order) this.drawCar(g, p, t);
     if (this.ghost) this.drawGhost(g, this.ghost);
   }
@@ -473,9 +524,12 @@ export default class MicroRace extends BaseGame {
 
   renderHUD(g) {
     const pos = this.cars[0].prog >= this.cars[1].prog ? [1, 2] : [2, 1];
+    const ord = this.team ? this.order() : null;
     this.hudTop(g, {
-      scores: pos.map((x) => `${x}º`),
-      sub: this.cars.map((c) => `Vuelta ${Math.min(this.laps, c.lap + 1)}/${this.laps}`),
+      scores: this.team ? this.teamPoints().map((x) => `${x} pts`) : pos.map((x) => `${x}º`),
+      sub: this.team
+        ? [0, 1].map((t) => [t, t + 2].map((p) => `J${p + 1} ${ord.indexOf(p) + 1}º`).join(' · '))
+        : this.cars.map((c) => `Vuelta ${Math.min(this.laps, c.lap + 1)}/${this.laps}`),
       timer: null,
       center: fmtTime(this.raceTime) + '.' + String(Math.floor((this.raceTime % 1) * 10)),
       centerSub: TRACKS[this.trackId].name,

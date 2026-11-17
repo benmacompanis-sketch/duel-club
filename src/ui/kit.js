@@ -1,3 +1,4 @@
+import { BADGE_BY_ID, badgeSvg } from '../data/badges.js';
 // Kit de interfaz de la plataforma: monedas, niveles, rangos, tarjetas de perfil, avatares con marco,
 // vistas previas de objetos y pequeñas utilidades compartidas por todas las secciones.
 import { h, icon } from './dom.js';
@@ -101,7 +102,7 @@ export function profileCard(ui, owner, me, opts = {}) {
     h('div.pc-top',
       avatar(ui, owner, look, opts.compact ? 64 : 96, { anim: opts.anim || 'idle' }),
       h('div.pc-id',
-        h('div.pc-name', me?.name || '—', me?.online ? h('span.dot-online', { title: 'En línea' }) : null),
+        h('div.pc-name', me?.name || '—', badgeEl(me?.equipped?.badge, 22), me?.online ? h('span.dot-online', { title: 'En línea' }) : null),
         h('div.pc-title.tr-' + titleRarity(me), titleOf(me)),
         h('div.pc-user', '@' + (me?.username || '')),
         h('div.pc-badges', levelBadge(L.level), resist(me?.rating || 1000)))),
@@ -157,8 +158,16 @@ export function itemPreview(ui, owner, item, size = 120, color = '#3985FF', base
     return h('div.card-prev', { style: { width: size + 'px', height: size + 'px' } },
       h('div.pcard.mini.pc-' + item.id, { style: { '--c': color } }, h('div.pc-deco'), h('b', item.name)));
   }
+  if (cat === 'badge') return h('div.badge-prev', { style: { width: size + 'px', height: size + 'px' } }, badgeEl(item.id, Math.round(size * 0.62)));
   if (cat === 'title') return h('div.title-prev', { style: { width: size + 'px', height: size + 'px' } }, h('span.pc-title.tr-' + item.rarity, item.name));
   return h('div', { style: { width: size + 'px', height: size + 'px' } });
+}
+/** Insignia equipada (al lado del nombre). */
+export function badgeEl(id, size = 22) {
+  if (!id || !BADGE_BY_ID[id]) return null;
+  const el = h('span.badge-ico', { title: BADGE_BY_ID[id].name, style: { width: size + 'px', height: Math.round(size * 1.12) + 'px' } });
+  el.innerHTML = badgeSvg(id); // SVG propio y fijo (no viene del usuario)
+  return el;
 }
 export function emoteBubble(id) {
   const it = ITEM_BY_ID[id];

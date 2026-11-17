@@ -40,17 +40,20 @@ export default class TargetPanic extends BaseGame {
   init() {
     this.duration = this.timed(this.options.time ?? 45);
     // cargador: 6 tiros; se recarga solo (de a uno) o del todo en 0,9 s al vaciarse. Cadencia máxima: 3,5 tiros/s
-    this.aims = [0, 1].map((p) => ({ x: p ? W * 0.72 : W * 0.28, y: 420, vx: 0, vy: 0, cd: 0, recoil: 0, ammo: MAG, refill: 0, reload: 0, flash: 0 }));
+    // 2v2: cada jugador tiene su mira y su cargador; los puntos y los blancos son del EQUIPO (lado)
+    const AX = this.team ? [0.2, 0.8, 0.36, 0.64] : [0.28, 0.72];
+    this.aims = Array.from({ length: this.np }, (_, p) => ({ x: W * AX[p], y: 420, vx: 0, vy: 0, cd: 0, recoil: 0, ammo: MAG, refill: 0, reload: 0, flash: 0 }));
     this.targets = [];
     this.spawnT = 0.4;
     this.score = [0, 0];
-    this.combo = [0, 0];
-    this.maxCombo = [0, 0];
-    this.shots = [0, 0];
-    this.hits = [0, 0];
-    this.bombs = [0, 0];
-    this.denies = [0, 0];
-    this.golds = [0, 0];
+    const per = () => Array(this.np).fill(0);
+    this.combo = per();
+    this.maxCombo = per();
+    this.shots = per();
+    this.hits = per();
+    this.bombs = per();
+    this.denies = per();
+    this.golds = per();
     this.frenzy = false;
     this.banner = null;
     this.holes = [];
@@ -130,7 +133,7 @@ export default class TargetPanic extends BaseGame {
     }
     this.targets = this.targets.filter((t) => t.life > 0 && !t.dead);
     // miras
-    for (const p of [0, 1]) this.updateAim(p, dt);
+    for (let p = 0; p < this.np; p++) this.updateAim(p, dt);
     if (this.time >= this.duration) this.end();
   }
 
@@ -186,9 +189,10 @@ export default class TargetPanic extends BaseGame {
     }
     hit.dead = true;
     const col = this.color(p);
+    const s = this.side(p);
     if (hit.owner === 'bomb') {
       const pts = 15 * this.scoreMul();
-      this.score[p] -= pts;
+      this.score[s] -= pts;
       this.combo[p] = 0;
       this.bombs[p]++;
       this.sfx('bad');
@@ -197,11 +201,11 @@ export default class TargetPanic extends BaseGame {
       this.fx.float(hit.x, hit.y - 20, `−${pts}`, '#FF654F', 34);
       return;
     }
-    if (hit.owner === 1 - p) {
+    if (hit.owner === 1 - s) {
       // robo: destruye el blanco del rival sin sumar ni cortar el combo
       this.denies[p]++;
       this.sfx('pop', { pitch: 0.8 });
-      this.fx.burst(hit.x, hit.y, [this.color(1 - p), '#fff'], 14, { speed: 250 });
+      this.fx.burst(hit.x, hit.y, [this.color(1 - s), '#fff'], 14, { speed: 250 });
       this.fx.float(hit.x, hit.y - 20, '¡ROBADO!', col, 22);
       return;
     }
@@ -213,7 +217,7 @@ export default class TargetPanic extends BaseGame {
     if (hit.owner === 'gold') this.golds[p]++;
     const m = this.mult(p);
     const pts = base * m * this.scoreMul();
-    this.score[p] += pts;
+    this.score[s] += pts;
     this.sfx(hit.owner === 'gold' ? 'coin' : 'pop', { pitch: 1 + Math.min(0.6, this.combo[p] * 0.03) });
     if (this.combo[p] % 5 === 0) { this.sfx('combo'); this.fx.float(a.x, a.y - 60, `COMBO x${m}`, '#FFC93C', 26); }
     this.fx.burst(hit.x, hit.y, hit.owner === 'gold' ? ['#FFC93C', '#fff'] : [col, '#fff'], hit.owner === 'gold' ? 28 : 16, { speed: 300 });
@@ -223,21 +227,25 @@ export default class TargetPanic extends BaseGame {
 
   end() {
     const [a, b] = this.score;
-    const acc = this.shots.map((s, p) => (s ? Math.round((this.hits[p] / s) * 100) : 0));
+    // en 2v2 las estadísticas se suman por equipo
+    const T = (arr) => (this.team ? [arr[0] + arr[2], arr[1] + arr[3]] : arr.slice());
+    const TM = (arr) => (this.team ? [Math.max(arr[0], arr[2]), Math.max(arr[1], arr[3])] : arr.slice());
+    const hits = T(this.hits), shots = T(this.shots), mc = TM(this.maxCombo);
+    const acc = shots.map((s, p) => (s ? Math.round((hits[p] / s) * 100) : 0));
     this.finish({
       winner: BaseGame.decide(a, b),
       scores: [a, b],
       scoreLabel: 'Puntos',
       stats: [
-        { label: 'Aciertos', values: this.hits.map(String), raw: this.hits, better: 'high' },
+        { label: 'Aciertos', values: hits.map(String), raw: hits, better: 'high' },
         { label: 'Precisión', values: acc.map((v) => v + '%'), raw: acc, better: 'high' },
-        { label: 'Combo máximo', values: this.maxCombo.map(String), raw: this.maxCombo, better: 'high' },
-        { label: 'Dorados', values: this.golds.map(String), raw: this.golds, better: 'high' },
-        { label: 'Robos', values: this.denies.map(String), raw: this.denies, better: 'high' },
-        { label: 'Minas tocadas', values: this.bombs.map(String), raw: this.bombs, better: 'low' },
+        { label: 'Combo máximo', values: mc.map(String), raw: mc, better: 'high' },
+        { label: 'Dorados', values: T(this.golds).map(String), raw: T(this.golds), better: 'high' },
+        { label: 'Robos', values: T(this.denies).map(String), raw: T(this.denies), better: 'high' },
+        { label: 'Minas tocadas', values: T(this.bombs).map(String), raw: T(this.bombs), better: 'low' },
       ],
-      records: [a, b],
-      flags: this.maxCombo.map((c) => ({ maxCombo: c })),
+      records: this.team ? [null, null] : [a, b],
+      flags: mc.map((c) => ({ maxCombo: c })),
       margin: Math.abs(a - b),
     });
   }
@@ -270,7 +278,7 @@ export default class TargetPanic extends BaseGame {
       g.beginPath(); g.arc(h.x, h.y, 5, 0, TAU); g.fill();
     }
     for (const tg of this.targets) this.drawTarget(g, tg, t);
-    for (const p of [0, 1]) this.drawAim(g, p, t);
+    for (let p = 0; p < this.np; p++) this.drawAim(g, p, t);
   }
 
   drawTarget(g, tg, t) {
@@ -305,7 +313,7 @@ export default class TargetPanic extends BaseGame {
       g.beginPath(); g.arc(0, 0, r * 0.4, 0, TAU); g.fill();
       g.fillStyle = '#F6F7FB';
       g.beginPath(); g.arc(0, 0, r * 0.14, 0, TAU); g.fill();
-      text(g, `J${tg.owner + 1}`, 0, -r - 10, { size: 12, body: true, weight: 800, color: col });
+      text(g, this.team ? (tg.owner ? 'ROJO' : 'AZUL') : `J${tg.owner + 1}`, 0, -r - 10, { size: 12, body: true, weight: 800, color: col });
     }
     // anillo de vida restante
     g.globalAlpha = 0.8;
@@ -343,12 +351,17 @@ export default class TargetPanic extends BaseGame {
     }
     g.restore();
     drawPortrait(g, a.x + 30, a.y + 30, 12, this.players[p], { t: t + p, ring: 2 });
+    if (this.team) text(g, `J${p + 1}`, a.x - 32, a.y - 28, { size: 14, body: true, weight: 900, color: col });
   }
 
   renderHUD(g) {
     this.hudTop(g, {
       scores: this.score,
-      sub: [0, 1].map((p) => (this.combo[p] ? `Combo ${this.combo[p]} · x${this.mult(p)}` : 'Sin combo')),
+      sub: [0, 1].map((p) => {
+        const c = this.team ? Math.max(this.combo[p], this.combo[p + 2]) : this.combo[p];
+        const q = this.team && this.combo[p + 2] > this.combo[p] ? p + 2 : p;
+        return c ? `Combo ${c} · x${this.mult(q)}` : 'Sin combo';
+      }),
       timer: this.remaining,
     });
     this.hudTimeBar(g);

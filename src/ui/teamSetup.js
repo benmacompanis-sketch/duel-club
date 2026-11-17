@@ -14,6 +14,10 @@ import { shade } from '../core/utils.js';
 export const TEAM_GAMES = [
   { id: 'pong', how: 'Dobles: en cada equipo uno defiende el arco y el otro juega adelante.' },
   { id: 'color', how: 'Los dos pintan para su equipo: repártanse el tablero, el escudo protege a los dos y el congelar frena a los dos rivales.' },
+  { id: 'target', how: 'Cada uno con su mira y su cargador; los blancos y los puntos son del equipo. Ojo: no le disparen al mismo blanco que su compañero.' },
+  { id: 'tennis', how: 'Dobles: uno arranca en el fondo y el otro en la red. No importa quién de los dos le pegue, pero el equipo no puede pegarle dos veces seguidas.' },
+  { id: 'blast', how: 'Sobreviven juntos: el equipo pierde cuando los dos se quedan sin escudos. El empujón va al rival más cercano.' },
+  { id: 'race', how: 'Carrera de 4 autos: 1º suma 4 puntos, 2º 3, 3º 2 y 4º 1. Gana el equipo que sume más (si empatan, el del ganador).' },
 ];
 const TEAM_COLORS = ['#2E7BFF', '#FF4B3E'];
 

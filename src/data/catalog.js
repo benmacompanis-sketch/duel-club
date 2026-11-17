@@ -5,6 +5,7 @@
 import { SEASONS, ITEM_PASS_LEVEL } from './pass.js';
 
 import { CHEST_ITEMS } from './chests.js';
+import { BADGE_ITEMS } from './badges.js';
 
 // Precios por rareza (v6): conseguir algo especial requiere jugar y ahorrar. Ingreso real medido: ~740 PIES por día activo.
 export const RARITIES = {
@@ -28,6 +29,7 @@ export const CATEGORIES = {
   frame: { name: 'Marcos de perfil', slot: 'frame' },
   card: { name: 'Tarjetas de perfil', slot: 'card' },
   title: { name: 'Títulos', slot: 'title' },
+  badge: { name: 'Insignias', slot: 'badge' },
 };
 
 // it(id, categoría, rareza, nombre, descripción, extra)
@@ -352,7 +354,7 @@ export const PASS_ITEMS = SEASONS.flatMap((se) => Object.entries(se.items).map((
   ({ id, category, rarity, name, desc, unlock: ITEM_PASS_LEVEL[id] ? `CLUB PASS · Nivel ${ITEM_PASS_LEVEL[id].level}${ITEM_PASS_LEVEL[id].track === 'premium' ? ' · Premium' : ''}` : 'CLUB PASS · Prestigio', sale: false, pass: 'club',
     ...(x ? { palette: x.palette, pattern: x.pattern, style: x.style, text: x.text, en: x.en, textEn: x.textEn } : {}) })));
 
-export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS, ...PASS_ITEMS, ...CREATOR_ITEMS, ...CHEST_ITEMS].map((x) => {
+export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS, ...PASS_ITEMS, ...CREATOR_ITEMS, ...CHEST_ITEMS, ...BADGE_ITEMS].map((x) => {
   const sale = x.sale && !ACH_ONLY.has(x.id);
   return { ...x, sale, exclusive: !sale && !x.default, price: sale ? RARITIES[x.rarity].price : null };
 });

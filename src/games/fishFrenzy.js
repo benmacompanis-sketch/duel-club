@@ -4,7 +4,7 @@
 // corte la línea (tensión). Basura resta puntos (podés soltarla) y las medusas paralizan.
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, lerp, text, panel, rgba, roundRect, glowCircle, quality, shade, mulberry32, newSeed, ease } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, lerp, text, panel, rgba, roundRect, glowCircle, quality, shade, mulberry32, newSeed, ease, cachedLayer } from '../core/utils.js';
 
 const SURF = 236, BOTTOM = 700, HALF = W / 2;
 const KINDS = {
@@ -255,6 +255,34 @@ export default class FishFrenzy extends BaseGame {
   ghostScore(p) { return this.score[p]; }
   render(g) {
     const t = this.realTime;
+    // cielo, sol, agua y arena de las dos mitades: quietos → se arman una vez y se copian (ver cachedLayer)
+    cachedLayer(g, 'fish:bg', (cg) => {
+      for (const ox of [0, HALF]) {
+        cg.save();
+        cg.beginPath(); cg.rect(ox, 0, HALF, H); cg.clip();
+        cg.translate(ox, 0);
+        // cielo
+        const sky = cg.createLinearGradient(0, 90, 0, SURF);
+        sky.addColorStop(0, '#2A2060');
+        sky.addColorStop(1, '#FF8E7A');
+        cg.fillStyle = sky;
+        cg.fillRect(0, 90, HALF, SURF - 90);
+        glowCircle(cg, HALF * 0.75, SURF - 10, 90, '#FFC93C', 0.8);
+        cg.fillStyle = '#FFD27A';
+        cg.beginPath(); cg.arc(HALF * 0.75, SURF - 4, 36, Math.PI, 0); cg.fill();
+        // agua
+        const wat = cg.createLinearGradient(0, SURF, 0, H);
+        wat.addColorStop(0, '#1E6E9A');
+        wat.addColorStop(0.5, '#124C74');
+        wat.addColorStop(1, '#0A2742');
+        cg.fillStyle = wat;
+        cg.fillRect(0, SURF, HALF, H - SURF);
+        // fondo: arena y algas
+        cg.fillStyle = '#C9A46A';
+        cg.beginPath(); cg.moveTo(0, H); cg.lineTo(0, BOTTOM); for (let x = 0; x <= HALF; x += 40) cg.lineTo(x, BOTTOM + Math.sin(x * 0.05) * 6); cg.lineTo(HALF, H); cg.fill();
+        cg.restore();
+      }
+    });
     for (const z of this.zones) {
       g.save();
       g.beginPath();
@@ -273,31 +301,13 @@ export default class FishFrenzy extends BaseGame {
 
   drawZone(g, z, t) {
     const col = this.color(z.p);
-    // cielo
-    const sky = g.createLinearGradient(0, 90, 0, SURF);
-    sky.addColorStop(0, '#2A2060');
-    sky.addColorStop(1, '#FF8E7A');
-    g.fillStyle = sky;
-    g.fillRect(0, 90, HALF, SURF - 90);
-    glowCircle(g, HALF * 0.75, SURF - 10, 90, '#FFC93C', 0.8);
-    g.fillStyle = '#FFD27A';
-    g.beginPath(); g.arc(HALF * 0.75, SURF - 4, 36, Math.PI, 0); g.fill();
-    // agua
-    const wat = g.createLinearGradient(0, SURF, 0, H);
-    wat.addColorStop(0, '#1E6E9A');
-    wat.addColorStop(0.5, '#124C74');
-    wat.addColorStop(1, '#0A2742');
-    g.fillStyle = wat;
-    g.fillRect(0, SURF, HALF, H - SURF);
     // rayos de luz
     g.fillStyle = 'rgba(255,255,255,0.04)';
     for (let i = 0; i < 4; i++) {
       const x = ((i * 170 + t * 12) % (HALF + 200)) - 100;
       g.beginPath(); g.moveTo(x, SURF); g.lineTo(x + 50, SURF); g.lineTo(x + 140, H); g.lineTo(x + 60, H); g.fill();
     }
-    // fondo: arena y algas
-    g.fillStyle = '#C9A46A';
-    g.beginPath(); g.moveTo(0, H); g.lineTo(0, BOTTOM); for (let x = 0; x <= HALF; x += 40) g.lineTo(x, BOTTOM + Math.sin(x * 0.05) * 6); g.lineTo(HALF, H); g.fill();
+    // algas (la arena va en la capa quieta)
     g.strokeStyle = '#2E9E6A';
     g.lineWidth = 6;
     g.lineCap = 'round';

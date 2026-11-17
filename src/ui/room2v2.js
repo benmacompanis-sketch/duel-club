@@ -23,6 +23,13 @@ const MODE_TXT = {
 };
 const STATUS_TXT = { new_accounts: 'No cambió el ELO: hay cuentas creadas hace menos de 24 horas.', limit: 'No cambió el ELO: este mismo grupo ya jugó 5 partidas competitivas hoy.', disputed: 'No cambió el ELO: las compus informaron resultados distintos.', void: 'La ronda no contó (corte o desincronización). No cambió el ELO de nadie.' };
 
+/** ¿El servidor todavía no tiene las salas 2v2 instaladas? (la función no existe) */
+const missingRpc = (e) => /could not find the function|does not exist|PGRST202/i.test(`${e?.message || ''} ${e?.detail || ''}`) || e?.code === 'PGRST202';
+function notReady(ui) {
+  ui.toast({ kind: 'warn', title: '2v2 online: casi listo', text: 'Las salas online se están activando en el servidor. Mientras tanto podés jugar 2v2 en esta compu.' });
+  ui.show(teamSetupScreen);
+}
+
 /** Cuenta que conecta esta compu a la sala (J1 si tiene sesión; si no, cualquier sesión guardada). */
 function deviceUser(app) {
   const s = app.accounts;
@@ -72,6 +79,7 @@ export function twoVTwoScreen(ui, params = {}) {
       if (kind === 'search') await ses.call('dc_room_queue', { p_on: true }).then((x) => ses.setView(x)).catch((e) => ui.toast({ kind: 'warn', title: 'No se pudo buscar', text: errorText(e) }));
       enterRoom(app, ses, kind);
     } catch (e) {
+      if (missingRpc(e)) return notReady(ui);
       ui.toast({ kind: 'warn', title: 'No se pudo crear la sala', text: errorText(e) });
       render();
     }
@@ -82,7 +90,7 @@ export function twoVTwoScreen(ui, params = {}) {
     try {
       const v = await rpc('dc_room_join', { p_token: app.accounts.tokenOf(user), p_code: code, p_dev: devKey() });
       enterRoom(app, new RoomSession(app, { user, view: v }), 'private');
-    } catch (e) { ui.toast({ kind: 'warn', title: 'No se pudo entrar', text: errorText(e) }); }
+    } catch (e) { if (missingRpc(e)) return notReady(ui); ui.toast({ kind: 'warn', title: 'No se pudo entrar', text: errorText(e) }); }
   }
   render();
   scr.el = h('div.screen.v2-page', header(ui, '2v2', 'Amistoso o competitivo · en una compu, en varias o mezclado', back), body);

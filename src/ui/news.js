@@ -89,12 +89,13 @@ export function newsSection(ui, owner, ctx) {
   function render() {
     const isAdmin = !!viewer()?.is_admin;
     const list = [['news', 'NOVEDADES', 'bell'], ['report', 'REPORTAR UN ERROR', 'flag'], ['mine', 'MIS REPORTES', 'list']];
-    if (isAdmin) list.push(['admin', 'ADMIN', 'shield']);
+    if (isAdmin) list.push(['admin', 'ADMIN', 'shield'], ['chatrep', 'REPORTES DE CHAT', 'chat']);
     put(tabsBox, tabs(list, tab, (t) => { tab = t; app.audio.play('click'); render(); }));
     if (tab === 'news') renderNews();
     else if (tab === 'report') renderReport();
     else if (tab === 'mine') renderMine();
     else if (tab === 'admin' && isAdmin) renderAdmin();
+    else if (tab === 'chatrep' && isAdmin) renderChatReports();
     else { tab = 'news'; renderNews(); }
   }
 
@@ -232,6 +233,35 @@ export function newsSection(ui, owner, ctx) {
       diag, reply,
       h('div.row', ...['visto', 'arreglando', 'arreglado', 'descartado'].map((s) =>
         h('button.btn.small' + (s === 'arreglado' ? '.green' : '') + (b.status === s ? '.on' : ''), { nav: true, onclick: () => save(s) }, BUG_STATUS[s].label.toUpperCase())))));
+  }
+
+  // ---------------------------------------------------------------- reportes del chat (privado y de partida)
+  let chatFilter = 'open';
+  async function renderChatReports() {
+    put(body, loading('Cargando reportes del chat…'));
+    const me = viewer();
+    try {
+      const list = await rpc('dc_admin_chat_reports', { p_token: svc.tokenOf(me.username), p_status: chatFilter === 'all' ? null : chatFilter });
+      if (owner.disposed || tab !== 'chatrep') return;
+      const filters = h('div.tabs.bug-filters', [['open', 'Sin revisar'], ['reviewed', 'Revisados'], ['dismissed', 'Descartados'], ['all', 'Todos']].map(([id, label]) =>
+        h('button.tab.small' + (id === chatFilter ? '.on' : ''), { nav: true, onclick: () => { chatFilter = id; renderChatReports(); } }, label)));
+      const set = async (r, status) => {
+        try { await rpc('dc_admin_chat_report_set', { p_token: svc.tokenOf(me.username), p_id: r.id, p_status: status }); renderChatReports(); }
+        catch (e) { ui.toast({ kind: 'warn', title: 'No se pudo', text: errorText(e) }); }
+      };
+      put(body, h('div.bug-admin', filters,
+        list.length ? h('div.bug-list', list.map((r) => h('div.bug-item.chatrep',
+          h('div.bri-head', h('b', r.kind === 'dm' ? 'CHAT PRIVADO' : 'CHAT DE PARTIDA'), h('small.muted', timeAgo(r.at)), r.context ? h('small.muted', r.context) : null),
+          h('p.chatrep-body', `«${r.body || ''}»`),
+          h('small', `Reportado: ${r.target_name || '—'} (@${r.target || '—'}) · ${r.target_reports} reporte(s) en total · lo reportó @${r.reporter || '—'}`),
+          h('div.row',
+            h('button.btn.small.green' + (r.status === 'reviewed' ? '.on' : ''), { nav: true, onclick: () => set(r, 'reviewed') }, 'REVISADO'),
+            h('button.btn.small' + (r.status === 'dismissed' ? '.on' : ''), { nav: true, onclick: () => set(r, 'dismissed') }, 'DESCARTAR'),
+            r.target ? h('button.btn.small.ghost', { nav: true, onclick: () => ctx.goto('profile', { user: r.target }) }, 'VER PERFIL') : null))))
+          : empty('No hay reportes de chat en esta lista.', 'check')));
+    } catch (e) {
+      put(body, errorBox(errorText(e), renderChatReports));
+    }
   }
 
   const el = h('div.news-section',

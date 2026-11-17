@@ -4,7 +4,7 @@
 // combos envía filas de ataque al rival; limpiar líneas cancela las que te llegan.
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, glowCircle, quality, shade, mulberry32, newSeed, shuffle, ease } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, glowCircle, quality, shade, mulberry32, newSeed, shuffle, ease, cachedLayer } from '../core/utils.js';
 
 const COLS = 10, ROWS = 22, HIDDEN = 2, CELL = 27;
 const KINDS = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
@@ -237,6 +237,8 @@ class Board {
   }
 }
 
+const BLOCK_SPR = new Map();
+
 export default class BlockBattle extends BaseGame {
   static meta = {
     id: 'blocks', num: 12, name: 'BLOCK BATTLE', short: 'BLOCKS', category: 'Lógica', color: '#9B6CFF',
@@ -333,17 +335,32 @@ export default class BlockBattle extends BaseGame {
   }
 
   // ------------------------------------------------------------------ dibujo
+  // Cada bloque se dibuja una sola vez por color y tamaño (a la resolución real de la pantalla) y después se copia:
+  // con dos tableros llenos eran ~1.600 figuras por cuadro.
   block(g, x, y, k, a = 1, s = CELL) {
-    const c = COLORS[k];
+    const tf = g.getTransform();
+    const sc = Math.hypot(tf.a, tf.b) || 1;
+    const key = `${k}:${s}:${sc.toFixed(2)}`;
+    let spr = BLOCK_SPR.get(key);
+    if (!spr) {
+      spr = document.createElement('canvas');
+      spr.width = spr.height = Math.max(1, Math.ceil(s * sc));
+      const q = spr.getContext('2d');
+      q.scale(spr.width / s, spr.height / s);
+      const c = COLORS[k];
+      q.fillStyle = shade(c, -0.35);
+      roundRect(q, 1, 1, s - 2, s - 2, 6); q.fill();
+      q.fillStyle = c;
+      roundRect(q, 1, 1, s - 2, s - 5, 6); q.fill();
+      q.fillStyle = 'rgba(255,255,255,0.35)';
+      roundRect(q, 4, 3, s - 10, s * 0.22, 3); q.fill();
+      q.fillStyle = 'rgba(255,255,255,0.18)';
+      q.beginPath(); q.arc(s - 8, s - 10, s * 0.1, 0, TAU); q.fill();
+      if (BLOCK_SPR.size > 80) BLOCK_SPR.clear();
+      BLOCK_SPR.set(key, spr);
+    }
     g.globalAlpha = a;
-    g.fillStyle = shade(c, -0.35);
-    roundRect(g, x + 1, y + 1, s - 2, s - 2, 6); g.fill();
-    g.fillStyle = c;
-    roundRect(g, x + 1, y + 1, s - 2, s - 5, 6); g.fill();
-    g.fillStyle = 'rgba(255,255,255,0.35)';
-    roundRect(g, x + 4, y + 3, s - 10, s * 0.22, 3); g.fill();
-    g.fillStyle = 'rgba(255,255,255,0.18)';
-    g.beginPath(); g.arc(x + s - 8, y + s - 10, s * 0.1, 0, TAU); g.fill();
+    g.drawImage(spr, x, y, s, s);
     g.globalAlpha = 1;
   }
 
@@ -351,7 +368,7 @@ export default class BlockBattle extends BaseGame {
   render(g) {
     const t = this.realTime;
     this.arenaBG(g, '#140F33', '#0B0A20');
-    this.grid(g, 0, 90, W, H - 90, 54, 'rgba(155,108,255,0.05)');
+    cachedLayer(g, 'blocks:grid', (cg) => this.grid(cg, 0, 90, W, H - 90, 54, 'rgba(155,108,255,0.05)'));
     // centro: personajes y flechas de ataque
     for (const p of [0, 1]) {
       const b = this.boards[p];

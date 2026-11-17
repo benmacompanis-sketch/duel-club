@@ -12,6 +12,15 @@ import { PUZZLE_EN } from './data/puzzles.js';
 import { CHEST_EN } from './data/chests.js';
 // textos de 2v2, SALAS, CHATS y TOP 10
 const V2_UI_EN = {
+  Insignias: 'Badges', 'Se muestra al lado de tu nombre.': 'Shown next to your name.', 'REPORTES DE CHAT': 'CHAT REPORTS', 'CHAT PRIVADO': 'PRIVATE CHAT', 'CHAT DE PARTIDA': 'MATCH CHAT',
+  'Sin revisar': 'Unreviewed', Revisados: 'Reviewed', Descartados: 'Dismissed', Todos: 'All', REVISADO: 'REVIEWED', DESCARTAR: 'DISMISS', 'VER PERFIL': 'VIEW PROFILE',
+  'No hay reportes de chat en esta lista.': 'There are no chat reports in this list.', 'Cargando reportes del chat…': 'Loading chat reports…',
+  '2v2 online: casi listo': 'Online 2v2: almost ready', 'Las salas online se están activando en el servidor. Mientras tanto podés jugar 2v2 en esta compu.': 'Online rooms are being enabled on the server. Meanwhile you can play 2v2 on this computer.',
+  AZUL: 'BLUE', ROJO: 'RED', 'Puntos por puesto (4-3-2-1)': 'Points by position (4-3-2-1)', Llegadas: 'Finishes',
+  'Cada uno con su mira y su cargador; los blancos y los puntos son del equipo. Ojo: no le disparen al mismo blanco que su compañero.': 'Each player has their own crosshair and ammo; targets and points belong to the team. Careful: don’t shoot the same target as your teammate.',
+  'Dobles: uno arranca en el fondo y el otro en la red. No importa quién de los dos le pegue, pero el equipo no puede pegarle dos veces seguidas.': 'Doubles: one starts at the back and the other at the net. Either can hit, but the team can’t hit twice in a row.',
+  'Sobreviven juntos: el equipo pierde cuando los dos se quedan sin escudos. El empujón va al rival más cercano.': 'Survive together: the team loses when both run out of shields. The shove hits the nearest rival.',
+  'Carrera de 4 autos: 1º suma 4 puntos, 2º 3, 3º 2 y 4º 1. Gana el equipo que sume más (si empatan, el del ganador).': '4-car race: 1st gets 4 points, 2nd 3, 3rd 2 and 4th 1. The team with more points wins (on a tie, the winner’s team).',
   '2v2': '2v2', 'Amistoso o competitivo · en una compu, en varias o mezclado': 'Friendly or competitive · on one computer, several, or mixed',
   '1 · MODALIDAD': '1 · MODE', '2 · DÓNDE JUEGAN': '2 · WHERE YOU PLAY', AMISTOSO: 'FRIENDLY', COMPETITIVO: 'COMPETITIVE',
   'Esta partida no modifica tu ELO.': 'This match does not change your ELO.', 'Esta partida modificará tu ELO 2v2.': 'This match will change your 2v2 ELO.',
@@ -513,6 +522,10 @@ const D = {
 const N = '([\\d.,]+)';
 const RULES = [
   // 2v2 y chats
+  [/^Reportado: (.+) \(@(.+)\) · (\d+) reporte\(s\) en total · lo reportó @(.+)$/, (m) => `Reported: ${m[1]} (@${m[2]}) · ${m[3]} report(s) in total · reported by @${m[4]}`],
+  [/^J(\d) (\d)º · J(\d) (\d)º$/, (m) => `P${m[1]} ${m[2]}${['st', 'nd', 'rd', 'th'][+m[2] - 1] || 'th'} · P${m[3]} ${m[4]}${['st', 'nd', 'rd', 'th'][+m[4] - 1] || 'th'}`],
+  [/^J(\d): (\d) escudos · J(\d): (.+)$/, (m) => `P${m[1]}: ${m[2]} shields · P${m[3]}: ${m[4].replace('escudos', 'shields').replace('fuera', 'out')}`],
+  [/^Insignia (.+)$/, (m) => null],
   [/^LUGAR (\d+)(?: · (.+))?$/, (m) => `SLOT ${m[1]}${m[2] ? ' · ' + (m[2] === 'INVITADO' ? 'GUEST' : m[2] === 'EQUIPO AZUL' ? 'BLUE TEAM' : m[2] === 'EQUIPO ROJO' ? 'RED TEAM' : m[2]) : ''}`],
   [/^Compu de (.+)$/, (m) => `${m[1]}’s computer`], [/^COMPUS EN LA SALA \((\d)\/4\)$/, (m) => `COMPUTERS IN THE ROOM (${m[1]}/4)`],
   [/^(\d) jugador\(es\)(.*)$/, (m) => `${m[1]} player(s)${m[2].replace(' · anfitrión', ' · host').replace(' · conexión directa', ' · direct connection').replace(' · por el servidor', ' · via server').replace(' · conectando…', ' · connecting…')}`],

@@ -40,8 +40,10 @@ export default class BlastZone extends BaseGame {
 
   init() {
     this.duration = this.timed(this.options.time ?? 75);
-    this.pl = [0, 1].map((p) => ({
-      p, x: CX + (p ? 180 : -180), y: CY, vx: 0, vy: 0, lives: 3, inv: 1.2, dash: 0, dashCd: 0, pushCd: 0, stun: 0, face: p ? -1 : 1,
+    // 2v2: J1+J3 (azul) contra J2+J4 (rojo); un equipo queda fuera cuando sus dos jugadores se quedan sin escudos
+    const POS = this.team ? [[-220, -70], [220, -70], [-140, 90], [140, 90]] : [[-180, 0], [180, 0]];
+    this.pl = Array.from({ length: this.np }, (_, p) => ({
+      p, x: CX + POS[p][0], y: CY + POS[p][1], vx: 0, vy: 0, lives: 3, inv: 1.2, dash: 0, dashCd: 0, pushCd: 0, stun: 0, face: p % 2 ? -1 : 1,
       hitsTaken: 0, dodges: 0, pushes: 0, alive: true, out: null, near: 0,
     }));
     this.zones = []; // {x,y,r,warn,t}
@@ -60,7 +62,7 @@ export default class BlastZone extends BaseGame {
   }
 
   update(dt) {
-    if (this.time >= this.duration || this.pl.some((p) => !p.alive)) return this.end();
+    if (this.time >= this.duration || this.teamOut()) return this.end();
     const ph = Math.min(3, Math.floor(this.time / 15));
     if (ph !== this.phase) {
       this.phase = ph;
@@ -76,7 +78,7 @@ export default class BlastZone extends BaseGame {
     if (this.zoneT <= 0) {
       this.zoneT = rand(1.1, 1.6);
       const P = this.pl[this.target];
-      this.target = 1 - this.target;
+      this.target = (this.target + 1) % this.np;
       const lead = 0.55;
       const x = clamp(P.x + P.vx * lead + rand(-70, 70), AX + 40, AX + AW - 40);
       const y = clamp(P.y + P.vy * lead + rand(-70, 70), AY + 40, AY + AH - 40);
@@ -165,12 +167,22 @@ export default class BlastZone extends BaseGame {
     P.x = clamp(P.x + P.vx * dt, AX + 16, AX + AW - 16);
     P.y = clamp(P.y + P.vy * dt, AY + 16, AY + AH - 16);
   }
+  /** ¿Algún equipo (o jugador, en 1v1) quedó entero fuera de combate? */
+  teamOut() {
+    return [0, 1].some((t) => this.pl.every((P) => P.p % 2 !== t || !P.alive));
+  }
   pushCheck() {
-    const [a, b] = this.pl;
-    const d = Math.hypot(a.x - b.x, a.y - b.y);
     for (const P of this.pl) {
       if (!P.pushReq || P.pushCd > 0) continue;
-      const O = this.pl[1 - P.p];
+      // empuja al rival vivo más cercano (nunca al compañero)
+      let O = null, d = Infinity;
+      for (const Q of this.pl) {
+        if (Q.p % 2 === P.p % 2 || !Q.alive) continue;
+        const dq = Math.hypot(Q.x - P.x, Q.y - P.y);
+        if (dq < d) { d = dq; O = Q; }
+      }
+      if (!O) O = this.pl[1 - (P.p % 2)];
+      const a = P, b = O;
       P.pushReq = 0;
       P.pushCd = 1.6;
       this.sfx('whoosh');
@@ -202,23 +214,26 @@ export default class BlastZone extends BaseGame {
   }
   end() {
     if (this.done) return;
-    const lives = this.pl.map((P) => Math.max(0, P.lives));
-    const alive = this.pl.map((P) => (P.alive ? Math.min(this.time, this.duration) : P.out));
+    // en 2v2 se suma por equipo (escudos y tiempo con escudos de los dos)
+    const T = (f) => [0, 1].map((t) => this.pl.filter((P) => P.p % 2 === t).reduce((a, P) => a + f(P), 0));
+    const lives = T((P) => Math.max(0, P.lives));
+    const alive = T((P) => (P.alive ? Math.min(this.time, this.duration) : P.out));
+    const teamAlive = [0, 1].map((t) => this.pl.some((P) => P.p % 2 === t && P.alive));
     const w = lives[0] !== lives[1] ? (lives[0] > lives[1] ? 0 : 1) : alive[0] !== alive[1] ? (alive[0] > alive[1] ? 0 : 1) : -1;
     this.finish({
       winner: w,
       scores: lives,
-      display: lives.map((l, i) => (this.pl[i].alive ? `${l} escudos` : `Fuera · ${alive[i].toFixed(1)} s`)),
+      display: lives.map((l, i) => (teamAlive[i] ? `${l} escudos` : `Fuera · ${alive[i].toFixed(1)} s`)),
       scoreLabel: 'Escudos restantes',
       banner: this.pl.some((P) => !P.alive) ? '¡FUERA DE COMBATE!' : '¡SOBREVIVIERON!',
       stats: [
         { label: 'Tiempo con escudos', values: alive.map((v) => `${v.toFixed(1)} s`), raw: alive, better: 'high' },
-        { label: 'Golpes recibidos', values: this.pl.map((P) => String(P.hitsTaken)), raw: this.pl.map((P) => P.hitsTaken), better: 'low' },
-        { label: 'Esquives', values: this.pl.map((P) => String(P.dodges)) },
-        { label: 'Empujones conectados', values: this.pl.map((P) => String(P.pushes)), raw: this.pl.map((P) => P.pushes), better: 'high' },
+        { label: 'Golpes recibidos', values: T((P) => P.hitsTaken).map(String), raw: T((P) => P.hitsTaken), better: 'low' },
+        { label: 'Esquives', values: T((P) => P.dodges).map(String) },
+        { label: 'Empujones conectados', values: T((P) => P.pushes).map(String), raw: T((P) => P.pushes), better: 'high' },
       ],
-      records: alive.map((v) => Math.round(v * 10) / 10),
-      flags: this.pl.map((P) => ({ hitsTaken: P.hitsTaken, pushes: P.pushes })),
+      records: this.team ? [null, null] : alive.map((v) => Math.round(v * 10) / 10),
+      flags: [0, 1].map((t) => ({ hitsTaken: T((P) => P.hitsTaken)[t], pushes: T((P) => P.pushes)[t] })),
       margin: Math.abs(lives[0] - lives[1]),
     });
   }
@@ -299,7 +314,11 @@ export default class BlastZone extends BaseGame {
   }
   renderHUD(g) {
     const t = this.realTime;
-    this.hudTop(g, { scores: this.pl.map((P) => Math.max(0, P.lives)), timer: this.remaining, sub: this.pl.map((P) => `Esquive ${P.dashCd > 0 ? P.dashCd.toFixed(1) + ' s' : 'LISTO'} · Empujón ${P.pushCd > 0 ? P.pushCd.toFixed(1) + ' s' : 'LISTO'}`) });
+    const sc = [0, 1].map((t) => this.pl.filter((P) => P.p % 2 === t).reduce((a, P) => a + Math.max(0, P.lives), 0));
+    const sub = this.team
+      ? [0, 1].map((t) => this.pl.filter((P) => P.p % 2 === t).map((P) => `J${P.p + 1}: ${P.alive ? Math.max(0, P.lives) + ' escudos' : 'fuera'}`).join(' · '))
+      : this.pl.map((P) => `Esquive ${P.dashCd > 0 ? P.dashCd.toFixed(1) + ' s' : 'LISTO'} · Empujón ${P.pushCd > 0 ? P.pushCd.toFixed(1) + ' s' : 'LISTO'}`);
+    this.hudTop(g, { scores: sc, timer: this.remaining, sub });
     this.hudTimeBar(g, 86);
     if (this.banner) {
       const a = Math.min(1, this.banner.t);

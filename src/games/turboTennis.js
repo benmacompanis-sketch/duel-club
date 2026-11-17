@@ -35,7 +35,10 @@ export default class TurboTennis extends BaseGame {
     this.target = this.options.target ?? 7;
     this.g = 1250 * this.gravityScale;
     this.score = [0, 0];
-    this.pl = [0, 1].map((p) => ({ p, x: p ? W - 260 : 260, y: GROUND, vx: 0, vy: 0, side: p ? 1 : -1, swing: 0, swingCd: 0, lob: false, hits: 0, aces: 0, winners: 0, faults: 0, anim: 'idle', jumps: 0 }));
+    // 2v2 (dobles): J1+J3 a la izquierda, J2+J4 a la derecha; uno arranca en el fondo y el otro cerca de la red.
+    // s = lado de la cancha (equipo); p = jugador. En 1v1 son lo mismo.
+    const X0 = [260, W - 260, NET_X - 170, NET_X + 170];
+    this.pl = Array.from({ length: this.np }, (_, p) => ({ p, s: p % 2, x: X0[p], y: GROUND, vx: 0, vy: 0, side: p % 2 ? 1 : -1, swing: 0, swingCd: 0, lob: false, hits: 0, aces: 0, winners: 0, faults: 0, anim: 'idle', jumps: 0 }));
     this.ball = null;
     this.server = Math.random() < 0.5 ? 0 : 1;
     this.servesLeft = 2;
@@ -61,6 +64,7 @@ export default class TurboTennis extends BaseGame {
     const s = this.pl[this.server];
     s.x = this.server ? COURT_R - 60 : COURT_L + 60;
     this.pl[1 - this.server].x = this.server ? COURT_L + 160 : COURT_R - 160;
+    if (this.team) { this.pl[this.server + 2].x = this.server ? NET_X + 170 : NET_X - 170; this.pl[3 - this.server].x = this.server ? NET_X - 170 : NET_X + 170; }
     this.ball = { x: s.x + (this.server ? -26 : 26), y: GROUND - 150, vx: 0, vy: -380, toss: true, spin: 0, tossT: 0 };
     this.rallyT = 0;
     this.lastHit = -1;
@@ -108,7 +112,7 @@ export default class TurboTennis extends BaseGame {
   updatePlayer(pl, dt) {
     const inp = this.inputs[pl.p];
     const ax = inp.axisX();
-    const minX = pl.p ? NET_X + 30 : COURT_L - 70, maxX = pl.p ? COURT_R + 70 : NET_X - 30;
+    const minX = pl.s ? NET_X + 30 : COURT_L - 70, maxX = pl.s ? COURT_R + 70 : NET_X - 30;
     const sp = 430 + this.diff * 40;
     pl.vx += (ax * sp - pl.vx) * Math.min(1, dt * 14);
     pl.x = clamp(pl.x + pl.vx * dt, minX, maxX);
@@ -127,17 +131,17 @@ export default class TurboTennis extends BaseGame {
   tryHit(pl, serve) {
     const b = this.ball;
     if (!b || pl.swing <= 0) return;
-    if (!serve && this.lastHit === pl.p && this.bounces === 0) return;
-    if (!serve && this.sideOf(b.x) !== pl.p) return;
-    const hx = pl.x + (pl.p ? -22 : 22), hy = pl.y - 62;
+    if (!serve && this.lastHit === pl.s && this.bounces === 0) return;
+    if (!serve && this.sideOf(b.x) !== pl.s) return;
+    const hx = pl.x + (pl.s ? -22 : 22), hy = pl.y - 62;
     const d = Math.hypot(b.x - hx, b.y - hy);
     if (d > REACH) return;
     // calidad del golpe: más cerca del punto dulce = mejor
     const q = clamp(1 - d / REACH, 0, 1);
     const inp = this.inputs[pl.p];
-    const fwd = inp.axisX() * (pl.p ? -1 : 1); // 1 = adelante (hacia la red)
-    const dir = pl.p ? -1 : 1;
-    const opp = 1 - pl.p;
+    const fwd = inp.axisX() * (pl.s ? -1 : 1); // 1 = adelante (hacia la red)
+    const dir = pl.s ? -1 : 1;
+    const opp = 1 - pl.s;
     let depth = 0.55 + fwd * 0.3; // 0 = cerca de la red, 1 = fondo
     const smash = pl.lob && b.y < pl.y - 130 && !serve;
     const lob = pl.lob && !smash;
@@ -170,13 +174,13 @@ export default class TurboTennis extends BaseGame {
     b.vy = vy;
     b.toss = false;
     b.spin = rand(-1, 1);
-    this.lastHit = pl.p;
+    this.lastHit = pl.s;
     this.bounces = 0;
     pl.swing = 0;
     pl.hits++;
     if (!serve) {
       this.rally++;
-      this.returned = this.returned || pl.p !== this.server;
+      this.returned = this.returned || pl.s !== this.server;
       this.bestRally = Math.max(this.bestRally, this.rally);
       if (this.rally % 4 === 0) {
         this.turbo = Math.min(1.6, this.turbo * 1.08);
@@ -193,7 +197,7 @@ export default class TurboTennis extends BaseGame {
     const pl = this.pl[this.server];
     const b = this.ball;
     // la pelota baja hasta la raqueta del que saca y sale un golpe correcto
-    b.x = pl.x + (pl.p ? -22 : 22);
+    b.x = pl.x + (pl.s ? -22 : 22);
     b.y = pl.y - 62;
     pl.swing = 0.22;
     pl.lob = false;
@@ -264,19 +268,21 @@ export default class TurboTennis extends BaseGame {
   end() {
     if (this.done) return;
     const [a, b] = this.score;
+    // en dobles, las estadísticas se suman por equipo
+    const T = (f) => [0, 1].map((t) => this.pl.filter((x) => x.s === t).reduce((a, x) => a + f(x), 0));
     this.finish({
       winner: BaseGame.decide(a, b),
       scores: [a, b],
       scoreLabel: 'Puntos',
       stats: [
-        { label: 'Golpes', values: this.pl.map((p) => String(p.hits)), raw: this.pl.map((p) => p.hits), better: 'high' },
-        { label: 'Aces', values: this.pl.map((p) => String(p.aces)), raw: this.pl.map((p) => p.aces), better: 'high' },
-        { label: 'Tiros ganadores', values: this.pl.map((p) => String(p.winners)), raw: this.pl.map((p) => p.winners), better: 'high' },
-        { label: 'Errores', values: this.pl.map((p) => String(p.faults)), raw: this.pl.map((p) => p.faults), better: 'low' },
+        { label: 'Golpes', values: T((x) => x.hits).map(String), raw: T((x) => x.hits), better: 'high' },
+        { label: 'Aces', values: T((x) => x.aces).map(String), raw: T((x) => x.aces), better: 'high' },
+        { label: 'Tiros ganadores', values: T((x) => x.winners).map(String), raw: T((x) => x.winners), better: 'high' },
+        { label: 'Errores', values: T((x) => x.faults).map(String), raw: T((x) => x.faults), better: 'low' },
         { label: 'Rally más largo', values: [String(this.bestRally), String(this.bestRally)] },
       ],
-      records: this.pl.map((p) => p.hits),
-      flags: this.pl.map((p) => ({ aces: p.aces, winners: p.winners })),
+      records: T((x) => x.hits),
+      flags: [0, 1].map((t) => ({ aces: T((x) => x.aces)[t], winners: T((x) => x.winners)[t] })),
       margin: Math.abs(a - b),
     });
   }
@@ -309,12 +315,12 @@ export default class TurboTennis extends BaseGame {
     g.fillStyle = '#fff'; g.fillRect(NET_X - 14, NET_TOP - 4, 28, 6);
     // jugadores
     for (const pl of this.pl) {
-      drawCharacter(g, { id: this.players[pl.p].char, x: pl.x, y: pl.y, s: 0.95, color: this.color(pl.p), anim: pl.anim, t: t + pl.p, facing: pl.p ? -1 : 1, acc: this.players[pl.p].acc });
+      drawCharacter(g, { id: this.players[pl.p].char, x: pl.x, y: pl.y, s: 0.95, color: this.color(pl.p), anim: pl.anim, t: t + pl.p, facing: pl.s ? -1 : 1, acc: this.players[pl.p].acc });
       // raqueta
       const ang = pl.swing > 0 ? (1 - pl.swing / 0.22) * 2.2 - 1.2 : -0.4;
       g.save();
-      g.translate(pl.x + (pl.p ? -18 : 18), pl.y - 58);
-      g.scale(pl.p ? -1 : 1, 1);
+      g.translate(pl.x + (pl.s ? -18 : 18), pl.y - 58);
+      g.scale(pl.s ? -1 : 1, 1);
       g.rotate(ang);
       g.strokeStyle = '#E8ECF8'; g.lineWidth = 4;
       g.beginPath(); g.moveTo(0, 0); g.lineTo(26, -10); g.stroke();
@@ -336,7 +342,7 @@ export default class TurboTennis extends BaseGame {
     this.vignette(g);
   }
   renderHUD(g) {
-    const sv = this.pl.map((p) => (this.server === p.p ? 'SACA' : ''));
+    const sv = [0, 1].map((s) => (this.server === s ? 'SACA' : ''));
     this.hudTop(g, { scores: this.score, center: `A ${this.target}`, centerSub: `Rally ${this.rally}${this.turbo > 1.001 ? ' · TURBO x' + this.turbo.toFixed(2) : ''}`, sub: sv });
     if (this.msg) {
       const a = Math.min(1, this.msg.t * 2);

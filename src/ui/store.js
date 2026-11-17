@@ -8,7 +8,7 @@ import { accFits, CHAR_BY_ID } from '../core/characters.js';
 
 export const CAT_TABS = [
   ['all', 'Todo'], ['char', 'Personajes'], ['skin', 'Skins'], ['hat', 'Sombreros'], ['face', 'Máscaras'], ['body', 'Accesorios'],
-  ['entrance', 'Entradas'], ['victory', 'Victorias'], ['emote', 'Emotes'], ['frame', 'Marcos'], ['card', 'Fondos de perfil'], ['title', 'Títulos'],
+  ['entrance', 'Entradas'], ['victory', 'Victorias'], ['emote', 'Emotes'], ['frame', 'Marcos'], ['card', 'Fondos de perfil'], ['title', 'Títulos'], ['badge', 'Insignias'],
 ];
 const RAR_ORDER = Object.keys(RARITIES);
 

@@ -1,7 +1,7 @@
 // Rankings mundiales con datos reales del servidor: ELO, nivel, XP, victorias, por minijuego
 // y récords. Filtros General/Amigos, Top 10/Top 100, búsqueda y la posición propia aunque no esté arriba.
 import { h, icon } from './dom.js';
-import { tabs, loading, errorBox, empty, avatar, lookOf, levelBadge, resist, fmtN, tierName, timeAgo, gameChip, titleOf } from './kit.js';
+import { tabs, loading, errorBox, empty, avatar, lookOf, levelBadge, resist, fmtN, tierName, timeAgo, gameChip, titleOf, badgeEl } from './kit.js';
 import { GAME_IDS, GAME_NAMES, levelInfo } from '../data/catalog.js';
 import { errorText } from '../net/api.js';
 
@@ -54,7 +54,7 @@ export function rankingSection(ui, owner, ctx) {
     },
     h('span.rank-pos', r.pos <= 3 ? h('span.medal.m' + r.pos, String(r.pos)) : '#' + r.pos),
     avatar(ui, owner, lookOf(r), 44),
-    h('div.rank-name', h('b', r.name, r.online ? h('span.dot-online') : null), h('small', `${titleOf(r)} · @${r.username}`)),
+    h('div.rank-name', h('b', r.name, badgeEl(r.equipped?.badge, 18), r.online ? h('span.dot-online') : null), h('small', `${titleOf(r)} · @${r.username}`)),
     h('div.rank-tags', r.level != null ? levelBadge(r.level) : null, kind === 'rating2' ? h('span.muted.small', '2v2') : kind !== 'rating' ? resist(r.rating, { short: true }) : h('span.muted.small', tierName(r.value))),
     h('div.rank-value', v, h('small', sub)));
   }
@@ -91,7 +91,7 @@ export function rankingSection(ui, owner, ctx) {
       }
       // ELO 2v2: ranking aparte (nunca se mezcla con el 1v1)
       const out = kind === 'rating2'
-        ? await svc.ranking2(p, limit).then((o) => ({ ...o, rows: o.rows.map((r) => ({ ...r, level: null, rating: r.value })) }))
+        ? await svc.ranking2(p, limit).then((o) => ({ ...o, rows: o.rows.map((r) => ({ ...r, level: null, rating: r.value })) }), () => ({ rows: [], total: 0 }))
         : await svc.ranking(kind, { scope, p, game: kind === 'game' ? game : null, limit, search });
       if (owner.disposed) return;
       const rows = out.rows || [];

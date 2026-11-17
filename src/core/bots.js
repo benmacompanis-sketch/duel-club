@@ -290,7 +290,9 @@ const BRAINS = {
     const tgt = b.every('tg', b.L.react * 0.7, () => {
       let best = null, bs = -Infinity;
       for (const t of g.targets) {
-        if (t.dead || t.owner === 'bomb' || (t.owner !== p && t.owner !== 'gold')) continue;
+        if (t.dead || t.owner === 'bomb' || (t.owner !== p % 2 && t.owner !== 'gold')) continue;
+        // 2v2: no le apunta al mismo blanco que su compañero
+        if (g.team && g.aims[(p + 2) % 4] && Math.hypot(t.x - g.aims[(p + 2) % 4].x, t.y - g.aims[(p + 2) % 4].y) < 40) continue;
         const d = Math.hypot(t.x - a.x, t.y - a.y);
         const sc = (t.owner === 'gold' ? 300 : 0) - d + t.life * 40;
         if (sc > bs) { bs = sc; best = t; }
@@ -313,7 +315,10 @@ const BRAINS = {
 
   // ---------------------------------------------------------------- BLAST ZONE (esquivar peligros)
   blast(g, p, b, w) {
-    const P = g.pl[p], O = g.pl[1 - p];
+    const P = g.pl[p];
+    // rival a vigilar: el vivo más cercano del otro equipo (en 1v1, el único rival)
+    let O = g.pl[1 - (p % 2)];
+    if (g.team) { let bd = Infinity; for (const Q of g.pl) { if (Q.p % 2 === p % 2 || !Q.alive) continue; const d = Math.hypot(Q.x - P.x, Q.y - P.y); if (d < bd) { bd = d; O = Q; } } }
     if (!P.alive) return;
     const AX = 90, AY = 112, AW = 1100, AH = 580, CX = AX + AW / 2, CY = AY + AH / 2;
     const look = 0.25 + 0.25 * (1 - b.L.noise);
@@ -477,18 +482,21 @@ const BRAINS = {
     const P = g.pl[p];
     const ball = g.ball;
     const GROUND = 612, NET_X = 640, REACH = 86;
-    const hx = P.x + (p ? -22 : 22), hy = P.y - 62;
-    if (!ball) { b.steerX(w, P.x, p ? 1020 : 260, 10); return; }
+    // s = lado de la cancha (en dobles J3 juega del lado de J1 y J4 del lado de J2)
+    const s = p % 2;
+    const home = g.team ? [260, 1020, NET_X - 170, NET_X + 170][p] : s ? 1020 : 260;
+    const hx = P.x + (s ? -22 : 22), hy = P.y - 62;
+    if (!ball) { b.steerX(w, P.x, home, 10); return; }
     if (ball.toss) {
-      if (g.server !== p) { b.steerX(w, P.x, p ? 1000 : 280, 10); return; }
+      if (g.server !== p) { b.steerX(w, P.x, g.team ? home : s ? 1000 : 280, 10); return; }
       // saque: pegarle cuando baja a la altura del golpe (después de un momento de reacción)
       const d = Math.hypot(ball.x - hx, ball.y - hy);
       if (ball.vy > 0 && d < REACH * 0.6 && b.after('srv', true, b.L.react)) { w.add(R() < 0.15 ? 'b' : 'a'); b.after('srv', false); }
       return;
     }
-    const mySide = (ball.x < NET_X ? 0 : 1) === p;
-    const coming = p ? ball.vx > 0 : ball.vx < 0;
-    let tx = p ? 1020 : 260;
+    const mySide = (ball.x < NET_X ? 0 : 1) === s;
+    const coming = s ? ball.vx > 0 : ball.vx < 0;
+    let tx = home;
     if (mySide || coming) {
       // dónde va a estar la pelota en un ratito (con reacción)
       const lead = b.every('tl', Math.max(0.05, b.L.react * 0.5), () => {
@@ -497,16 +505,20 @@ const BRAINS = {
         for (let i = 0; i < 90; i++) {
           vy += G * (1 / 60); x += vx / 60; y += vy / 60;
           if (y > GROUND - BR_T) { y = GROUND - BR_T; vy = -Math.abs(vy) * 0.7; }
-          if (((x < NET_X ? 0 : 1) === p) && y > GROUND - 140 && y < GROUND - 30) break;
+          if (((x < NET_X ? 0 : 1) === s) && y > GROUND - 140 && y < GROUND - 30) break;
         }
         return x + gauss() * 30 * b.L.noise;
       });
-      tx = lead - (p ? -22 : 22) * 0.6;
-      tx = p ? Math.max(NET_X + 40, tx) : Math.min(NET_X - 40, tx);
+      // dobles: va a buscarla el que está más cerca de donde cae; el compañero vuelve a su lugar
+      const mate = g.team ? g.pl[(p + 2) % 4] : null;
+      if (!mate || Math.abs(lead - P.x) <= Math.abs(lead - mate.x)) {
+        tx = lead - (s ? -22 : 22) * 0.6;
+        tx = s ? Math.max(NET_X + 40, tx) : Math.min(NET_X - 40, tx);
+      }
     }
     b.steerX(w, P.x, tx, 10);
     const d = Math.hypot(ball.x - hx, ball.y - hy);
-    if (mySide && d < REACH * (0.55 + 0.25 * (1 - b.L.noise)) && P.swingCd <= 0 && !(g.lastHit === p && g.bounces === 0)) {
+    if (mySide && d < REACH * (0.55 + 0.25 * (1 - b.L.noise)) && P.swingCd <= 0 && !(g.lastHit === s && g.bounces === 0)) {
       if (b.chance(1 - b.L.slip)) w.add(b.chance(0.18) ? 'b' : 'a');
     }
     if (mySide && ball.y < hy - 70 && Math.abs(ball.x - P.x) < 90 && P.y >= GROUND - 0.5 && b.chance(0.08)) w.add('up');
