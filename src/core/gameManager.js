@@ -15,7 +15,7 @@ import { BotInput } from './bots.js';
 import { handleExtAuth } from '../ui/extAuthFlow.js';
 let GameRunnerDots = null;
 const keyNameShort = (c) => ({ ShiftRight: 'SHIFT', NumpadEnter: 'ENTER' }[c] || keyName(c));
-import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel, mulberry32, burst, comicPanel } from './utils.js';
+import { W, H, text, rgba, quality, clamp, rand, ease, PALETTE, panel, mulberry32, burst, comicPanel, cachedLayer } from './utils.js';
 const fmtGhost = (v) => (Math.abs(v) >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10));
 import { UI } from '../ui/ui.js';
 import { introScreen } from '../ui/intro.js';
@@ -675,16 +675,15 @@ export class MinigameRunner {
     // textura de impresión de historieta (tramado de puntos) y marco de viñeta alrededor de la pantalla de juego
     g.save();
     if (quality.level !== 'low') {
-      if (!GameRunnerDots) {
+      cachedLayer(g, 'printdots', (cg) => {
         const c = document.createElement('canvas');
         c.width = c.height = 9;
         const d = c.getContext('2d');
         d.fillStyle = 'rgba(10,8,20,0.16)';
         d.beginPath(); d.arc(2.2, 2.2, 1.4, 0, Math.PI * 2); d.arc(6.7, 6.7, 1.4, 0, Math.PI * 2); d.fill();
-        GameRunnerDots = g.createPattern(c, 'repeat');
-      }
-      g.fillStyle = GameRunnerDots;
-      g.fillRect(0, 0, W, H);
+        cg.fillStyle = cg.createPattern(c, 'repeat');
+        cg.fillRect(0, 0, W, H);
+      });
     }
     g.strokeStyle = '#0D0B14';
     g.lineWidth = 12;

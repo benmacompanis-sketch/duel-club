@@ -4,6 +4,30 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-17-v6',
+    date: '2026-11-17',
+    version: '6.0',
+    title: '2v2 online, cofres y chat',
+    tag: 'v6.0',
+    color: '#FF3B5C',
+    intro: 'La actualización más grande: 2v2 entre varias compus (o mezclado con la misma compu y bots), cofres, chat y todo más rápido.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        '2v2 FLEXIBLE: cada lugar puede ser un jugador de esta compu, de otra compu o un bot. Salas con código, cuentas propias para cada jugador (hasta 4 en una compu) y búsqueda de partida.',
+        'AMISTOSO (no cambia el ELO) y COMPETITIVO (4 cuentas, sin bots): ELO 2v2 y ranking 2v2 separados del 1v1.',
+        'COFRES de bronce, plata, oro y mítico: se ganan con desafíos, niveles, logros, Daily Chaos y la Historia. Objetos exclusivos, probabilidades a la vista y el Pase Premium como premio rarísimo.',
+        'CHAT privado con tus amigos y chat durante las partidas (1v1 y 2v2), con silenciar, bloquear y reportar.',
+        'TOP 10 de los minijuegos más jugados (en Ranking).',
+      ] },
+      { kind: 'mejora', items: [
+        'MINIJUEGOS ahora es una página de historieta: cada juego en su propia viñeta.',
+        'Todo más rápido: las secciones abren casi el doble de rápido y los menús y varios minijuegos van mucho más fluidos en celulares.',
+        'Los personajes tienen una sombra de historieta que sigue su forma (antes parecían partidos al medio).',
+        'Precios nuevos en la tienda según la rareza: lo especial ahora cuesta jugar y ahorrar.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-16-historia-53',
     date: '2026-11-16',
     version: '5.3',

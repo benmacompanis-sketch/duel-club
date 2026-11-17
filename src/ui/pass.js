@@ -77,7 +77,8 @@ export function passSection(ui, owner, ctx) {
           ? h('div.ph-prem-on', icon('crown'), h('b', 'PREMIUM ACTIVO'))
           : live ? h('button.btn.gold', { nav: true, onclick: () => buy(S, d) }, icon('crown'), `PASE PREMIUM · ${fmtN(S.premium_price)}`, piesIcon()) : null,
         live && ready ? h('button.btn.primary', { nav: true, 'data-autofocus': true, onclick: () => claim(null, null) }, `RECLAMAR TODO (${ready})`) : null,
-        !d.premium && live ? h('p.muted.small', 'Si lo comprás más tarde, recibís todo lo de los niveles que ya alcanzaste.') : null));
+        !d.premium && live ? h('p.muted.small', 'Si lo comprás más tarde, recibís todo lo de los niveles que ya alcanzaste.') : null,
+        !d.premium && live ? h('p.ph-jack', icon('star'), 'También puede salir en un cofre de oro (0,5 %) o mítico (2 %).') : null));
 
     // próximas recompensas con objeto (una por fila)
     const nextOf = (track) => d.rewards.find((r) => r.track === track && r.level > d.level && r.item);

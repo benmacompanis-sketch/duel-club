@@ -5,6 +5,7 @@ import { tabs, loading, errorBox, empty, avatar, lookOf, levelBadge, resist, tim
 import { GAME_NAMES } from '../data/catalog.js';
 import { errorText } from '../net/api.js';
 import { challengeFriend } from './online.js';
+import { dmChatModal } from './dmChat.js';
 import { drawCharacter } from '../core/characters.js';
 import { TAU, rgba } from '../core/utils.js';
 
@@ -111,13 +112,15 @@ export function clubSection(ui, owner, ctx) {
     body.replaceChildren(loading());
     if (tab === 'search') return renderSearch();
     try {
-      const f = await svc.friends(p);
+      const [f, inbox] = await Promise.all([svc.friends(p), svc.dmInbox(p).catch(() => null)]);
       if (owner.disposed) return;
+      const unread = Object.fromEntries((inbox?.threads || []).map((t) => [t.username, t.unread]));
       renderBar({ friends: f.friends.length, incoming: f.incoming.length });
       if (tab === 'friends') {
         const online = f.friends.filter((x) => x.online).length;
         body.replaceChildren(f.friends.length
           ? h('div.people', h('p.muted', `${online} en línea · ${f.friends.length} amigos`), ...f.friends.map((a) => personRow(ui, owner, a, [
+            h('button.btn.small.chat-btn', { nav: true, title: 'Chat privado', onclick: () => ui.modal(dmChatModal, { p, friend: a, onClose: () => { if (!owner.disposed && tab === 'friends') render(); } }) }, icon('chat'), 'CHAT', unread[a.username] ? h('span.sn-count', String(unread[a.username])) : null),
             h('button.btn.small.primary', { nav: true, title: 'Desafiar a jugar online (cada uno en su compu)', onclick: () => challengeFriend(ui, svc.slotUser(p), a) }, icon('bolt'), 'ONLINE'),
             h('button.btn.small', { nav: true, title: 'Invitar a jugar en esta compu', onclick: () => invite(a) }, icon('play'), 'ACÁ'),
             h('button.btn.small', { nav: true, onclick: () => vs(a.username) }, icon('duel')),

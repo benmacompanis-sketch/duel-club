@@ -5,7 +5,7 @@ import { tabs, loading, errorBox, empty, avatar, lookOf, levelBadge, resist, fmt
 import { GAME_IDS, GAME_NAMES, levelInfo } from '../data/catalog.js';
 import { errorText } from '../net/api.js';
 
-const KINDS = [['rating', 'ELO'], ['level', 'Nivel'], ['xp', 'XP'], ['wins', 'Victorias'], ['game', 'Por minijuego'], ['records', 'Récords']];
+const KINDS = [['rating', 'ELO'], ['rating2', 'ELO 2v2'], ['level', 'Nivel'], ['xp', 'XP'], ['wins', 'Victorias'], ['game', 'Por minijuego'], ['records', 'Récords'], ['popular', 'Más jugados']];
 
 export function rankingSection(ui, owner, ctx) {
   const app = ui.app;
@@ -26,7 +26,7 @@ export function rankingSection(ui, owner, ctx) {
     bar.replaceChildren(tabs(KINDS, kind, (v) => { kind = v; app.audio.play('click'); renderBar(); renderFilters(); load(); }));
   }
   function renderFilters() {
-    if (kind === 'records') { filters.replaceChildren(); return; }
+    if (kind === 'records' || kind === 'popular') { filters.replaceChildren(); return; }
     const searchIn = h('input.acc-input.search-in.small', { type: 'text', nav: true, maxlength: 16, placeholder: 'Buscar jugador…', value: search, 'aria-label': 'Buscar en el ranking' });
     let timer;
     searchIn.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { search = searchIn.value.trim(); load(); }, 350); });
@@ -40,6 +40,7 @@ export function rankingSection(ui, owner, ctx) {
   }
   const valueOf = (r) => {
     if (kind === 'rating') return [resist(r.value), `Mejor: ${fmtN(r.value2)}`];
+    if (kind === 'rating2') return [h('b.rank-val', fmtN(r.value)), `${fmtN(r.wins)} de ${fmtN(r.played)} ganadas · mejor ${fmtN(r.value2)}`];
     if (kind === 'level') return [levelBadge(levelInfo(r.value).level), `${fmtN(r.value)} XP`];
     if (kind === 'xp') return [h('b.rank-val', fmtN(r.value)), 'XP'];
     if (kind === 'wins') return [h('b.rank-val', fmtN(r.value)), `de ${fmtN(r.value2)} partidas`];
@@ -54,13 +55,26 @@ export function rankingSection(ui, owner, ctx) {
     h('span.rank-pos', r.pos <= 3 ? h('span.medal.m' + r.pos, String(r.pos)) : '#' + r.pos),
     avatar(ui, owner, lookOf(r), 44),
     h('div.rank-name', h('b', r.name, r.online ? h('span.dot-online') : null), h('small', `${titleOf(r)} · @${r.username}`)),
-    h('div.rank-tags', levelBadge(r.level), kind !== 'rating' ? resist(r.rating, { short: true }) : h('span.muted.small', tierName(r.value))),
+    h('div.rank-tags', r.level != null ? levelBadge(r.level) : null, kind === 'rating2' ? h('span.muted.small', '2v2') : kind !== 'rating' ? resist(r.rating, { short: true }) : h('span.muted.small', tierName(r.value))),
     h('div.rank-value', v, h('small', sub)));
   }
   async function load() {
     body.replaceChildren(loading());
     mineBox.replaceChildren();
     try {
+      if (kind === 'popular') {
+        // TOP 10 de minijuegos: cantidad real de partidas registradas en el servidor
+        const top = await svc.topGames();
+        if (owner.disposed) return;
+        const max = top.rows[0]?.n || 1;
+        body.replaceChildren(top.rows.length
+          ? h('div.top-games',
+            h('p.muted.small', `Sobre ${fmtN(top.total)} partidas registradas por todos los jugadores (se actualiza con cada partida).`),
+            ...top.rows.map((r) => h('div.tg-row' + (r.pos <= 3 ? '.podium.p' + r.pos : ''), { style: { '--w': `${Math.max(6, (r.n / max) * 100)}%` } },
+              h('b.tg-pos', `#${r.pos}`), gameChip(r.game), h('div.tg-bar', h('i')), h('span.tg-n', `${fmtN(r.n)} partidas`))))
+          : empty('Todavía no hay partidas registradas para armar el ranking.', 'records'));
+        return;
+      }
       if (kind === 'records') {
         const recs = await svc.worldRecords();
         if (owner.disposed) return;
@@ -75,7 +89,10 @@ export function rankingSection(ui, owner, ctx) {
         })), h('p.muted.small', 'Solo cuentan partidas con cuenta.'));
         return;
       }
-      const out = await svc.ranking(kind, { scope, p, game: kind === 'game' ? game : null, limit, search });
+      // ELO 2v2: ranking aparte (nunca se mezcla con el 1v1)
+      const out = kind === 'rating2'
+        ? await svc.ranking2(p, limit).then((o) => ({ ...o, rows: o.rows.map((r) => ({ ...r, level: null, rating: r.value })) }))
+        : await svc.ranking(kind, { scope, p, game: kind === 'game' ? game : null, limit, search });
       if (owner.disposed) return;
       const rows = out.rows || [];
       body.replaceChildren(rows.length

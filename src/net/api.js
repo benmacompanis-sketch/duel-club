@@ -22,8 +22,16 @@ const MESSAGES = {
   session_invalid: 'La sesión expiró. Volvé a iniciar sesión.',
   not_owned: 'Todavía no tenés ese objeto.',
   not_for_sale: 'Ese objeto no se vende: se desbloquea jugando.',
+  invalid_item: 'Ese objeto no existe.',
+  dm_not_friends: 'Solo podés chatear con tus amigos del CLUB.',
+  chat_too_fast: 'Estás mandando mensajes muy rápido. Esperá unos segundos.',
+  blocked: 'No se puede: hay un bloqueo entre ustedes.',
+  invalid_request: 'Pedido inválido.',
+  user_not_found: 'No existe ese usuario.',
   already_owned: 'Ya tenés ese objeto.',
   not_enough_pies: 'No te alcanzan los PIES.',
+  not_enough_shards: 'No te alcanzan los fragmentos.',
+  no_chest: 'No tenés cofres de ese tipo.',
   level_required: 'Necesitás más nivel para ese objeto.',
   not_found: 'No se encontró ese jugador.',
   too_many_requests: 'Tenés demasiadas solicitudes pendientes.',
@@ -53,8 +61,17 @@ const MESSAGES = {
   report_invalid: 'Contanos qué pasó con al menos 10 letras (máximo 2000).',
   too_many_reports: 'Llegaste al máximo de reportes por hoy. ¡Gracias por ayudar! Probá mañana.',
   not_admin: 'Solo los administradores pueden ver esto.',
+  room_not_ready: 'Todavía no se puede empezar.',
+  room_busy: 'La sala está en medio de una partida.',
+  not_in_room: 'Esta compu no está en esa sala.',
+  slot_taken: 'Ese lugar ya está ocupado.',
+  already_in_room: 'Esa cuenta ya está jugando en esta sala.',
+  host_only: 'Solo el anfitrión (la compu que creó la sala) puede hacer eso.',
+  competitive_rules: 'En COMPETITIVO no se permiten bots ni invitados: todos juegan con su cuenta.',
+  too_many_rooms: 'Creaste demasiadas salas en poco tiempo. Esperá un rato.',
 };
-export const errorText = (e) => MESSAGES[e?.code] || e?.message || 'Error inesperado.';
+// algunos errores traen el motivo exacto (por ejemplo, por qué todavía no se puede empezar)
+export const errorText = (e) => (e?.code === 'room_not_ready' && e.detail) || MESSAGES[e?.code] || e?.message || 'Error inesperado.';
 
 /** Llama a una función RPC. Lanza ApiError(code). Devuelve el JSON de la respuesta. */
 export async function rpc(fn, args = {}, { timeout = 15000, bearer = null } = {}) {
@@ -82,7 +99,9 @@ export async function rpc(fn, args = {}, { timeout = 15000, bearer = null } = {}
   }
   if (!res.ok) {
     const code = data?.message && MESSAGES[data.message] ? data.message : res.status >= 500 ? 'network' : data?.message || 'error';
-    throw new ApiError(code, data?.message || String(res.status));
+    const err = new ApiError(code, data?.message || String(res.status));
+    if (data?.details) err.detail = data.details;
+    throw err;
   }
   if (data && typeof data === 'object' && !Array.isArray(data) && data.error) throw new ApiError(data.error);
   return data;

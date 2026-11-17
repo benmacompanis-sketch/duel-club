@@ -1092,7 +1092,7 @@ export function drawCharacter(g, o) {
     const off = offCanvas(offIdx++ % 6, W2, H2);
     const og = off.g;
     og.setTransform(1, 0, 0, 1, 0, 0);
-    og.clearRect(0, 0, off.width, off.height);
+    og.clearRect(0, 0, W2 + 1, H2 + 1); // solo la zona que se usa
     og.setTransform(k, 0, 0, k, 90 * k, 170 * k);
     if (look.body) {
       og.save(); bodyTf(og, 1); og.translate(0, st.headY * 0.5);
@@ -1111,15 +1111,31 @@ export function drawCharacter(g, o) {
       skin.overlay(og, t, base);
       og.restore();
     }
-    // sombra de un corte (lado derecho-abajo) con puntos de historieta
-    og.save();
-    og.beginPath(); og.moveTo(18, -170); og.lineTo(95, -170); og.lineTo(95, 25); og.lineTo(4, 25); og.closePath();
-    og.fillStyle = 'rgba(20,10,45,0.22)';
-    og.fill();
-    og.clip();
-    og.fillStyle = halftone(og);
-    og.fillRect(-95, -170, 190, 195);
-    og.restore();
+    // SOMBRA DE BORDE (estilo historieta): sigue la forma de cada personaje por la derecha y abajo, con puntos.
+    // Antes era un corte recto por la mitad del cuerpo y parecía que cada personaje tenía dos estilos distintos.
+    // Se calcula a media resolución (4 veces menos píxeles) y se estira: no se nota y casi no cuesta.
+    {
+      const sk = k * 0.5, sw = Math.ceil(180 * sk), shh = Math.ceil(190 * sk);
+      const shd = offCanvas(8, sw, shh), sgc = shd.g;
+      sgc.setTransform(1, 0, 0, 1, 0, 0);
+      sgc.globalCompositeOperation = 'source-over';
+      sgc.clearRect(0, 0, sw + 1, shh + 1);
+      sgc.drawImage(off, 0, 0, W2, H2, 0, 0, sw, shh);
+      // se borra la silueta corrida hacia arriba a la izquierda: queda solo el borde derecho/inferior
+      sgc.globalCompositeOperation = 'destination-out';
+      sgc.drawImage(off, 0, 0, W2, H2, -13 * sk, -9 * sk, sw, shh);
+      sgc.globalCompositeOperation = 'source-in';
+      sgc.fillStyle = 'rgba(20,10,45,0.30)';
+      sgc.fillRect(0, 0, sw, shh);
+      sgc.globalCompositeOperation = 'source-atop';
+      sgc.fillStyle = halftone(sgc);
+      sgc.fillRect(0, 0, sw, shh);
+      sgc.globalCompositeOperation = 'source-over';
+      og.save();
+      og.setTransform(1, 0, 0, 1, 0, 0);
+      og.drawImage(shd, 0, 0, sw, shh, 0, 0, W2, H2);
+      og.restore();
+    }
     // brillo duro arriba a la izquierda
     og.fillStyle = 'rgba(255,255,255,0.22)';
     og.beginPath(); og.ellipse(-20, -96, 10, 18, -0.6, 0, TAU); og.fill();
@@ -1138,7 +1154,7 @@ export function drawCharacter(g, o) {
     const sg = sil.g;
     sg.setTransform(1, 0, 0, 1, 0, 0);
     sg.globalCompositeOperation = 'source-over';
-    sg.clearRect(0, 0, sil.width, sil.height);
+    sg.clearRect(0, 0, W2 + 1, H2 + 1);
     sg.drawImage(off, 0, 0);
     sg.globalCompositeOperation = 'source-in';
     sg.fillStyle = '#0D0B14';

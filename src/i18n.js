@@ -9,6 +9,80 @@ import { DATA_EN, DATA_RULES } from './i18n-data.js';
 import { ALL_ITEMS } from './data/catalog.js';
 import { STORY_EN } from './data/story.js';
 import { PUZZLE_EN } from './data/puzzles.js';
+import { CHEST_EN } from './data/chests.js';
+// textos de 2v2, SALAS, CHATS y TOP 10
+const V2_UI_EN = {
+  '2v2': '2v2', 'Amistoso o competitivo · en una compu, en varias o mezclado': 'Friendly or competitive · on one computer, several, or mixed',
+  '1 · MODALIDAD': '1 · MODE', '2 · DÓNDE JUEGAN': '2 · WHERE YOU PLAY', AMISTOSO: 'FRIENDLY', COMPETITIVO: 'COMPETITIVE',
+  'Esta partida no modifica tu ELO.': 'This match does not change your ELO.', 'Esta partida modificará tu ELO 2v2.': 'This match will change your 2v2 ELO.',
+  'Para jugar con amigos y probar minijuegos. Se puede con bots e invitados.': 'To play with friends and try minigames. Bots and guests allowed.',
+  'Cuatro personas con su cuenta, sin bots. Cambia el ELO 2v2 (separado del 1v1) y suma al ranking 2v2.': 'Four people with their own accounts, no bots. Changes your 2v2 ELO (separate from 1v1) and counts for the 2v2 ranking.',
+  'EN ESTA COMPU': 'ON THIS COMPUTER', 'Hasta 4 jugadores en el mismo teclado (o con joysticks), cada uno con su cuenta.': 'Up to 4 players on the same keyboard (or with gamepads), each with their own account.',
+  'SALA PRIVADA ONLINE': 'PRIVATE ONLINE ROOM', 'Creá una sala y pasá el código. Se puede mezclar: jugadores en esta compu, en otras compus y bots.': 'Create a room and share the code. Mix freely: players on this computer, on other computers and bots.',
+  'ENTRAR CON CÓDIGO': 'JOIN WITH CODE', ENTRAR: 'JOIN', 'CÓDIGO': 'CODE', 'BUSCAR PARTIDA': 'FIND A MATCH',
+  'Te emparejamos con rivales de ELO 2v2 parecido. Podés buscar solo o con un compañero en esta compu.': 'We match you with rivals of similar 2v2 ELO. Search alone or with a teammate on this computer.',
+  'Necesitás iniciar sesión con una cuenta (J1) para usar salas.': 'You need to log in with an account (P1) to use rooms.', 'Sin cuenta podés jugar igual en esta compu: ': 'Without an account you can still play on this computer: ',
+  'abrir el 2v2 rápido sin cuentas': 'open quick 2v2 without accounts', 'Creando la sala…': 'Creating the room…',
+  'SALA 2v2': '2v2 ROOM', 'Configurá los 4 lugares': 'Set up the 4 slots', 'Búsqueda de partida competitiva': 'Competitive matchmaking',
+  'CÓDIGO DE LA SALA': 'ROOM CODE', COPIAR: 'COPY', 'Código copiado': 'Code copied', 'EQUIPO AZUL': 'BLUE TEAM', 'EQUIPO ROJO': 'RED TEAM', LIBRE: 'EMPTY',
+  'JUGADOR DE ESTA COMPU': 'PLAYER ON THIS COMPUTER', 'El anfitrión puede poner un bot.': 'The host can add a bot.', 'Lo maneja la compu del anfitrión': 'Controlled by the host computer',
+  'Quitar del lugar': 'Remove from slot', 'OTRA CUENTA': 'ANOTHER ACCOUNT', 'INICIAR SESIÓN Y ENTRAR': 'LOG IN AND JOIN', 'JUGAR COMO INVITADO (sin cuenta)': 'PLAY AS GUEST (no account)',
+  'En COMPETITIVO no se permiten invitados.': 'Guests are not allowed in COMPETITIVE.',
+  'Cada jugador entra con SU cuenta: así suma sus propias estadísticas, PIES y ELO. Las sesiones de las demás cuentas de esta compu no se tocan.': 'Each player joins with THEIR account: that way they earn their own stats, PIES and ELO. Other accounts logged in on this computer are not affected.',
+  MINIJUEGO: 'MINIGAME', 'Lo elige el anfitrión.': 'The host picks it.', EMPEZAR: 'START', 'Esperando que el anfitrión empiece.': 'Waiting for the host to start.',
+  'BUSCAR RIVALES': 'FIND RIVALS', 'CANCELAR BÚSQUEDA': 'CANCEL SEARCH', 'SALIR DE LA SALA': 'LEAVE ROOM', '¿Salir de la sala?': 'Leave the room?',
+  'Sos el anfitrión: la sala se cierra para todos.': 'You are the host: the room closes for everyone.', 'Tus jugadores dejan sus lugares.': 'Your players leave their slots.',
+  Salir: 'Leave', Quedarme: 'Stay', 'Esta compu': 'This computer', anfitrión: 'host', 'conexión directa': 'direct connection', 'por el servidor': 'via server', 'conectando…': 'connecting…',
+  ECHAR: 'KICK', Echar: 'Kick', 'Salen todos sus jugadores.': 'All its players leave.', '¡PARTIDA ENCONTRADA!': 'MATCH FOUND!', CONFIRMAR: 'CONFIRM', 'NO, SALIR': 'NO, LEAVE',
+  'Confirmado. Esperando a los demás…': 'Confirmed. Waiting for the others…', 'RONDA ANULADA': 'ROUND VOIDED', EMPATE: 'DRAW', RESULTADO: 'RESULT',
+  'Amistoso: el ELO no cambió.': 'Friendly: ELO did not change.', '¿Empezar partida COMPETITIVA?': 'Start a COMPETITIVE match?', '¿Empezar partida AMISTOSA?': 'Start a FRIENDLY match?',
+  Empezar: 'Start', 'Todavía no': 'Not yet', '¿Salir de la partida?': 'Leave the match?', 'Seguir jugando': 'Keep playing',
+  'En COMPETITIVO, salir cuenta como abandono: tu equipo pierde.': 'In COMPETITIVE, leaving counts as abandoning: your team loses.', 'La ronda se corta para todos.': 'The round ends for everyone.',
+  'Saliste de la sala': 'You left the room', 'Sala cerrada': 'Room closed', 'El anfitrión cerró la sala.': 'The host closed the room.',
+  'Esta compu ya no está en la sala (te echaron o la sala cerró).': 'This computer is no longer in the room (you were kicked or the room closed).', 'Se cerró tu sesión.': 'Your session ended.',
+  'No cambió el ELO: hay cuentas creadas hace menos de 24 horas.': 'ELO unchanged: some accounts were created less than 24 hours ago.',
+  'No cambió el ELO: este mismo grupo ya jugó 5 partidas competitivas hoy.': 'ELO unchanged: this same group already played 5 competitive matches today.',
+  'No cambió el ELO: las compus informaron resultados distintos.': 'ELO unchanged: the computers reported different results.',
+  'La ronda no contó (corte o desincronización). No cambió el ELO de nadie.': 'The round did not count (disconnect or desync). Nobody’s ELO changed.',
+  'Faltan jugadores: tienen que estar los 4 lugares ocupados.': 'Missing players: all 4 slots must be filled.', 'Elegí un minijuego 2v2.': 'Pick a 2v2 minigame.',
+  'En COMPETITIVO no puede haber bots: cambiá a AMISTOSO o quitá el bot.': 'No bots in COMPETITIVE: switch to FRIENDLY or remove the bot.',
+  'En COMPETITIVO todos tienen que jugar con su cuenta (no se permiten invitados).': 'In COMPETITIVE everyone must play with their account (no guests).',
+  'En COMPETITIVO tienen que ser 4 cuentas distintas.': 'COMPETITIVE needs 4 different accounts.', 'Hay una compu desconectada.': 'A computer is disconnected.',
+  'Alguien no confirmó a tiempo. Podés volver a buscar.': 'Someone did not confirm in time. You can search again.', 'Una compu se desconectó durante la partida.': 'A computer disconnected during the match.',
+  'Una compu salió de la partida.': 'A computer left the match.',
+  'CHAT DE LA PARTIDA': 'MATCH CHAT', 'Escribí y apretá Enter…': 'Type and press Enter…', 'Muy rápido: esperá unos segundos.': 'Too fast: wait a few seconds.',
+  'Silenciar o reportar': 'Mute or report', 'Silenciar y reportar': 'Mute and report', 'Silenciado y reportado': 'Muted and reported', 'Necesitás una cuenta': 'You need an account',
+  'Iniciá sesión para silenciar o reportar.': 'Log in to mute or report.', 'Chat de la partida': 'Match chat', Minimizar: 'Minimize',
+  CHAT: 'CHAT', 'Chat privado': 'Private chat', 'Escribí un mensaje…': 'Write a message…', ENVIAR: 'SEND', BLOQUEAR: 'BLOCK', DESBLOQUEAR: 'UNBLOCK', SILENCIAR: 'MUTE', 'QUITAR SILENCIO': 'UNMUTE',
+  'No ver sus mensajes durante las partidas': 'Hide their messages during matches', 'Reportar este mensaje': 'Report this message', 'Reportar mensaje': 'Report message', Reportar: 'Report',
+  'Reporte enviado': 'Report sent', 'Gracias por avisar.': 'Thanks for letting us know.', 'No se envió': 'Not sent', Bloqueado: 'Blocked', Desbloqueado: 'Unblocked', Silenciado: 'Muted',
+  'Ya no está silenciado': 'No longer muted', visto: 'seen', 'Ya no son amigos: no se pueden mandar mensajes.': 'You are no longer friends: messages cannot be sent.',
+  'Hay un bloqueo entre ustedes: no se pueden mandar mensajes.': 'There is a block between you: messages cannot be sent.',
+  'No te va a poder escribir y no vas a ver sus mensajes en las partidas. Lo podés deshacer cuando quieras.': 'They won’t be able to message you and you won’t see their match messages. You can undo it anytime.',
+  'Solo podés chatear con tus amigos del CLUB.': 'You can only chat with your CLUB friends.', 'Estás mandando mensajes muy rápido. Esperá unos segundos.': 'You are sending messages too fast. Wait a few seconds.',
+  'No se puede: hay un bloqueo entre ustedes.': 'Not possible: there is a block between you.', 'Pedido inválido.': 'Invalid request.', 'No existe ese usuario.': 'That user does not exist.',
+  'Todavía no se puede empezar.': 'Cannot start yet.', 'La sala está en medio de una partida.': 'The room is in the middle of a match.', 'Esta compu no está en esa sala.': 'This computer is not in that room.',
+  'Ese lugar ya está ocupado.': 'That slot is already taken.', 'Esa cuenta ya está jugando en esta sala.': 'That account is already playing in this room.',
+  'Solo el anfitrión (la compu que creó la sala) puede hacer eso.': 'Only the host (the computer that created the room) can do that.',
+  'En COMPETITIVO no se permiten bots ni invitados: todos juegan con su cuenta.': 'No bots or guests in COMPETITIVE: everyone plays with their account.',
+  'Creaste demasiadas salas en poco tiempo. Esperá un rato.': 'You created too many rooms in a short time. Wait a while.',
+  'ELO 2v2': '2v2 ELO', 'Más jugados': 'Most played', 'Todavía no hay partidas registradas para armar el ranking.': 'There are no recorded matches yet to build the ranking.',
+  'Se abre QUICK PLAY con este minijuego para elegir opciones y dificultad.': 'Opens QUICK PLAY with this minigame to choose options and difficulty.',
+  'Amistoso o competitivo: en una compu, en varias o mezclado, con cuentas propias y bots.': 'Friendly or competitive: on one computer, several, or mixed, with your own accounts and bots.',
+};
+// textos de la interfaz de COFRES
+const CHEST_UI_EN = {
+  'Se ganan jugando. El premio lo decide el servidor y las probabilidades están a la vista.': 'Earned by playing. The server picks the prize and the odds are always visible.',
+  FRAGMENTOS: 'SHARDS', 'TUS PIES': 'YOUR PIES', ABIERTOS: 'OPENED', ABRIR: 'OPEN', 'SIN COFRES': 'NO CHESTS', 'No se vende': 'Not for sale', Probabilidades: 'Odds',
+  'CÓMO SE CONSIGUEN': 'HOW TO GET THEM', REPETIDOS: 'DUPLICATES', 'ÚLTIMOS PREMIOS': 'LATEST PRIZES', 'Todavía no abriste ningún cofre.': 'You haven’t opened any chest yet.',
+  'Si te sale algo que ya tenés no lo perdés: se convierte en PIES y fragmentos según su rareza (de 25 PIES + 1 fragmento a 2.000 PIES + 30 fragmentos). Algunos objetos son exclusivos de cofres y no se venden en la tienda.': 'If you get something you already own, you don’t lose it: it turns into PIES and shards based on its rarity (from 25 PIES + 1 shard up to 2,000 PIES + 30 shards). Some items are chest exclusives and are not sold in the store.',
+  'Los cofres se guardan en tu cuenta. Iniciá sesión para ver y abrir los tuyos.': 'Chests are saved to your account. Log in to see and open yours.',
+  '¡PASE PREMIUM!': 'PREMIUM PASS!', 'Compensación del Pase Premium': 'Premium Pass compensation', 'El premio más raro del club. Ya podés reclamar las recompensas Premium del CLUB PASS.': 'The rarest prize in the club. You can now claim the CLUB PASS Premium rewards.',
+  'EXCLUSIVO DE COFRES': 'CHEST EXCLUSIVE', '¡NUEVO! Ya está en tu inventario.': 'NEW! It’s already in your inventory.', 'Tocá para saltar la animación': 'Tap to skip the animation',
+  'ABRIR OTRO': 'OPEN ANOTHER', CERRAR: 'CLOSE', 'No te alcanzan los fragmentos.': 'You don’t have enough shards.', 'No tenés cofres de ese tipo.': 'You don’t have chests of that type.',
+  'También se consiguen jugando, sin gastar nada.': 'You can also get them by playing, for free.', Cofres: 'Chests',
+  'También puede salir en un cofre de oro (0,5 %) o mítico (2 %).': 'It can also drop from a gold (0.5%) or mythic (2%) chest.',
+};
 // textos de la interfaz de HISTORIA y PUZZLE CLUB
 const STORY_UI_EN = {
   'SIGUIENTE': 'NEXT', 'EMPEZAR': 'START', 'CONTINUAR': 'CONTINUE', 'REPETIR': 'REPLAY', 'SEGUIR': 'CONTINUE', 'BLOQUEADO': 'LOCKED', 'FINAL': 'FINAL',
@@ -438,6 +512,28 @@ const D = {
 // ------------------------------------------------------------------ reglas para textos con variables
 const N = '([\\d.,]+)';
 const RULES = [
+  // 2v2 y chats
+  [/^LUGAR (\d+)(?: · (.+))?$/, (m) => `SLOT ${m[1]}${m[2] ? ' · ' + (m[2] === 'INVITADO' ? 'GUEST' : m[2] === 'EQUIPO AZUL' ? 'BLUE TEAM' : m[2] === 'EQUIPO ROJO' ? 'RED TEAM' : m[2]) : ''}`],
+  [/^Compu de (.+)$/, (m) => `${m[1]}’s computer`], [/^COMPUS EN LA SALA \((\d)\/4\)$/, (m) => `COMPUTERS IN THE ROOM (${m[1]}/4)`],
+  [/^(\d) jugador\(es\)(.*)$/, (m) => `${m[1]} player(s)${m[2].replace(' · anfitrión', ' · host').replace(' · conexión directa', ' · direct connection').replace(' · por el servidor', ' · via server').replace(' · conectando…', ' · connecting…')}`],
+  [/^Esta compu · teclas (.+)$/, (m) => `This computer · keys ${m[1]}`], [/^ELO 2v2: (.+)$/, (m) => `2v2 ELO: ${m[1]}`], [/^BOT (FÁCIL|NORMAL|DIFÍCIL|EXPERTO)$/, (m) => `BOT ${({ 'FÁCIL': 'EASY', NORMAL: 'NORMAL', 'DIFÍCIL': 'HARD', EXPERTO: 'EXPERT' })[m[1]]}`],
+  [/^¡GANÓ EL EQUIPO (AZUL|ROJO)!$/, (m) => `${m[1] === 'AZUL' ? 'BLUE' : 'RED'} TEAM WINS!`], [/^¿Echar la compu de (.+)\?$/, (m) => `Kick ${m[1]}’s computer?`],
+  [/^Buscando rivales… \((\d+) s · el rango de ELO se abre con el tiempo\)$/, (m) => `Searching for rivals… (${m[1]} s · the ELO range widens over time)`],
+  [/^COMPETITIVO · (.+) · confirmá en (\d+) s$/, (m) => `COMPETITIVE · ${m[1]} · confirm within ${m[2]} s`], [/^2v2 (COMPETITIVO|AMISTOSO) · RONDA (\d+)$/, (m) => `2v2 ${m[1] === 'COMPETITIVO' ? 'COMPETITIVE' : 'FRIENDLY'} · ROUND ${m[2]}`],
+  [/^Esperando a: (.+)$/, (m) => `Waiting for: ${m[1]}`], [/^@(.+) · chat privado$/, (m) => `@${m[1]} · private chat`], [/^Todavía no hablaste con (.+)\. ¡Saludá!$/, (m) => `You haven’t talked to ${m[1]} yet. Say hi!`],
+  [/^¿Bloquear a (.+)\?$/, (m) => `Block ${m[1]}?`], [/^#(\d+) MÁS JUGADO$/, (m) => `#${m[1]} MOST PLAYED`], [/^(.+) partidas$/, (m) => (/^[\d.,]+$/.test(m[1]) ? `${m[1]} matches` : null)],
+  [/^Sobre (.+) partidas registradas por todos los jugadores \(se actualiza con cada partida\)\.$/, (m) => `Out of ${m[1]} matches recorded by all players (updates with every match).`],
+  [/^(.+) de (.+) ganadas · mejor (.+)$/, (m) => `${m[1]} of ${m[2]} won · best ${m[3]}`],
+  // COFRES
+  [/^ARMAR · (\d+) frag\.$/, (m) => `CRAFT · ${m[1]} shards`], [/^Usa (\d+) fragmentos$/, (m) => `Uses ${m[1]} shards`],
+  [/^Además: (\d+) % de que en lugar de un objeto salga una bolsa de PIES de esa rareza\.$/, (m) => `Also: ${m[1]}% chance of a bag of PIES of that rarity instead of an item.`],
+  [/^PASE PREMIUM: ([\d.]+) % aparte de la tabla \(si ya lo tenés, recibís una compensación especial\)\.$/, (m) => `PREMIUM PASS: ${m[1]}% on top of the table (if you already own it, you get a special compensation).`],
+  [/^repetido → \+(.+) PIES · \+(\d+) frag\.$/, (m) => `duplicate → +${m[1]} PIES · +${m[2]} shards`], [/^Bolsa de (.+) PIES$/, (m) => `Bag of ${m[1]} PIES`],
+  [/^Ya lo tenías: se convirtió en \+(.+) PIES y \+(\d+) fragmentos\.$/, (m) => `You already had it: it became +${m[1]} PIES and +${m[2]} shards.`],
+  [/^Ya lo tenías, así que recibís una compensación especial: \+(.+) PIES y \+(\d+) fragmentos\.$/, (m) => `You already had it, so you get a special compensation: +${m[1]} PIES and +${m[2]} shards.`],
+  [/^¿Comprar un (cofre de bronce|cofre de plata|cofre de oro)\?$/, (m) => `Buy a ${({ 'cofre de bronce': 'bronze', 'cofre de plata': 'silver', 'cofre de oro': 'gold' })[m[1]]} chest?`],
+  [/^Cuesta (.+) PIES\. También se consiguen jugando, sin gastar nada\.$/, (m) => `Costs ${m[1]} PIES. You can also get them by playing, for free.`],
+  [/^Armaste un cofre con (\d+) fragmentos\.$/, (m) => `You crafted a chest with ${m[1]} shards.`],
   // HISTORIA y PUZZLE CLUB
   [/^CAPÍTULO (\d+)(?: · (.+))?$/, (m) => `CHAPTER ${m[1]}${m[2] ? ' · ' + m[2] : ''}`], [/^Etapa (\d+) de (\d+) · (.+)$/, (m) => `Stage ${m[1]} of ${m[2]} · ${tr(m[3])}`],
   [/^(\d+) \/ (\d+) etapas$/, (m) => `${m[1]} / ${m[2]} stages`], [/^(\d+) \/ (\d+) resueltos$/, (m) => `${m[1]} / ${m[2]} solved`], [/^(\d+) intentos$/, (m) => `${m[1]} attempts`],
@@ -529,7 +625,7 @@ const RULES = [
   [/^(\d+) minijuegos?$/, (m) => `${m[1]} minigame${m[1] === '1' ? '' : 's'}`], [/^(\d+) rondas?$/, (m) => `${m[1]} round${m[1] === '1' ? '' : 's'}`], [/^(\d+) vidas?$/, (m) => `${m[1]} li${m[1] === '1' ? 'fe' : 'ves'}`],
 ];
 for (const [k, v] of Object.entries(DATA_EN)) if (!(k in D)) D[k] = v;
-for (const [k, v] of Object.entries({ ...STORY_EN, ...PUZZLE_EN, ...STORY_UI_EN })) if (!(k in D)) D[k] = v;
+for (const [k, v] of Object.entries({ ...STORY_EN, ...PUZZLE_EN, ...STORY_UI_EN, ...CHEST_EN, ...CHEST_UI_EN, ...V2_UI_EN })) if (!(k in D)) D[k] = v;
 // objetos generados (CLUB PASS): traen su nombre en inglés
 for (const it of ALL_ITEMS) {
   if (it.en && !(it.name in D)) D[it.name] = it.en;

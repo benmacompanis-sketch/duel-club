@@ -331,6 +331,51 @@ export class AccountService {
   async equip(p, slot, item) {
     return this._setMe(await this._call(this.slotUser(p), 'dc_equip', { p_slot: slot, p_item: item }));
   }
+  ranking2(p = 0, limit = 10) {
+    return rpc('dc_ranking2', { p_token: this.slotToken(p) || null, p_limit: limit });
+  }
+  history2(p = 0) {
+    return this._call(this.slotUser(p), 'dc_history2', {});
+  }
+  topGames() {
+    return rpc('dc_top_games', {});
+  }
+  // ------------------------------------------------------------------ chat privado, bloqueos y reportes
+  dmInbox(p = 0) {
+    return this._call(this.slotUser(p), 'dc_dm_inbox', {});
+  }
+  dmThread(p, withUser, after = null) {
+    return this._call(this.slotUser(p), 'dc_dm_thread', { p_with: withUser, p_after: after });
+  }
+  dmSend(p, to, body) {
+    return this._call(this.slotUser(p), 'dc_dm_send', { p_to: to, p_body: body });
+  }
+  blocks(p = 0) {
+    return this._call(this.slotUser(p), 'dc_blocks', {});
+  }
+  setBlock(p, user, kind, on) {
+    return this._call(this.slotUser(p), 'dc_block', { p_user: user, p_kind: kind, p_on: on });
+  }
+  chatReport(p, user, kind, msgId, body, context = null) {
+    return this._call(this.slotUser(p), 'dc_chat_report', { p_user: user, p_kind: kind, p_msg: msgId, p_body: body, p_context: context });
+  }
+  // ------------------------------------------------------------------ cofres
+  chests(p = 0) {
+    return this._call(this.slotUser(p), 'dc_chests', {});
+  }
+  async chestOpen(p, kind) {
+    const out = await this._call(this.slotUser(p), 'dc_chest_open', { p_kind: kind });
+    if (out?.me) this._setMe(out.me);
+    return out;
+  }
+  chestCraft(p, kind) {
+    return this._call(this.slotUser(p), 'dc_chest_craft', { p_kind: kind });
+  }
+  async chestBuy(p, kind) {
+    const out = await this._call(this.slotUser(p), 'dc_chest_buy', { p_kind: kind });
+    if (out?.me) this._setMe(out.me);
+    return out;
+  }
   async buy(p, item) {
     const out = await this._call(this.slotUser(p), 'dc_buy', { p_item: item });
     this._setMe(out.me);

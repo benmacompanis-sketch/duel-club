@@ -7,12 +7,13 @@ import { levelInfo, GAME_NAMES } from '../data/catalog.js';
 import { accountModal } from './accountModal.js';
 import { notificationsModal } from './notifications.js';
 import { duelSetupScreen, tournamentSetupScreen, survivalSetupScreen } from './modeSetup.js';
-import { teamSetupScreen } from './teamSetup.js';
+import { twoVTwoScreen } from './room2v2.js';
 import { quickPlayScreen } from './quickPlay.js';
 import { settingsScreen } from './settings.js';
 import { playerSelectScreen } from './playerSelect.js';
 import { storeSection } from './store.js';
 import { inventorySection } from './inventory.js';
+import { chestsSection } from './chests.js';
 import { achievementsSection } from './achievementsView.js';
 import { profileSection } from './profile.js';
 import { clubSection } from './club.js';
@@ -35,13 +36,14 @@ export const SECTIONS = [
   { id: 'stats', name: 'Estadísticas', icon: 'arrow', color: '#3DDC97' },
   { id: 'pass', name: 'Pase', icon: 'crown', color: '#FFD23F' },
   { id: 'store', name: 'PIE STORE', icon: 'pie', color: '#FF4B3E' },
+  { id: 'chests', name: 'Cofres', icon: 'star', color: '#FFB547' },
   { id: 'inventory', name: 'Inventario', icon: 'card', color: '#B98CFF' },
   { id: 'news', name: 'Novedades', icon: 'flame', color: '#25CFE6' },
   { id: 'settings', name: 'Configuración', icon: 'settings', color: '#A79FB8' },
 ];
 const RENDER = {
   home: homeSection, play: playSection, games: gamesSection, profile: profileSection, club: clubSection, ranking: rankingSection,
-  pass: passSection, store: storeSection, inventory: inventorySection, achievements: achievementsSection, stats: statsSection, news: newsSection,
+  pass: passSection, store: storeSection, chests: chestsSection, inventory: inventorySection, achievements: achievementsSection, stats: statsSection, news: newsSection,
 };
 
 /** Jugador que está "mirando" las secciones personales (J1 o J2). */
@@ -130,6 +132,29 @@ export function hubScreen(ui, params = {}) {
     if (b && newsUnseen()) b.append(h('span.sn-dot'));
   }
   renderNavDots();
+  // cantidad de cofres sin abrir (un solo pedido, un rato después de abrir el menú)
+  async function chestBadge() {
+    const b = nav.querySelector('.sn-btn[data-id="chests"]');
+    if (!b || !svc.slotAccount(ctx.viewer)) return;
+    try {
+      const d = await svc.chests(ctx.viewer);
+      const n = Object.values(d.inv || {}).reduce((a, x) => a + x, 0);
+      b.querySelector('.sn-count')?.remove();
+      if (n > 0 && !scr.disposed) b.append(h('span.sn-count', String(n)));
+    } catch {}
+  }
+  // mensajes privados sin leer (en Amigos): al abrir el menú y cada 60 s
+  async function dmBadge() {
+    const b = nav.querySelector('.sn-btn[data-id="club"]');
+    if (!b || !svc.slotAccount(ctx.viewer) || scr.disposed) return;
+    try {
+      const d = await svc.dmInbox(ctx.viewer);
+      b.querySelector('.sn-count')?.remove();
+      if (d.unread > 0 && !scr.disposed) b.append(h('span.sn-count', String(d.unread)));
+    } catch {}
+  }
+  setTimeout(() => { if (!scr.disposed) { chestBadge(); dmBadge(); } }, 1500);
+  const dmTimer = setInterval(() => { if (scr.disposed) clearInterval(dmTimer); else if (!document.hidden) dmBadge(); }, 60000);
   const content = h('div.hub-content');
 
   function open(id, p = {}, silent = false) {
@@ -239,7 +264,7 @@ function playSection(ui, owner, ctx) {
   const MODES = [
     { id: 'duel', title: 'DUEL MODE', sub: 'La competición principal: de 3 a 12 minijuegos, un campeón.', color: '#3985FF', icon: 'duel', go: () => ui.show(duelSetupScreen) },
     { id: 'quick', title: 'QUICK PLAY', sub: 'Elegí un minijuego y jugá ya. Revancha con un botón.', color: '#48D597', icon: 'quick', go: () => ui.show(quickPlayScreen) },
-    { id: 'team', title: '2v2 · EQUIPOS', sub: 'Azul contra rojo: hasta 4 personas (teclado o joysticks) o bots compañeros.', color: '#25CFE6', icon: 'duel', go: () => ui.show(teamSetupScreen) },
+    { id: 'team', title: '2v2 · EQUIPOS', sub: 'Amistoso o competitivo: en una compu, en varias o mezclado, con cuentas propias y bots.', color: '#25CFE6', icon: 'duel', go: () => ui.show(twoVTwoScreen) },
     { id: 'tournament', title: 'TOURNAMENT', sub: 'Rondas, clasificación y una gran final que vale doble.', color: '#9B6CFF', icon: 'tournament', go: () => ui.show(tournamentSetupScreen) },
     { id: 'survival', title: 'SURVIVAL', sub: 'Vidas, etapas y dificultad que no para de subir.', color: '#FF654F', icon: 'survival', go: () => ui.show(survivalSetupScreen) },
   ];

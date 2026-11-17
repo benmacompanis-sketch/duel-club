@@ -11,6 +11,8 @@ const DECO = {
   ondas: (c) => `radial-gradient(circle at 50% 120%, transparent 30%, ${c} 31% 34%, transparent 35% 44%, ${c} 45% 48%, transparent 49% 58%, ${c} 59% 62%, transparent 63%)`,
   estrellas: (c) => `radial-gradient(circle at 20% 30%, ${c} 0 2px, transparent 3px), radial-gradient(circle at 70% 60%, ${c} 0 2px, transparent 3px), radial-gradient(circle at 45% 80%, ${c} 0 1.5px, transparent 2.5px), radial-gradient(circle at 85% 15%, ${c} 0 1.5px, transparent 2.5px)`,
   damero: (c) => `conic-gradient(${c} 25%, transparent 0 50%, ${c} 0 75%, transparent 0) 0 0 / 22px 22px`,
+  // holográfico (exclusivo de cofres): arcoíris suave en diagonal sobre la paleta
+  holo: () => `linear-gradient(115deg, rgba(255,90,200,.28), rgba(90,200,255,.28) 30%, rgba(160,255,120,.24) 55%, rgba(255,230,90,.28) 80%, rgba(255,90,200,.28)), repeating-linear-gradient(115deg, rgba(255,255,255,.14) 0 2px, transparent 2px 7px)`,
   vinetas: (c) => `linear-gradient(100deg, transparent 38%, ${c} 38% 40%, transparent 40%), linear-gradient(80deg, transparent 68%, ${c} 68% 70%, transparent 70%), linear-gradient(170deg, transparent 55%, ${c} 55% 57%, transparent 57%)`,
 };
 const hexA = (hex, a) => {
@@ -34,6 +36,7 @@ export function installClubStyles() {
         doble: `border:5px double ${edge};box-shadow:0 0 0 2px #0D0B14`,
         punteado: `border:4px dotted ${c1};box-shadow:0 0 0 2px ${c2}`,
         brillo: `border:3px solid ${edge};box-shadow:0 0 12px ${c1},inset 0 0 8px ${c1};animation:flick 1.1s infinite alternate`,
+        holo: `border:4px solid transparent;background:conic-gradient(from 0deg,${c1},#ff5ac8,#5ac8ff,#a0ff78,#ffe65a,${c1}) border-box;-webkit-mask:linear-gradient(#000 0 0) padding-box exclude,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) padding-box exclude,linear-gradient(#000 0 0);box-shadow:0 0 0 2px #0D0B14`,
       }[it.style] || `border:3px solid ${c1}`;
       css.push(`.fr-${it.id}::after{${b}}`);
     }

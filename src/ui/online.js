@@ -1,6 +1,7 @@
 // JUGAR ONLINE: cada jugador en su compu.
 // Menú (buscar rival por ELO, crear sala con código, entrar con código, desafiar a un amigo), esperas,
 // presentación de cada ronda, resultados confirmados por el servidor, final de la serie y revancha.
+import { mountMatchChat } from './matchChat.js';
 import { h, icon, keycap } from './dom.js';
 import { header, segGroup, toggleRow, gameIcon } from './widgets.js';
 import { profileCard, avatar, lookOf, resist, levelBadge, empty, loading, errorBox, fmtN, gameChip, timeAgo } from './kit.js';
@@ -355,6 +356,14 @@ export async function runOnline(app, user, view, { rejoin = false } = {}) {
   if (app.online) app.online.close();
   ui.closeAllModals();
   const match = (app.online = new OnlineMatch(app, { user, view }));
+  // chat de la partida 1v1: solo los dos jugadores (viaja por la misma conexión que las teclas)
+  const meAcc = app.accounts.cache.get(user);
+  const chat = mountMatchChat(app, {
+    authors: () => [{ name: meAcc?.name || user, username: user, p: app.accounts.slotUser(1) === user ? 1 : 0 }],
+    send: (a, t) => match.sendChat(a, t),
+    subscribe: (fn) => match.onChat(fn),
+    context: `serie ${view.id}`,
+  });
   const starting = match.start({ rejoin });
   const applied = new Set();
   const applyOut = (r) => {
@@ -434,6 +443,7 @@ export async function runOnline(app, user, view, { rejoin = false } = {}) {
   } finally {
     match.round?.dispose();
     if (app.runner.active) app.runner.close();
+    chat.destroy();
     match.close();
     if (app.online === match) app.online = null;
   }

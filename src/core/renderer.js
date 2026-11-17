@@ -33,6 +33,7 @@ export class Renderer {
     }
     this.bgCanvas.width = Math.round(vw * this.dpr);
     this.bgCanvas.height = Math.round(vh * this.dpr);
+    if (this.bgFx) this.bgFx.drawnKey = null; // al cambiar el tamaño el lienzo se borra: hay que repintar el fondo
     this.vw = vw;
     this.vh = vh;
   }
@@ -63,9 +64,13 @@ export class Renderer {
 
   renderOverlay(dt) {
     const g = this.fxg;
+    const on = this.overlayFx.active();
+    // capa de efectos vacía: no se toca (borrarla igual en cada cuadro obligaba a recomponer la pantalla)
+    if (!on && !this.fxDirty) return;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, this.fxCanvas.width, this.fxCanvas.height);
-    if (!this.overlayFx.active()) return;
+    this.fxDirty = !!on;
+    if (!on) return;
     g.setTransform(this.scale * this.dpr, 0, 0, this.scale * this.dpr, 0, 0);
     this.overlayFx.update(dt);
     this.overlayFx.render(g);
@@ -137,6 +142,12 @@ class Background {
     if (quality.animations) this.t += dt;
     this.tint = lerp(this.tint, mode === 'game' ? 1 : 0, Math.min(1, dt * 3));
     if (!this.page || this.page.w !== w || this.page.h !== h) this.page = { w, h, c: this.buildPage(w, h) };
+    // el fondo es quieto: solo se vuelve a pintar si cambió el tamaño o el oscurecido (menú ↔ juego).
+    // Antes se repintaba la pantalla entera 60 veces por segundo y era lo que más gastaba en los menús.
+    const key = `${w}x${h}:${Math.round(this.tint * 200)}`;
+    if (this.drawnKey === key && this.drawnOn === g) return;
+    this.drawnKey = key; this.drawnOn = g;
+    g.clearRect(0, 0, w, h);
     g.drawImage(this.page.c, 0, 0, w, h);
     // atenuado para que la interfaz se lea (más oscuro durante los minijuegos)
     g.fillStyle = `rgba(16,12,26,${0.38 + this.tint * 0.42})`;

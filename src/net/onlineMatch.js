@@ -165,6 +165,16 @@ export class OnlineMatch {
       this.rejoinAnswer?.(m);
       return;
     }
+    if (m.t === 'c') {
+      // chat: texto plano y como mucho 5 mensajes cada 10 s (aunque la otra compu esté modificada)
+      const now = performance.now();
+      this.chatTimes = (this.chatTimes || []).filter((t) => now - t < 10000);
+      if (this.chatTimes.length >= 5) return;
+      this.chatTimes.push(now);
+      const msg = { from: String(m.n || '').slice(0, 24), user: String(m.u || '').slice(0, 24), text: String(m.x || '').slice(0, 200) };
+      for (const fn of this.chatFns || []) fn(msg);
+      return;
+    }
     if (typeof m.r !== 'number') return;
     if (this.round && m.r === this.round.r) this.round.onMessage(m);
     else if (!this.round || m.r > this.round.r) {
@@ -173,6 +183,14 @@ export class OnlineMatch {
     }
   }
 
+  onChat(fn) {
+    (this.chatFns ||= new Set()).add(fn);
+    return () => this.chatFns.delete(fn);
+  }
+  sendChat(author, text) {
+    this.link?.send({ t: 'c', n: author.name, u: author.username || '', x: text });
+    for (const fn of this.chatFns || []) fn({ from: author.name, user: author.username || '', text, mine: true });
+  }
   /** Latencia que se muestra (la de la ronda si está corriendo). */
   get ping() {
     const r = this.round?.rtt ?? this.rtt;

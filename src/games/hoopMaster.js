@@ -3,7 +3,7 @@
 // y soltá para lanzar. Tiros lejanos valen 3, los limpios suman bonus y el aro termina moviéndose.
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, lerp, text, panel, rgba, roundRect, glowCircle, quality, shade, ease } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, lerp, text, panel, rgba, roundRect, glowCircle, quality, shade, ease, cachedLayer } from '../core/utils.js';
 
 const FLOOR = 640, BR = 14, RIM = 46, RIMR = 5;
 const BOARD_TOP = 160, BOARD_BOT = 62; // tablero doble: desde hoop.y-160 hasta hoop.y-62 (deja pasar la pelota por debajo)
@@ -279,45 +279,44 @@ export default class HoopMaster extends BaseGame {
   ghostScore(p) { return this.score[p]; }
   render(g) {
     const t = this.realTime;
-    // gimnasio nocturno
-    const bg = g.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#141A3A');
-    bg.addColorStop(1, '#0C1028');
-    g.fillStyle = bg;
-    g.fillRect(0, 0, W, H);
-    for (let i = 0; i < 6; i++) {
-      glowCircle(g, 120 + i * 210, 110, 120, '#9B6CFF', 0.25);
-      g.fillStyle = 'rgba(246,247,251,0.6)';
-      g.fillRect(100 + i * 210, 98, 40, 6);
-    }
-    // gradas
+    // gimnasio nocturno + cancha + marcas: es todo quieto → se arma una vez y se copia (ver cachedLayer)
+    cachedLayer(g, 'hoop:gym', (cg) => {
+      const bg = cg.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#141A3A');
+      bg.addColorStop(1, '#0C1028');
+      cg.fillStyle = bg;
+      cg.fillRect(0, 0, W, H);
+      for (let i = 0; i < 6; i++) {
+        glowCircle(cg, 120 + i * 210, 110, 120, '#9B6CFF', 0.25);
+        cg.fillStyle = 'rgba(246,247,251,0.6)';
+        cg.fillRect(100 + i * 210, 98, 40, 6);
+      }
+      for (let r = 0; r < 4; r++) { cg.fillStyle = r % 2 ? '#161D40' : '#19214A'; cg.fillRect(0, 400 + r * 30, W, 30); }
+      const fl = cg.createLinearGradient(0, FLOOR, 0, H);
+      fl.addColorStop(0, '#C97B3E');
+      fl.addColorStop(1, '#8A4E25');
+      cg.fillStyle = fl;
+      cg.fillRect(0, FLOOR, W, H - FLOOR);
+      cg.strokeStyle = 'rgba(255,255,255,0.12)';
+      cg.lineWidth = 2;
+      for (let x = 0; x < W; x += 64) { cg.beginPath(); cg.moveTo(x, FLOOR); cg.lineTo(x - 30, H); cg.stroke(); }
+      for (const p of [0, 1]) {
+        SPOTS.forEach((d, i) => {
+          const x = this.spotX(p, i);
+          cg.fillStyle = i === 2 ? '#FFC93C' : 'rgba(246,247,251,0.6)';
+          cg.fillRect(x - 20, FLOOR + 6, 40, 5);
+          text(cg, i === 2 ? '3 PTS' : '2 PTS', x, FLOOR + 30, { size: 12, body: true, weight: 800, color: i === 2 ? '#FFC93C' : 'rgba(246,247,251,0.6)' });
+        });
+      }
+    });
+    // público (se mueve)
     for (let r = 0; r < 4; r++) {
-      g.fillStyle = r % 2 ? '#161D40' : '#19214A';
-      g.fillRect(0, 400 + r * 30, W, 30);
       for (let i = 0; i < 40; i++) {
         const x = i * 34 + (r % 2) * 17;
         const bob = Math.sin(t * 3 + i + r) * 2;
         g.fillStyle = ['#2B3566', '#3B2E66', '#2E4B66'][(i + r) % 3];
         g.beginPath(); g.arc(x, 410 + r * 30 + bob, 9, 0, TAU); g.fill();
       }
-    }
-    // cancha
-    const fl = g.createLinearGradient(0, FLOOR, 0, H);
-    fl.addColorStop(0, '#C97B3E');
-    fl.addColorStop(1, '#8A4E25');
-    g.fillStyle = fl;
-    g.fillRect(0, FLOOR, W, H - FLOOR);
-    g.strokeStyle = 'rgba(255,255,255,0.12)';
-    g.lineWidth = 2;
-    for (let x = 0; x < W; x += 64) { g.beginPath(); g.moveTo(x, FLOOR); g.lineTo(x - 30, H); g.stroke(); }
-    // marcas de distancia
-    for (const p of [0, 1]) {
-      SPOTS.forEach((d, i) => {
-        const x = this.spotX(p, i);
-        g.fillStyle = i === 2 ? '#FFC93C' : 'rgba(246,247,251,0.6)';
-        g.fillRect(x - 20, FLOOR + 6, 40, 5);
-        text(g, i === 2 ? '3 PTS' : '2 PTS', x, FLOOR + 30, { size: 12, body: true, weight: 800, color: i === 2 ? '#FFC93C' : 'rgba(246,247,251,0.6)' });
-      });
     }
     this.drawHoop(g, t);
     for (const bl of this.blockers) {

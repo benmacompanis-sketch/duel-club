@@ -13,7 +13,7 @@ export const CLUB = {
   xpBase: 150, // XP del nivel 1 al 2
   xpGrowth: 3, // cada nivel pide 3 XP más que el anterior
   prestigeXp: 900, // cada nivel de prestigio (después del 250)
-  premiumPrice: 3000,
+  premiumPrice: 6000,
 };
 
 /** XP total necesaria para llegar al nivel L (L ≥ 1). */

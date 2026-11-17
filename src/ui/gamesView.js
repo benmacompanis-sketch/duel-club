@@ -15,16 +15,27 @@ export function gamesSection(ui, owner, ctx) {
   const detail = h('div.gv-detail');
   let sel = ctx.params.game || GAMES[0].meta.id;
   let records = {};
-  const grid = h('div.gv-grid', GAMES.map((G) => {
+  // PÁGINA DE HISTORIETA: cada minijuego es una viñeta con su color, su dibujo y su fondo (puntos, líneas de acción,
+  // rayas o cuadrícula), con borde de tinta y calles blancas entre viñetas
+  const grid = h('div.gv-grid', GAMES.map((G, i) => {
     const m = G.meta;
     const ms = me?.mastery?.[m.id];
-    return h('button.gv-card', { nav: true, dataset: { id: m.id }, style: { '--gc': GAME_COLORS[m.id] || m.color || '#9B6CFF' }, onclick: () => { sel = m.id; app.audio.play('click'); renderDetail(); mark(); } },
-      gameIcon(ui, owner, m, 64),
-      h('b', m.name),
-      h('small', m.category || ''),
-      me ? h('span.gv-rank', { style: { color: MASTERY_COLORS[ms?.rank || 0] } }, MASTERY_NAMES[ms?.rank || 0]) : null,
+    return h('button.gv-card.pat' + (i % 4), { nav: true, dataset: { id: m.id }, style: { '--gc': GAME_COLORS[m.id] || m.color || '#9B6CFF' }, onclick: () => { sel = m.id; app.audio.play('click'); renderDetail(); mark(); } },
+      h('span.gv-burst'),
+      gameIcon(ui, owner, m, 72),
+      h('b.gv-cap', m.name),
+      h('small.gv-cat', m.category || ''),
+      me ? h('span.gv-rank', { style: { '--rc': MASTERY_COLORS[ms?.rank || 0] } }, MASTERY_NAMES[ms?.rank || 0]) : null,
       m.isNew ? h('span.gv-new', 'NUEVO') : null);
   }));
+  // los 3 más jugados de todo el club (datos reales del servidor)
+  svc.topGames().then((t) => {
+    if (owner.disposed) return;
+    for (const r of t.rows.slice(0, 3)) {
+      const c = grid.querySelector(`.gv-card[data-id="${r.game}"]`);
+      if (c && !c.querySelector('.gv-top')) c.append(h('span.gv-top', `#${r.pos} MÁS JUGADO`));
+    }
+  }).catch(() => {});
   const mark = () => grid.querySelectorAll('.gv-card').forEach((b) => b.classList.toggle('on', b.dataset.id === sel));
   function renderDetail() {
     const G = GAMES.find((x) => x.meta.id === sel);
@@ -59,7 +70,7 @@ export function gamesSection(ui, owner, ctx) {
           })))),
       h('div.row',
         h('button.btn.primary.big', { nav: true, onclick: () => { app.audio.play('confirm'); ui.show(quickPlayScreen, { selected: m.id }); } }, icon('play'), 'JUGAR'),
-        h('p.muted.small', 'Se abre QUICK PLAY con este minijuego para elegir opciones y dificultad.')));
+        h('p.gv-hint', 'Se abre QUICK PLAY con este minijuego para elegir opciones y dificultad.')));
   }
   svc.worldRecords().then((r) => {
     records = Object.fromEntries(r.map((x) => [x.game, x]));

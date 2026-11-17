@@ -79,6 +79,7 @@ export const ICONS = {
   hair: I('<path d="M4 20C8 14 9 8 8 3M12 20c2-6 2-11 1-17M20 20c-3-5-4-10-3-16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>'),
   arrow: I('<path d="M3 17l6-6 4 4 8-8M15 7h6v6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'),
   bolt: I('<path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="currentColor"/>'),
+  chat: I('<path d="M4 4h16v11H9l-5 4z" fill="currentColor"/><path d="M8 8.5h8M8 11.5h5" stroke="#0D0B14" stroke-width="1.8" stroke-linecap="round"/>'),
   flag: I('<path d="M5 21V3h2v1h12l-3 5 3 5H7v7z" fill="currentColor"/>'),
   shield: I('<path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z" fill="currentColor"/>'),
   boot: I('<path d="M6 3h6v9l7 3a3 3 0 012 3v2H4v-3l2-1z" fill="currentColor"/>'),

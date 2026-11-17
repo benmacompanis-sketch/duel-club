@@ -4,7 +4,7 @@
 import { FX } from '../core/renderer.js';
 import { PlayerInput } from '../core/inputManager.js';
 import { drawPortrait } from '../core/characters.js';
-import { W, H, text, panel, rgba, fmtTime, clamp, PALETTE, roundRect, quality, shade, burst, comicPanel, halftone, mix } from '../core/utils.js';
+import { W, H, text, panel, rgba, fmtTime, clamp, PALETTE, roundRect, quality, shade, burst, comicPanel, halftone, mix, cachedLayer } from '../core/utils.js';
 
 export class BaseGame {
   constructor(app, opts) {
@@ -160,30 +160,29 @@ export class BaseGame {
 
   /** Fondo de arena genérico con viñeta. */
   arenaBG(g, c1 = '#0F1630', c2 = '#0B1020') {
-    // cada minijuego tiñe su fondo con su color (misma familia de historieta, paletas distintas)
+    // cada minijuego tiñe su fondo con su color (misma familia de historieta, paletas distintas).
+    // Es quieto: se arma una vez por tamaño de pantalla y después se copia (ver cachedLayer).
     const tint = this.meta?.color || '#9B6CFF';
-    c1 = mix(c1, tint, 0.38);
-    c2 = mix(c2, tint, 0.22);
-    const grad = g.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, c1);
-    grad.addColorStop(1, c2);
-    g.fillStyle = grad;
-    g.fillRect(0, 0, W, H);
-    // historieta: tramado de puntos con el color del minijuego y líneas de acción desde el centro
-    const mc = this.meta?.color || '#9B6CFF';
-    g.fillStyle = halftone(g, rgba(mc, 0.16), 12, 2.2);
-    g.fillRect(0, 0, W, H);
-    g.save();
-    g.strokeStyle = 'rgba(13,11,20,0.35)';
-    g.lineWidth = 3;
-    g.beginPath();
-    for (let i = 0; i < 18; i++) {
-      const a = (i / 18) * Math.PI * 2 + 0.13;
-      g.moveTo(W / 2 + Math.cos(a) * 420, H / 2 + Math.sin(a) * 300);
-      g.lineTo(W / 2 + Math.cos(a) * 900, H / 2 + Math.sin(a) * 700);
-    }
-    g.stroke();
-    g.restore();
+    cachedLayer(g, `arena:${tint}:${c1}:${c2}`, (cg) => {
+      const a = mix(c1, tint, 0.38), b = mix(c2, tint, 0.22);
+      const grad = cg.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, a);
+      grad.addColorStop(1, b);
+      cg.fillStyle = grad;
+      cg.fillRect(0, 0, W, H);
+      // historieta: tramado de puntos con el color del minijuego y líneas de acción desde el centro
+      cg.fillStyle = halftone(cg, rgba(tint, 0.16), 12, 2.2);
+      cg.fillRect(0, 0, W, H);
+      cg.strokeStyle = 'rgba(13,11,20,0.35)';
+      cg.lineWidth = 3;
+      cg.beginPath();
+      for (let i = 0; i < 18; i++) {
+        const ang = (i / 18) * Math.PI * 2 + 0.13;
+        cg.moveTo(W / 2 + Math.cos(ang) * 420, H / 2 + Math.sin(ang) * 300);
+        cg.lineTo(W / 2 + Math.cos(ang) * 900, H / 2 + Math.sin(ang) * 700);
+      }
+      cg.stroke();
+    });
   }
   vignette(g) {
     const r = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95);

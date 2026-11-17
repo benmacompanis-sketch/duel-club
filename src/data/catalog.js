@@ -4,13 +4,16 @@
 
 import { SEASONS, ITEM_PASS_LEVEL } from './pass.js';
 
+import { CHEST_ITEMS } from './chests.js';
+
+// Precios por rareza (v6): conseguir algo especial requiere jugar y ahorrar. Ingreso real medido: ~740 PIES por día activo.
 export const RARITIES = {
-  common: { name: 'Común', color: '#A7B0C8', price: 100, order: 0 },
-  uncommon: { name: 'Poco común', color: '#48D597', price: 250, order: 1 },
-  rare: { name: 'Raro', color: '#3985FF', price: 500, order: 2 },
-  epic: { name: 'Épico', color: '#9B6CFF', price: 1000, order: 3 },
-  legendary: { name: 'Legendario', color: '#FFD16B', price: 2200, order: 4 },
-  mythic: { name: 'Mítico', color: '#FF3B5C', price: 5000, order: 5 },
+  common: { name: 'Común', color: '#A7B0C8', price: 200, order: 0 },
+  uncommon: { name: 'Poco común', color: '#48D597', price: 500, order: 1 },
+  rare: { name: 'Raro', color: '#3985FF', price: 1200, order: 2 },
+  epic: { name: 'Épico', color: '#9B6CFF', price: 3000, order: 3 },
+  legendary: { name: 'Legendario', color: '#FFD16B', price: 7000, order: 4 },
+  mythic: { name: 'Mítico', color: '#FF3B5C', price: 15000, order: 5 },
 };
 
 export const CATEGORIES = {
@@ -349,7 +352,7 @@ export const PASS_ITEMS = SEASONS.flatMap((se) => Object.entries(se.items).map((
   ({ id, category, rarity, name, desc, unlock: ITEM_PASS_LEVEL[id] ? `CLUB PASS · Nivel ${ITEM_PASS_LEVEL[id].level}${ITEM_PASS_LEVEL[id].track === 'premium' ? ' · Premium' : ''}` : 'CLUB PASS · Prestigio', sale: false, pass: 'club',
     ...(x ? { palette: x.palette, pattern: x.pattern, style: x.style, text: x.text, en: x.en, textEn: x.textEn } : {}) })));
 
-export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS, ...PASS_ITEMS, ...CREATOR_ITEMS].map((x) => {
+export const ALL_ITEMS = [...ITEMS, ...TITLES, ...MASTERY_ITEMS, ...PASS_ITEMS, ...CREATOR_ITEMS, ...CHEST_ITEMS].map((x) => {
   const sale = x.sale && !ACH_ONLY.has(x.id);
   return { ...x, sale, exclusive: !sale && !x.default, price: sale ? RARITIES[x.rarity].price : null };
 });

@@ -243,6 +243,30 @@ export function comicPanel(g, x, y, w, h, fill, o = {}) {
 }
 const htCache = new Map();
 /** Patrón de tramado de puntos (se cachea por color). */
+/**
+ * Capa QUIETA de pantalla completa (fondo del escenario, textura de puntos): se dibuja una sola vez a la resolución
+ * real de la pantalla y después solo se copia. Rellenar con un patrón toda la pantalla en cada cuadro era lo que más
+ * gastaba en los celulares (millones de píxeles por cuadro en pantallas de alta densidad).
+ */
+const LAYERS = new Map();
+export function cachedLayer(g, key, draw) {
+  const t = g.getTransform();
+  const sx = Math.hypot(t.a, t.b) || 1;
+  const k = key + '@' + sx.toFixed(3);
+  let c = LAYERS.get(k);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(W * sx));
+    c.height = Math.max(1, Math.round(H * sx));
+    const cg = c.getContext('2d');
+    cg.scale(c.width / W, c.height / H);
+    draw(cg);
+    if (LAYERS.size > 12) LAYERS.delete(LAYERS.keys().next().value);
+    LAYERS.set(k, c);
+  }
+  g.drawImage(c, 0, 0, W, H);
+}
+
 export function halftone(g, color = 'rgba(13,11,20,0.2)', step = 9, r = 1.9) {
   const key = color + step + r;
   let pat = htCache.get(key);

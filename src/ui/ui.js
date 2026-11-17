@@ -70,7 +70,7 @@ export class UI {
     const el = old.el;
     el.classList.add('leave');
     el.style.pointerEvents = 'none';
-    setTimeout(() => el.remove(), quality.animations ? 260 : 0);
+    setTimeout(() => el.remove(), quality.animations ? 140 : 0);
   }
   clear() {
     this.closeAllModals();
@@ -220,10 +220,16 @@ export class UI {
     this.t += dt;
     const r = this.app.renderer;
     const px = r.scale * r.dpr;
-    // con muchas vistas previas en pantalla se animan a menos cuadros por segundo (siguen fluidas, gastan mucho menos)
+    // MODO LIVIANO AUTOMÁTICO: si la compu o el celu no llega a ~33 cuadros por segundo en los menús,
+    // los personajes de los menús se animan más lento y solo los primeros 4 visibles (se mide sin parar).
+    this.ema = this.ema == null ? dt : this.ema * 0.96 + Math.min(dt, 0.2) * 0.04;
+    if (!this.slow && this.ema > 0.03 && this.t > 3) this.slow = true;
+    else if (this.slow && this.ema < 0.018) this.slow = false;
+    // los personajes de los menús se dibujan a 20 cuadros por segundo (de sobra para un saludo o un salto chiquito)
     let vis = 0;
     for (const p of this.previews) if (p.visible && !p.static) vis++;
-    const step = vis > 24 ? 1 / 12 : vis > 8 ? 1 / 24 : 0;
+    const step = this.slow ? 1 / 10 : vis > 24 ? 1 / 12 : 1 / 20;
+    let live = 0, first = 0;
     for (const p of this.previews) {
       if (p.owner.disposed) {
         this.previews.delete(p);
@@ -245,6 +251,9 @@ export class UI {
         p.host.addEventListener('blur', () => { p.hover = false; });
       }
       if (vis > 10 && p.px && p.drawn && !p.hover) continue;
+      if (this.slow && p.px && p.drawn && !p.hover && ++live > 4) continue;
+      // al abrir una pantalla con muchas vistas previas, se dibujan de a 3 por cuadro: la pantalla aparece al instante
+      if (!p.drawn && ++first > 3) continue;
       p.acc += dt;
       if (step && p.px && p.acc < step && !p.hover) continue;
       p.acc = 0;
