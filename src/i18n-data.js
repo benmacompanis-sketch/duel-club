@@ -168,6 +168,7 @@ export const DATA_EN = {
   '2v2 en 6 minijuegos: Pong, Color Control, Target Panic, Turbo Tennis (dobles), Blast Zone y Micro Race.': '2v2 in 6 minigames: Pong, Color Control, Target Panic, Turbo Tennis (doubles), Blast Zone and Micro Race.',
   'INSIGNIAS: un escudito al lado de tu nombre (8 en la tienda y 8 exclusivas de cofres).': 'BADGES: a little shield next to your name (8 in the store and 8 chest exclusives).',
   'Fish Frenzy y Block Battle se dibujan más livianos.': 'Fish Frenzy and Block Battle are lighter to draw.',
+  'Duel Arena: el bot Fácil le ganaba al Normal (por eso costaba tanto). Ahora cada nivel es más fácil que el siguiente.': 'Duel Arena: the Easy bot used to beat Normal (that is why it felt so hard). Now each level is easier than the next.',
   'Todo más prolijo': 'Everything tidier', 'Una pasada de prolijidad por todo el juego y bots más fáciles.': 'A tidy-up pass over the whole game and easier bots.',
   'El fondo de historieta tiene calles blancas parejas entre todas las viñetas.': 'The comic background has even white gutters between all panels.',
   'Minijuegos favoritos del perfil: nombre del juego entero, números grandes y "1 victoria" bien escrito.': 'Profile favorite minigames: full game name, big numbers and correct singular/plural.',

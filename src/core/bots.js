@@ -610,7 +610,9 @@ const BRAINS = {
     const face = dx > 0 ? 'right' : 'left';
     // defensa: si el rival está pegando cerca, bloquear (con reacción; los buenos a veces hacen parry)
     const threat = O.atk && ad < 100 && O.atk.t < O.atk.start;
-    if (threat && F.ground && !F.atk && b.every('blkd', 0.35, () => R() < (1 - b.L.noise) * 0.55)) { w.add('b'); return; }
+    // (v6.1) antes Fácil y Normal no bloqueaban nunca; ahora cada nivel bloquea un poco más que el anterior
+    const blockP = clamp(0.95 - 0.55 * b.L.noise, 0, 0.85);
+    if (threat && F.ground && !F.atk && b.every('blkd', 0.35, () => R() < blockP)) { w.add('b'); return; }
     // especial a distancia
     if (F.en >= 50 && F.specCd <= 0 && ad > 220 && F.ground && b.every('sp', 0.5, () => R() < 0.4)) { w.add('down'); w.add('a'); return; }
     // acercarse a distancia de golpe
@@ -618,7 +620,9 @@ const BRAINS = {
     if (ad > want + 12) w.add(face);
     else if (ad < want - 30) w.add(face === 'right' ? 'left' : 'right');
     // atacar: combos con ritmo según la dificultad
-    if (ad < 82 && Math.abs(O.y - F.y) < 60) b.tap(w, 'a', 0.11 + (1 - b.L.speed) * 0.4);
+    // (v6.1) los fáciles dudan: cada tanto deciden si se animan a pegar (antes pegaban siempre y el Fácil le ganaba al Normal)
+    const brave = b.every('brave', 0.3 + (1 - b.L.speed) * 0.6, () => R() < 0.25 + 0.75 * b.L.hit);
+    if (brave && ad < 82 && Math.abs(O.y - F.y) < 60) b.tap(w, 'a', 0.11 + (1 - b.L.speed) * 0.4);
     // saltos de vez en cuando (y patada aérea)
     if (F.ground && b.every('jmp', 1.2, () => R() < 0.15)) w.add('up');
     if (!F.ground && ad < 90 && !F.airUsed) b.tap(w, 'a', 0.3);

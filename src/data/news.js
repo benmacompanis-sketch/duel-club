@@ -23,6 +23,7 @@ export const NEWS = [
         'El numerito de COFRES se actualiza apenas abrís uno y ya no se encima con la flecha del menú.',
         'La barra de progreso de cada logro ya no corta el "0 / 1".',
         'La vista previa de los títulos en PRÓXIMAS RECOMPENSAS del pase ya no se sale de su lugar.',
+        'Duel Arena: el bot Fácil le ganaba al Normal (por eso costaba tanto). Ahora cada nivel es más fácil que el siguiente.',
       ] },
     ],
   },
