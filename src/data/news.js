@@ -4,6 +4,33 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-18-v6-2',
+    date: '2026-11-18',
+    version: '6.2',
+    title: 'Minijuegos renovados',
+    tag: 'v6.2',
+    color: '#FF3B5C',
+    intro: 'Los 16 minijuegos se ven mucho mejor y varios se juegan distinto.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        'Blast Zone: escudos para agarrar (si estás lleno, te dan una estrella invencible), empujones más fuertes y un arranque más tranquilo.',
+        'Last Platform: 2 vidas por ronda; si te caés, volvés en una nube.',
+        'Duel Arena: contador de combos y cámara que sigue la pelea.',
+        'Pausa de impacto en los golpes fuertes: cada golpe se siente.',
+      ] },
+      { kind: 'mejora', items: [
+        'Carteles de historieta para los anuncios (ganó la ronda, ¡GOL!, ¡FALTA!, cambios de fase).',
+        'Duel Arena: personajes más grandes, escenarios de historieta y marcador nuevo.',
+        'Turbo Tennis: estadio con público, cancha y cámara más cerca.',
+        'Pong Chaos: mesa de juego nueva, paletas gruesas con la cara de cada jugador y pelota en llamas al hacer smash.',
+        'Target Panic: galería de tiro de feria con toldo, cortinas y blancos de madera.',
+        'Shadow Sneak: el laberinto se adivina en la oscuridad, más luz y personajes más grandes.',
+        'Micro Race: pista con pianos, pasto, árboles y autos con contorno.',
+        'Color Control, Beat Battle, Tower Climb, Reaction Rush y Memory War con detalles de historieta.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-18-v6-1',
     date: '2026-11-18',
     version: '6.1',

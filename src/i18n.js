@@ -636,6 +636,9 @@ const RULES = [
   [/^Guardado local: (.+) · Servidor: (.+)$/, (m) => `Local save: ${m[1] === 'disponible' ? 'available' : tr(m[1])} · Server: ${tr(m[2])}`],
   [/^VOS · (.+)$/, (m) => `YOU · ${m[1].replace('SERVIDOR', 'SERVER')}`], [/^Victoria (\d) · Empate (\d)$/, (m) => `Win ${m[1]} · Draw ${m[2]}`], [/^(\d+) N EN LÍNEA$/, (m) => `${m[1]} ONLINE`], [/^(.+) EN LÍNEA$/, (m) => `${m[1]} ONLINE`],
   [/^\+(.+) XP · \+(.+) PIES(.*)$/, (m) => `+${m[1]} XP · +${m[2]} PIES${m[3]}`], [/^(\d+) ganadas?$/, (m) => `${m[1]} won`], [/^(\d+) partidas?$/, (m) => `${m[1]} match${m[1] === '1' ? '' : 'es'}`],
+  [/^¡(.+) GANA LA RONDA!$/, (m) => `${m[1]} WINS THE ROUND!`], [/^(\d+) GOLPES$/, (m) => `${m[1]} HITS`], [/^RONDA (\d+) · (.+)$/, (m) => `ROUND ${m[1]} · ${m[2]}`],
+  [/^(\d) (vidas?) · ganá 2 rondas$/, (m) => `${m[1]} li${m[1] === '1' ? 'fe' : 'ves'} · win 2 rounds`], [/^¡(.+) ES EL CAZADOR!$/, (m) => `${m[1]} IS THE HUNTER!`],
+  [/^SACA (.+): ACCIÓN cuando baje la pelota(?: · automático en (\d+))?$/, (m) => `${m[1]} SERVES: ACTION when the ball drops${m[2] ? ` · auto in ${m[2]}` : ''}`], [/^ESPECIAL ([\d.]+) s$/, (m) => `SPECIAL ${m[1]} s`],
   [/^(\d+) minijuegos?$/, (m) => `${m[1]} minigame${m[1] === '1' ? '' : 's'}`], [/^(\d+) rondas?$/, (m) => `${m[1]} round${m[1] === '1' ? '' : 's'}`], [/^(\d+) vidas?$/, (m) => `${m[1]} li${m[1] === '1' ? 'fe' : 'ves'}`],
 ];
 for (const [k, v] of Object.entries(DATA_EN)) if (!(k in D)) D[k] = v;
