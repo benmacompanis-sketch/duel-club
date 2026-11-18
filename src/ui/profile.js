@@ -118,7 +118,10 @@ export function profileSection(ui, owner, ctx) {
             h('div.kv', h('span', 'Para el próximo nivel'), h('b', `${fmtN(L.need - L.into)} XP`)),
             h('div.kv', h('span', 'Competiciones ganadas'), h('b', fmtN(d.comp_wins))), h('div.kv', h('span', 'Torneos'), h('b', fmtN(d.tournaments))),
             h('div.kv', h('span', 'Logros'), h('b', `${Object.keys(d.achievements || {}).length} / ${ACHIEVEMENTS.length}`))),
-          h('div.card', h('h3', 'Minijuegos favoritos'), fav.length ? h('div.fav-list', fav.map(([g, m]) => h('div.fav', gameChip(g), h('span', `${m.played} partidas · ${m.wins} victorias`), h('b', { style: { color: MASTERY_COLORS[m.rank] } }, MASTERY_NAMES[m.rank])))) : h('p.muted', 'Todavía no jugó minijuegos con esta cuenta.')),
+          h('div.card', h('h3', 'Minijuegos favoritos'), fav.length ? h('div.fav-list.fv2', fav.map(([g, m]) => h('div.fav', { style: { '--mc': MASTERY_COLORS[m.rank] } },
+            h('div.fav-who', gameChip(g), h('i', MASTERY_NAMES[m.rank])),
+            h('span.fav-n', h('b', fmtN(m.played)), h('small', m.played === 1 ? 'partida' : 'partidas')),
+            h('span.fav-n.w', h('b', fmtN(m.wins)), h('small', m.wins === 1 ? 'victoria' : 'victorias'))))) : h('p.muted', 'Todavía no jugó minijuegos con esta cuenta.')),
           h('div.card', h('h3', 'Récords mundiales'), d.records?.length ? h('div.fav-list', d.records.map((r) => h('div.fav', gameChip(r.game), h('b', r.display)))) : h('p.muted', 'Ningún récord mundial… por ahora.'))));
     } else if (tab === 'history') {
       body.replaceChildren(d.matches?.length ? h('div.mlist', d.matches.map((m) => matchRow(m, openUser))) : empty('Sin partidas registradas todavía.', 'records'));

@@ -12,6 +12,7 @@ import { PUZZLE_EN } from './data/puzzles.js';
 import { CHEST_EN } from './data/chests.js';
 // textos de 2v2, SALAS, CHATS y TOP 10
 const V2_UI_EN = {
+  'partida': 'match', 'partidas': 'matches', 'victoria': 'win', 'victorias': 'wins',
   Insignias: 'Badges', 'Se muestra al lado de tu nombre.': 'Shown next to your name.', 'REPORTES DE CHAT': 'CHAT REPORTS', 'CHAT PRIVADO': 'PRIVATE CHAT', 'CHAT DE PARTIDA': 'MATCH CHAT',
   'Sin revisar': 'Unreviewed', Revisados: 'Reviewed', Descartados: 'Dismissed', Todos: 'All', REVISADO: 'REVIEWED', DESCARTAR: 'DISMISS', 'VER PERFIL': 'VIEW PROFILE',
   'No hay reportes de chat en esta lista.': 'There are no chat reports in this list.', 'Cargando reportes del chat…': 'Loading chat reports…',

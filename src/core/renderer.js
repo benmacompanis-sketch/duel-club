@@ -80,15 +80,39 @@ export class Renderer {
 // Fondo de DUEL CLUB: una página de historieta. Viñetas inclinadas (nada simétrico) de colores saturados,
 // cada una con tramado de puntos que crece hacia una esquina, calles blancas y borde de tinta.
 // Se dibuja una vez por tamaño de pantalla y después solo se copia (barato).
+// Las viñetas comparten sus bordes (encajan sin huecos ni encimarse) y después cada una se achica la mitad de la
+// calle hacia adentro: así la calle blanca mide lo mismo en todos lados, en cualquier tamaño de pantalla.
 const PAGE = [
   // [polígono en coordenadas 0..1, color, esquina de donde nacen los puntos grandes]
-  [[[0, 0], [0.41, 0], [0.47, 0.47], [0, 0.41]], '#1E9BE0', [0, 0]],
-  [[[0.425, 0], [1, 0], [1, 0.53], [0.49, 0.475]], '#E8203A', [1, 0.5]],
-  [[[0, 0.425], [0.31, 0.455], [0.27, 1], [0, 1]], '#FF1F7A', [0, 1]],
-  [[[0.325, 0.46], [1, 0.545], [1, 0.78], [0.3, 0.74]], '#FFC93C', [0.3, 0.74]],
-  [[[0.285, 0.755], [0.745, 0.79], [0.7, 1], [0.255, 1]], '#8A10D8', [0.255, 1]],
-  [[[0.76, 0.8], [1, 0.805], [1, 1], [0.715, 1]], '#00A651', [1, 0.8]],
+  [[[0, 0], [0.42, 0], [0.47, 0.45], [0, 0.42]], '#1E9BE0', [0, 0]],
+  [[[0.42, 0], [1, 0], [1, 0.53], [0.47, 0.45]], '#E8203A', [1, 0.5]],
+  [[[0, 0.42], [0.3, 0.4391], [0.26, 1], [0, 1]], '#FF1F7A', [0, 1]],
+  [[[0.3, 0.4391], [0.47, 0.45], [1, 0.53], [1, 0.78], [0.2771, 0.76]], '#FFC93C', [0.28, 0.76]],
+  [[[0.2771, 0.76], [0.74, 0.7728], [0.7, 1], [0.26, 1]], '#8A10D8', [0.26, 1]],
+  [[[0.74, 0.7728], [1, 0.78], [1, 1], [0.7, 1]], '#00A651', [1, 0.8]],
 ];
+// achica un polígono convexo "d" píxeles hacia adentro (los lados que tocan el borde de la pantalla no se mueven)
+function insetPoly(pts, d, w, h) {
+  const n = pts.length;
+  const cx = pts.reduce((a, p) => a + p[0], 0) / n, cy = pts.reduce((a, p) => a + p[1], 0) / n;
+  const onEdge = (p, q) => (p[0] <= 0.5 && q[0] <= 0.5) || (p[0] >= w - 0.5 && q[0] >= w - 0.5) || (p[1] <= 0.5 && q[1] <= 0.5) || (p[1] >= h - 0.5 && q[1] >= h - 0.5);
+  const lines = pts.map((p, i) => {
+    const q = pts[(i + 1) % n];
+    let nx = -(q[1] - p[1]), ny = q[0] - p[0];
+    const L = Math.hypot(nx, ny) || 1;
+    nx /= L; ny /= L;
+    if (nx * (cx - p[0]) + ny * (cy - p[1]) < 0) { nx = -nx; ny = -ny; }
+    const k = onEdge(p, q) ? 0 : d;
+    return { x: p[0] + nx * k, y: p[1] + ny * k, dx: q[0] - p[0], dy: q[1] - p[1] };
+  });
+  return lines.map((l1, i) => {
+    const l0 = lines[(i + n - 1) % n];
+    const den = l0.dx * l1.dy - l0.dy * l1.dx;
+    if (Math.abs(den) < 1e-9) return [l1.x, l1.y];
+    const t = ((l1.x - l0.x) * l1.dy - (l1.y - l0.y) * l1.dx) / den;
+    return [l0.x + l0.dx * t, l0.y + l0.dy * t];
+  });
+}
 class Background {
   constructor() {
     this.t = 0;
@@ -103,16 +127,19 @@ class Background {
     g.fillStyle = '#FFF4E0'; // calles de la página
     g.fillRect(0, 0, w, h);
     const sp = Math.max(9, Math.round(Math.min(w, h) / 70)); // separación de los puntos
-    for (const [poly, col, [cx, cy]] of PAGE) {
+    const lw = Math.max(4, Math.min(w, h) / 160);
+    const gut = Math.max(7, Math.min(w, h) / 64); // media calle + medio borde de tinta
+    for (const [rel, col, [cx, cy]] of PAGE) {
+      const poly = insetPoly(rel.map(([x, y]) => [x * w, y * h]), gut, w, h);
       g.save();
       g.beginPath();
-      poly.forEach(([x, y], i) => (i ? g.lineTo(x * w, y * h) : g.moveTo(x * w, y * h)));
+      poly.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
       g.closePath();
       g.fillStyle = col;
       g.fill();
       g.clip();
       // tramado: puntos más grandes cerca de la esquina "origen" de la viñeta
-      const xs = poly.map((p) => p[0] * w), ys = poly.map((p) => p[1] * h);
+      const xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]);
       const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
       const ox = cx * w, oy = cy * h;
       const far = Math.hypot(Math.max(Math.abs(x0 - ox), Math.abs(x1 - ox)), Math.max(Math.abs(y0 - oy), Math.abs(y1 - oy)));
@@ -129,9 +156,9 @@ class Background {
       g.restore();
       // borde de tinta
       g.beginPath();
-      poly.forEach(([x, y], i) => (i ? g.lineTo(x * w, y * h) : g.moveTo(x * w, y * h)));
+      poly.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
       g.closePath();
-      g.lineWidth = Math.max(4, Math.min(w, h) / 160);
+      g.lineWidth = lw;
       g.strokeStyle = '#0D0B14';
       g.lineJoin = 'miter';
       g.stroke();

@@ -4,6 +4,29 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-18-v6-1',
+    date: '2026-11-18',
+    version: '6.1',
+    title: 'Todo más prolijo',
+    tag: 'v6.1',
+    color: '#FFC93C',
+    intro: 'Una pasada de prolijidad por todo el juego y bots más fáciles.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'El fondo de historieta tiene calles blancas parejas entre todas las viñetas.',
+        'Minijuegos favoritos del perfil: nombre del juego entero, números grandes y "1 victoria" bien escrito.',
+        'La tarjeta del pase del perfil, los logros, el ranking, los filtros y los buscadores ya no son transparentes.',
+        'Los nombres de los minijuegos son carteles del color de cada juego, también en VS BOT.',
+        'Bots más fáciles: Fácil y Normal se distraen de a ratos y reaccionan más lento.',
+      ] },
+      { kind: 'arreglo', items: [
+        'El numerito de COFRES se actualiza apenas abrís uno y ya no se encima con la flecha del menú.',
+        'La barra de progreso de cada logro ya no corta el "0 / 1".',
+        'La vista previa de los títulos en PRÓXIMAS RECOMPENSAS del pase ya no se sale de su lugar.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-17-v6',
     date: '2026-11-17',
     version: '6.0',

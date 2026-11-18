@@ -91,9 +91,11 @@ export function chestsSection(ui, owner, ctx) {
     const me = svc.slotAccount(p);
     const inv = data.inv || {};
     const total = CHEST_ORDER.reduce((n, k) => n + (inv[k] || 0), 0);
+    // el numerito del menú se actualiza en el momento (al abrir, comprar o armar)
+    window.dispatchEvent(new CustomEvent('dc:chests', { detail: total }));
     body.replaceChildren(
       h('div.chests-head',
-        h('div', h('h2', 'COFRES'), h('p', 'Se ganan jugando. El premio lo decide el servidor y las probabilidades están a la vista.')),
+        h('div.sec-head', h('h2', 'COFRES'), h('p', 'Se ganan jugando. El premio lo decide el servidor y las probabilidades están a la vista.')),
         h('div.chests-bal', h('div.cb-box', h('small', 'FRAGMENTOS'), h('b', fmtN(data.shards))), h('div.cb-box', h('small', 'TUS PIES'), pies(me.pies)), h('div.cb-box', h('small', 'ABIERTOS'), h('b', fmtN(data.opened))))),
       h('div.chests-row', CHEST_ORDER.map((k) => {
         const C = CHESTS[k], n = inv[k] || 0;

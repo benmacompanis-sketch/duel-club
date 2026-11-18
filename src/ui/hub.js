@@ -133,24 +133,28 @@ export function hubScreen(ui, params = {}) {
   }
   renderNavDots();
   // cantidad de cofres sin abrir (un solo pedido, un rato después de abrir el menú)
+  function setCount(id, n) {
+    const b = nav.querySelector(`.sn-btn[data-id="${id}"]`);
+    if (!b || scr.disposed) return;
+    b.querySelector('.sn-count')?.remove();
+    if (n > 0) b.append(h('span.sn-count', String(n)));
+  }
   async function chestBadge() {
-    const b = nav.querySelector('.sn-btn[data-id="chests"]');
-    if (!b || !svc.slotAccount(ctx.viewer)) return;
+    if (!svc.slotAccount(ctx.viewer)) return;
     try {
       const d = await svc.chests(ctx.viewer);
-      const n = Object.values(d.inv || {}).reduce((a, x) => a + x, 0);
-      b.querySelector('.sn-count')?.remove();
-      if (n > 0 && !scr.disposed) b.append(h('span.sn-count', String(n)));
+      setCount('chests', Object.values(d.inv || {}).reduce((a, x) => a + x, 0));
     } catch {}
   }
+  const onChests = (e) => { if (scr.disposed) window.removeEventListener('dc:chests', onChests); else setCount('chests', e.detail); };
+  window.addEventListener('dc:chests', onChests);
   // mensajes privados sin leer (en Amigos): al abrir el menú y cada 60 s
   async function dmBadge() {
     const b = nav.querySelector('.sn-btn[data-id="club"]');
     if (!b || !svc.slotAccount(ctx.viewer) || scr.disposed) return;
     try {
       const d = await svc.dmInbox(ctx.viewer);
-      b.querySelector('.sn-count')?.remove();
-      if (d.unread > 0 && !scr.disposed) b.append(h('span.sn-count', String(d.unread)));
+      setCount('club', d.unread);
     } catch {}
   }
   setTimeout(() => { if (!scr.disposed) { chestBadge(); dmBadge(); } }, 1500);

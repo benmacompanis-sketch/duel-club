@@ -2326,3 +2326,84 @@ body { font-weight: 600; }
 .badge-ico svg { width: 100%; height: 100%; display: block; }
 .badge-prev { display: flex; align-items: center; justify-content: center; }
 .chatrep-body { margin: 6px 0; font-weight: 800; font-size: 16px; background: #fff4e0; color: #15121f; padding: 6px 10px; border: 2px solid #0d0b14; overflow-wrap: anywhere; }
+
+/* =====================================================================
+   v6.1 PROLIJIDAD: nada semitransparente sobre la página de historieta, textos sueltos en recuadros,
+   etiquetas de minijuego como carteles y favoritos legibles
+   ===================================================================== */
+/* etiqueta de minijuego: cartel sólido del color del juego */
+.gchip { padding: 3px 9px 2px; border-radius: 4px; border: 2px solid var(--ink); background: var(--gc); color: #15121f;
+  font-family: var(--display); font-weight: 400; font-size: 14px; letter-spacing: 0.8px; box-shadow: 2px 2px 0 var(--ink); transform: rotate(-1.5deg); }
+/* favoritos del perfil: nombre + nivel a la izquierda, números grandes a la derecha */
+.fv2 { gap: 10px; }
+.fv2 .fav { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center; padding: 8px 10px; background: #15121f;
+  border: 3px solid var(--ink); border-left: 8px solid var(--mc); border-radius: 8px; }
+.fav-who { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
+.fav-who .gchip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.fav-who i { font-style: normal; font-family: var(--display); font-size: 13px; letter-spacing: 1px; color: var(--mc); text-transform: uppercase; }
+.fav-n { display: flex; flex-direction: column; align-items: center; min-width: 54px; line-height: 1; }
+.fav-n b { font-family: var(--display); font-weight: 400; font-size: 26px; color: #fff4e0; text-shadow: 2px 2px 0 var(--ink); }
+.fav-n.w b { color: var(--yellow); }
+.fav-n small { margin-top: 3px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: #cfc7e8; white-space: nowrap; }
+/* títulos de tarjeta como carteles de historieta */
+.prof-grid .card > h3, .stats .card > h3, .gv-cols .card > h3 { display: inline-block; background: var(--yellow); color: #15121f !important; padding: 3px 10px 1px;
+  border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transform: rotate(-1.5deg); margin-bottom: 12px; }
+/* tarjeta del pase en el perfil: sólida (antes era transparente y se veía el fondo) */
+.prof-pass { border: 4px solid var(--ink) !important; box-shadow: 5px 5px 0 var(--ink) !important; border-radius: 10px !important; transform: rotate(-0.8deg);
+  background: radial-gradient(circle, rgba(10, 6, 20, 0.28) 1.6px, transparent 2px) 0 0 / 8px 8px, linear-gradient(110deg, #7d3cff, #4b1fa8) !important; }
+.prof-pass.prem { background: radial-gradient(circle, rgba(10, 6, 20, 0.18) 1.6px, transparent 2px) 0 0 / 8px 8px, linear-gradient(110deg, #ffd23f, #ff9e2c) !important; color: #15121f !important; }
+.prof-pass small { color: #ffd23f !important; } .prof-pass.prem small { color: #15121f !important; }
+.prof-pass b { color: #fff; text-shadow: 2px 2px 0 var(--ink); } .prof-pass.prem b { color: #15121f; text-shadow: none; }
+.prof-pass .ph-bar { height: 12px; border-radius: 3px; background: #15121f; border: 2px solid #15121f; }
+.prof-pass .ph-bar i { border-radius: 2px; background: #ffd23f; } .prof-pass.prem .ph-bar i { background: #fff4e0; }
+.prof-pass:hover, .prof-pass:focus { border-color: var(--ink) !important; transform: translate(-2px, -2px) rotate(-0.8deg); box-shadow: 7px 7px 0 var(--ink), 0 0 0 3px #fff !important; }
+.prof-meta span { align-self: flex-start; background: var(--ink); color: #fff4e0; padding: 3px 9px; border-radius: 3px; font-weight: 700; }
+/* filtros, buscadores y saldos: sólidos */
+.rf { background: #221c33 !important; border: 2px solid var(--ink) !important; color: #fff4e0 !important; border-radius: 6px !important; box-shadow: 2px 2px 0 var(--ink); }
+.rf.on { background: var(--rr, var(--yellow)) !important; color: #15121f !important; transform: rotate(-1deg); }
+.rf-count { background: var(--ink); color: #fff4e0 !important; padding: 3px 9px; border-radius: 3px; }
+.acc-input, .search-in { background: #15121f !important; border: 3px solid var(--ink) !important; box-shadow: 3px 3px 0 var(--ink); }
+.store-bal { background: #221c33 !important; border-color: var(--ink) !important; }
+.rank-mine-in { background: #221c33 !important; border: 3px solid var(--ink) !important; box-shadow: 4px 4px 0 var(--ink); }
+.btn.ghost { background: #221c33 !important; }
+/* logros: filas y resumen sólidos */
+.achievements .ach, .ach { background: #221c33 !important; border: 3px solid var(--ink) !important; box-shadow: 4px 4px 0 var(--ink); border-radius: 10px !important; opacity: 1 !important; }
+.achievements .ach:not(.got) { background: #1a1628 !important; }
+.ach-ico { background: #2f2846 !important; border: 2px solid var(--ink); }
+.ach-tier { background: #221c33 !important; border: 3px solid var(--ink) !important; border-top: 6px solid var(--tc) !important; box-shadow: 4px 4px 0 var(--ink); border-radius: 8px !important; }
+.ach-ring { border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.ach-ring::before { background: #15121f; }
+.ach-group h4, .club-body h4 { display: inline-block; background: var(--ink); color: #fff4e0 !important; padding: 3px 10px; border-radius: 3px; }
+/* tablas, historiales y textos que quedaban sueltos sobre el fondo */
+.stats-table, .rec-body .table { background: #221c33; border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); border-radius: 10px; }
+.tx { background: #221c33 !important; border: 2px solid var(--ink); }
+.mast { background: #221c33 !important; border: 3px solid var(--ink) !important; box-shadow: 4px 4px 0 var(--ink); }
+.hub-content > div > p.muted, .hub-content > div > p.muted.small, .ch-head small.muted, .hub-content .empty p { display: inline-block; background: var(--ink); color: #fff4e0 !important; padding: 4px 10px; border-radius: 3px; }
+.ch-head h3 { display: inline-block; background: var(--yellow); color: #15121f !important; padding: 2px 10px 0; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transform: rotate(-1.5deg); text-shadow: none !important; }
+.home-slogan span, .home-slogan { text-shadow: 3px 3px 0 var(--ink); }
+.nb-bug { background: #221c33 !important; border: 3px solid var(--ink) !important; }
+/* próximas recompensas del pase: la vista previa no se sale de su lugar */
+.pn-item > :first-child { flex: 0 0 44px; width: 44px; overflow: hidden; }
+.pass-next > small { background: var(--ink); color: #fff4e0 !important; padding: 3px 9px; border-radius: 3px; }
+/* menú: el numerito no se pisa con la flecha de la sección elegida */
+.sn-btn .sn-count { position: relative; z-index: 2; box-shadow: 2px 2px 0 var(--ink); }
+.sn-btn.on .sn-count { margin-right: 22px; }
+.sn-btn.on::after { right: 8px; }
+.gchip, .fav .gchip, .fav span.gchip { color: #15121f !important; flex: none; }
+.fv2 .fav span.fav-n { flex: none; color: inherit; }
+.achievements .ach .kbar { height: 16px; border: 2px solid var(--ink); background: #15121f; }
+.achievements .ach .kbar span { display: block; font-size: 10px; line-height: 12px; font-weight: 800; color: #fff; text-shadow: 1px 1px 0 #000; }
+.title-prev { overflow: hidden; }
+.title-prev .pc-title { white-space: normal; text-align: center; font-size: 10px; line-height: 1.05; word-break: break-word; }
+/* favoritos: el nombre del juego va arriba, entero; abajo el nivel y los números */
+.fv2 .fav { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'who who who' 'rank n1 n2'; row-gap: 6px; }
+.fv2 .fav-who { display: contents; }
+.fv2 .fav-who .gchip { grid-area: who; justify-self: start; }
+.fv2 .fav-who i { grid-area: rank; align-self: end; }
+.fv2 .fav-n { grid-area: n1; min-width: 46px; } .fv2 .fav-n.w { grid-area: n2; }
+/* VS BOT / Fantasma: cada minijuego como etiqueta de su color (igual que Quick Play) */
+.solo-game { background: radial-gradient(circle, rgba(10, 6, 20, 0.22) 1.5px, transparent 1.9px) 0 0 / 7px 7px, var(--c) !important; color: #15121f !important;
+  border-radius: 6px !important; font-family: var(--display); font-weight: 400; font-size: 15px !important; letter-spacing: 0.8px; }
+.solo-game:nth-child(odd) { transform: rotate(-0.6deg); } .solo-game:nth-child(even) { transform: rotate(0.5deg); }
+.solo-game .gicon, .solo-game canvas { background: #fff4e0; border: 2px solid var(--ink); border-radius: 50%; }
+.solo-game.sel { outline: 4px solid #fff !important; outline-offset: 1px; transform: translate(-2px, -2px) rotate(-1deg) scale(1.03); z-index: 1; }

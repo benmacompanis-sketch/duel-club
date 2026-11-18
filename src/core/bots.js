@@ -5,10 +5,11 @@
 
 export const BOT_LEVELS = {
   // (v5.2) más accesible: el Fácil es para chicos que recién empiezan, cada nivel bajó un escalón
-  easy: { id: 'easy', name: 'Fácil', color: '#48D597', react: 0.75, noise: 1.7, slip: 0.38, speed: 0.45, hit: 0.35 },
-  normal: { id: 'normal', name: 'Normal', color: '#3985FF', react: 0.45, noise: 1, slip: 0.2, speed: 0.62, hit: 0.6 },
-  hard: { id: 'hard', name: 'Difícil', color: '#FF8E3C', react: 0.3, noise: 0.6, slip: 0.1, speed: 0.8, hit: 0.8 },
-  expert: { id: 'expert', name: 'Experto', color: '#FF3B5C', react: 0.19, noise: 0.25, slip: 0.03, speed: 0.97, hit: 0.95 },
+  // (v6.1) "idle": parte del tiempo en que el bot se distrae y no toca nada (en todos los minijuegos)
+  easy: { id: 'easy', name: 'Fácil', color: '#48D597', react: 0.85, noise: 1.9, slip: 0.42, speed: 0.4, hit: 0.3, idle: 0.3 },
+  normal: { id: 'normal', name: 'Normal', color: '#3985FF', react: 0.5, noise: 1.1, slip: 0.22, speed: 0.58, hit: 0.55, idle: 0.12 },
+  hard: { id: 'hard', name: 'Difícil', color: '#FF8E3C', react: 0.3, noise: 0.6, slip: 0.1, speed: 0.8, hit: 0.8, idle: 0.03 },
+  expert: { id: 'expert', name: 'Experto', color: '#FF3B5C', react: 0.19, noise: 0.25, slip: 0.03, speed: 0.97, hit: 0.95, idle: 0 },
 };
 export const BOT_ORDER = ['easy', 'normal', 'hard', 'expert'];
 
@@ -48,8 +49,15 @@ export class BotInput {
     if (!g || !this.brain) return;
     this.t += dt;
     const want = new Set();
+    // distracciones: ratos de 0,35 a 0,95 s sin tocar nada; cada cuánto depende de la dificultad
+    const idle = this.L.idle || 0;
+    if (idle > 0) {
+      const gap = () => (0.65 * (1 - idle) / idle) * (0.5 + R());
+      if (this.nextLapse == null) this.nextLapse = this.t + gap();
+      if (this.t >= this.nextLapse) { this.lapseUntil = this.t + 0.35 + R() * 0.6; this.nextLapse = this.lapseUntil + gap(); }
+    }
     try {
-      this.brain(g, this.slot, this, want, dt);
+      if (!(this.lapseUntil > this.t)) this.brain(g, this.slot, this, want, dt);
     } catch (e) {
       if (!this.mem.__err) { this.mem.__err = 1; console.warn('bot', this.gameId, e); }
     }
