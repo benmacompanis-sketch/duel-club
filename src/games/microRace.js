@@ -3,7 +3,7 @@
 // Pistas definidas con splines Catmull-Rom; progreso medido sobre la línea central.
 import { BaseGame } from './baseGame.js';
 import { drawPortrait } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, shade, wrapAngle, choice, mulberry32, fmtTime, quality } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, shade, wrapAngle, choice, mulberry32, fmtTime, quality, halftone } from '../core/utils.js';
 
 const TRACKS = {
   oval: {
@@ -160,15 +160,22 @@ export default class MicroRace extends BaseGame {
     c.height = Math.round(H * px);
     const g = c.getContext('2d');
     g.scale(px, px);
-    // terreno
-    const bg = g.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#0F2A2E');
-    bg.addColorStop(1, '#0B1D22');
-    g.fillStyle = bg;
-    g.fillRect(0, 0, W, H);
+    // terreno: pasto de historieta con tramado y franjas de corte
+    g.fillStyle = '#2F9A4A'; g.fillRect(0, 0, W, H);
+    for (let x = 0; x < W; x += 120) { g.fillStyle = 'rgba(255,255,255,0.05)'; g.fillRect(x, 0, 60, H); }
+    g.fillStyle = halftone(g, 'rgba(13,11,20,0.16)', 11, 2.2); g.fillRect(0, 0, W, H);
     const rng = mulberry32(42);
-    g.fillStyle = 'rgba(72,213,151,0.08)';
-    for (let i = 0; i < 260; i++) { g.beginPath(); g.arc(rng() * W, rng() * H, 2 + rng() * 6, 0, TAU); g.fill(); }
+    // árboles y arbustos lejos de la pista
+    const far = (x, y, d) => this.track.every((q) => Math.hypot(q.x - x, q.y - y) > d);
+    for (let i = 0; i < 70; i++) {
+      const x = rng() * W, y = 120 + rng() * (H - 120), r = 14 + rng() * 16;
+      if (!far(x, y, HALF + WALL + r + 18)) continue;
+      g.fillStyle = 'rgba(13,11,20,0.35)'; g.beginPath(); g.ellipse(x + 5, y + r * 0.7, r, r * 0.45, 0, 0, TAU); g.fill();
+      g.fillStyle = rng() < 0.5 ? '#1E7A3A' : '#25914A';
+      g.beginPath(); g.arc(x, y, r, 0, TAU); g.arc(x - r * 0.6, y + r * 0.2, r * 0.7, 0, TAU); g.arc(x + r * 0.6, y + r * 0.25, r * 0.65, 0, TAU); g.fill();
+      g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.stroke();
+      g.fillStyle = 'rgba(255,255,255,0.18)'; g.beginPath(); g.arc(x - r * 0.3, y - r * 0.35, r * 0.3, 0, TAU); g.fill();
+    }
     const path = () => {
       g.beginPath();
       this.track.forEach((s, i) => (i ? g.lineTo(s.x, s.y) : g.moveTo(s.x, s.y)));
@@ -176,17 +183,21 @@ export default class MicroRace extends BaseGame {
     };
     g.lineJoin = 'round';
     g.lineCap = 'round';
-    // barrera exterior
-    path(); g.strokeStyle = 'rgba(155,108,255,0.18)'; g.lineWidth = WALL * 2 + 10; g.stroke();
-    path(); g.strokeStyle = '#0D1E24'; g.lineWidth = WALL * 2; g.stroke();
-    // pianos (curbs)
-    path(); g.strokeStyle = '#F6F7FB'; g.lineWidth = HALF * 2 + 12; g.stroke();
-    path(); g.setLineDash([16, 16]); g.strokeStyle = '#FF654F'; g.stroke(); g.setLineDash([]);
-    // asfalto
-    path(); g.strokeStyle = '#2A3150'; g.lineWidth = HALF * 2; g.stroke();
-    path(); g.strokeStyle = 'rgba(255,255,255,0.04)'; g.lineWidth = HALF * 1.2; g.stroke();
+    // barrera exterior: neumáticos con contorno de tinta
+    path(); g.strokeStyle = '#0D0B14'; g.lineWidth = WALL * 2 + 8; g.stroke();
+    path(); g.strokeStyle = '#3A3F58'; g.lineWidth = WALL * 2; g.stroke();
+    path(); g.setLineDash([10, 10]); g.strokeStyle = '#FFF4E0'; g.lineWidth = WALL * 2 - 6; g.stroke(); g.setLineDash([]);
+    // pianos (curbs) rojo y blanco
+    path(); g.strokeStyle = '#0D0B14'; g.lineWidth = HALF * 2 + 18; g.stroke();
+    path(); g.strokeStyle = '#FFF4E0'; g.lineWidth = HALF * 2 + 12; g.stroke();
+    path(); g.setLineDash([18, 18]); g.strokeStyle = '#E8203A'; g.stroke(); g.setLineDash([]);
+    // asfalto con tramado
+    path(); g.strokeStyle = '#0D0B14'; g.lineWidth = HALF * 2 + 2; g.stroke();
+    path(); g.strokeStyle = '#4A4F6E'; g.lineWidth = HALF * 2 - 2; g.stroke();
+    g.save(); path(); g.lineWidth = HALF * 2 - 2; g.strokeStyle = halftone(g, 'rgba(13,11,20,0.25)', 8, 1.6); g.stroke(); g.restore();
+    path(); g.strokeStyle = 'rgba(255,255,255,0.06)'; g.lineWidth = HALF * 1.1; g.stroke();
     // línea central
-    path(); g.setLineDash([18, 22]); g.strokeStyle = 'rgba(246,247,251,0.28)'; g.lineWidth = 3; g.stroke(); g.setLineDash([]);
+    path(); g.setLineDash([20, 22]); g.strokeStyle = '#FFD23F'; g.lineWidth = 4; g.stroke(); g.setLineDash([]);
     // línea de meta a cuadros
     const s = this.track[0];
     g.save();
@@ -469,11 +480,13 @@ export default class MicroRace extends BaseGame {
       if (o.kind === 'cone') {
         g.fillStyle = 'rgba(0,0,0,0.3)'; g.beginPath(); g.ellipse(3, 4, 13, 9, 0, 0, TAU); g.fill();
         g.fillStyle = '#FF8E3C'; g.beginPath(); g.arc(0, 0, 12, 0, TAU); g.fill();
+        g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.stroke();
         g.fillStyle = '#F6F7FB'; g.beginPath(); g.arc(0, 0, 7, 0, TAU); g.fill();
         g.fillStyle = '#FF8E3C'; g.beginPath(); g.arc(0, 0, 3.5, 0, TAU); g.fill();
       } else {
         g.fillStyle = 'rgba(0,0,0,0.3)'; g.beginPath(); g.ellipse(3, 4, 14, 10, 0, 0, TAU); g.fill();
         g.fillStyle = '#9B6CFF'; g.beginPath(); g.arc(0, 0, 13, 0, TAU); g.fill();
+        g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.stroke();
         g.strokeStyle = '#D9C8FF'; g.lineWidth = 2; g.beginPath(); g.arc(0, 0, 9, 0, TAU); g.stroke();
       }
       g.restore();
@@ -502,24 +515,23 @@ export default class MicroRace extends BaseGame {
     g.save();
     g.translate(c.x, c.y);
     g.rotate(c.ang);
-    if (quality.glow && c.boost > 0) { g.shadowColor = '#FFC93C'; g.shadowBlur = 20; }
-    g.fillStyle = 'rgba(0,0,0,0.35)';
-    roundRect(g, -17, -10, 38, 24, 7); g.fill();
-    g.shadowBlur = 0;
+    g.scale(1.2, 1.2);
+    g.lineJoin = 'round';
+    // sombra
+    g.fillStyle = 'rgba(13,11,20,0.45)'; roundRect(g, -15, -8, 38, 24, 7); g.fill();
+    // turbo: llamarada atrás
+    if (c.boost > 0) { g.fillStyle = Math.floor(t * 20) % 2 ? '#FFD23F' : '#FF8E3C'; g.beginPath(); g.moveTo(-18, -6); g.lineTo(-34 - Math.random() * 8, 0); g.lineTo(-18, 6); g.closePath(); g.fill(); g.lineWidth = 2.5; g.strokeStyle = '#0D0B14'; g.stroke(); }
     // ruedas
-    g.fillStyle = '#10131F';
-    for (const [wx, wy] of [[-11, -12], [-11, 8], [9, -12], [9, 8]]) { roundRect(g, wx - 5, wy, 10, 4, 2); g.fill(); }
-    g.fillStyle = col;
-    roundRect(g, -18, -10, 36, 20, 7); g.fill();
-    g.fillStyle = shade(col, -0.3);
-    roundRect(g, -18, -10, 8, 20, 4); g.fill();
-    g.fillStyle = shade(col, 0.35);
-    roundRect(g, 10, -8, 7, 16, 3); g.fill();
-    g.fillStyle = '#F6F7FB';
-    g.fillRect(-2, -10, 3, 20);
+    for (const [wx, wy] of [[-11, -13], [-11, 8], [9, -13], [9, 8]]) { g.fillStyle = '#0D0B14'; roundRect(g, wx - 6, wy, 12, 5, 2); g.fill(); }
+    // carrocería
+    g.fillStyle = col; roundRect(g, -18, -10, 36, 20, 7); g.fill();
+    g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.stroke();
+    g.fillStyle = shade(col, -0.3); roundRect(g, -18, -10, 8, 20, 4); g.fill();
+    g.fillStyle = '#BDE8FF'; roundRect(g, 6, -7, 8, 14, 3); g.fill(); g.lineWidth = 2; g.stroke();
+    g.fillStyle = '#FFF4E0'; g.fillRect(-4, -10, 4, 20);
     g.restore();
     // piloto
-    drawPortrait(g, c.x, c.y, 9, this.players[p], { t: t + p, ring: 2 });
+    drawPortrait(g, c.x, c.y, 10, this.players[p], { t: t + p, ring: 2 });
   }
 
   renderHUD(g) {

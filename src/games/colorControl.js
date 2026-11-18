@@ -269,46 +269,49 @@ export default class ColorControl extends BaseGame {
     const t = this.realTime;
     this.arenaBG(g, '#0E1630', '#0A0F22');
     const S = this.cell;
-    panel(g, this.ox - 10, this.oy - 10, this.cols * S + 20, this.rows * S + 20, { r: 18, fill: '#0B1124', stroke: 'rgba(155,108,255,0.35)' });
+    // tablero: marco de tinta grueso y casillas tipo baldosa de historieta
+    g.fillStyle = '#0D0B14'; g.fillRect(this.ox - 12 + 6, this.oy - 12 + 6, this.cols * S + 24, this.rows * S + 24);
+    g.fillStyle = '#1C1640'; g.fillRect(this.ox - 12, this.oy - 12, this.cols * S + 24, this.rows * S + 24);
+    g.lineWidth = 5; g.strokeStyle = '#0D0B14'; g.strokeRect(this.ox - 12, this.oy - 12, this.cols * S + 24, this.rows * S + 24);
+    g.lineJoin = 'round';
     for (const k of this.cells) {
       const x = this.ox + k.c * S, y = this.oy + k.r * S;
       if (k.wall) {
-        g.fillStyle = '#231A4A';
-        roundRect(g, x + 2, y + 2, S - 4, S - 4, 8); g.fill();
-        g.fillStyle = '#4A3A99';
-        roundRect(g, x + 2, y + 2, S - 4, S - 12, 8); g.fill();
-        g.strokeStyle = 'rgba(155,108,255,0.5)'; g.lineWidth = 2;
-        g.beginPath(); g.moveTo(x + 12, y + 10); g.lineTo(x + S - 12, y + S - 18); g.moveTo(x + S - 12, y + 10); g.lineTo(x + 12, y + S - 18); g.stroke();
+        g.fillStyle = '#0D0B14'; g.fillRect(x + 1, y + 1, S - 2, S - 2);
+        g.fillStyle = '#5B47B8'; g.fillRect(x + 3, y + 3, S - 6, S - 12);
+        g.fillStyle = '#3A2C80'; g.fillRect(x + 3, y + S - 12, S - 6, 9);
+        g.strokeStyle = 'rgba(13,11,20,0.5)'; g.lineWidth = 3;
+        g.beginPath(); g.moveTo(x + 3, y + S / 2 - 4); g.lineTo(x + S - 3, y + S / 2 - 4); g.moveTo(x + S / 2, y + 3); g.lineTo(x + S / 2, y + S / 2 - 4); g.stroke();
         continue;
       }
-      let base = (k.c + k.r) % 2 ? '#141C3A' : '#18213F';
-      if (k.owner >= 0) base = (k.c + k.r) % 2 ? this.color(k.owner) : shade(this.color(k.owner), -0.1);
-      const pop = k.t < 0.25 && k.t >= 0 ? 1 + (1 - k.t / 0.25) * 0.15 : 1;
+      let base = (k.c + k.r) % 2 ? '#262B55' : '#2C3262';
+      if (k.owner >= 0) base = (k.c + k.r) % 2 ? this.color(k.owner) : shade(this.color(k.owner), -0.12);
+      const pop = k.t < 0.25 && k.t >= 0 ? 1 + (1 - k.t / 0.25) * 0.18 : 1;
       const sz = (S - 4) * pop;
-      g.fillStyle = base;
-      roundRect(g, x + S / 2 - sz / 2, y + S / 2 - sz / 2, sz, sz, 8); g.fill();
+      const bx = x + S / 2 - sz / 2, by = y + S / 2 - sz / 2;
+      g.fillStyle = base; g.fillRect(bx, by, sz, sz);
       if (k.owner >= 0) {
-        g.fillStyle = 'rgba(255,255,255,0.14)';
-        roundRect(g, x + 6, y + 5, S - 12, 5, 3); g.fill();
-        if (this.shielded(k.owner)) { g.strokeStyle = 'rgba(72,213,151,0.7)'; g.lineWidth = 2; roundRect(g, x + 4, y + 4, S - 8, S - 8, 6); g.stroke(); }
+        g.fillStyle = 'rgba(255,255,255,0.22)'; g.fillRect(bx + 4, by + 4, sz - 8, 5);
+        g.fillStyle = 'rgba(13,11,20,0.22)'; g.fillRect(bx, by + sz - 6, sz, 6);
+        if (this.shielded(k.owner)) { g.strokeStyle = '#3DDC97'; g.lineWidth = 3; g.strokeRect(bx + 4, by + 4, sz - 8, sz - 8); }
       }
+      g.lineWidth = 2; g.strokeStyle = 'rgba(13,11,20,0.75)'; g.strokeRect(bx, by, sz, sz);
       if (k.gold) {
-        g.strokeStyle = rgba('#FFC93C', 0.7 + Math.sin(t * 4) * 0.25);
-        g.lineWidth = 3;
-        roundRect(g, x + 4, y + 4, S - 8, S - 8, 7); g.stroke();
-        g.fillStyle = rgba('#FFE08A', 0.85);
-        drawStar(g, x + S / 2, y + S / 2, S * 0.16, S * 0.07, 5); g.fill();
+        g.strokeStyle = rgba('#FFD23F', 0.75 + Math.sin(t * 4) * 0.25);
+        g.lineWidth = 4; g.strokeRect(x + 5, y + 5, S - 10, S - 10);
+        drawStar(g, x + S / 2, y + S / 2, S * 0.2, S * 0.09, 5); g.fillStyle = '#FFD23F'; g.fill();
+        g.lineWidth = 2.5; g.strokeStyle = '#0D0B14'; g.stroke();
       }
     }
     // potenciadores
     for (const pw of this.powers) {
       const P = POWERS[pw.type];
       const by = pw.y + Math.sin(pw.ph * 4) * 4;
-      glowCircle(g, pw.x, by, 40, P.color, 0.9);
-      g.fillStyle = '#0B1020';
-      g.beginPath(); g.arc(pw.x, by, 17, 0, TAU); g.fill();
-      g.strokeStyle = P.color; g.lineWidth = 3;
-      g.beginPath(); g.arc(pw.x, by, 17, 0, TAU); g.stroke();
+      glowCircle(g, pw.x, by, 44, P.color, 0.9);
+      g.fillStyle = '#0D0B14'; g.beginPath(); g.arc(pw.x + 3, by + 3, 20, 0, TAU); g.fill();
+      g.fillStyle = '#FFF4E0'; g.beginPath(); g.arc(pw.x, by, 19, 0, TAU); g.fill();
+      g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.stroke();
+      g.strokeStyle = P.color; g.lineWidth = 3; g.beginPath(); g.arc(pw.x, by, 14, 0, TAU); g.stroke();
       this.powerIcon(g, pw.type, pw.x, by, P.color);
     }
     // jugadores
@@ -353,8 +356,8 @@ export default class ColorControl extends BaseGame {
     g.fillStyle = this.color(1);
     roundRect(g, x0 + wbar - (wbar * pc[1]) / 100, y, (wbar * pc[1]) / 100, 10, 5); g.fill();
     if (this.banner) {
-      const a = Math.min(1, this.banner.t * 3);
-      text(g, this.banner.text, W / 2, 400, { size: 54, color: '#fff', glow: this.banner.color, stroke: '#0B1020', alpha: a });
+      const b = this.banner;
+      this.callout(g, b.text, { y: 400, size: 50, k: ((b.p != null ? 1.2 : 1.4) - b.t) * 3, alpha: Math.min(1, b.t * 3), color: b.color });
     }
   }
 }

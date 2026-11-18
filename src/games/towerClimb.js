@@ -264,8 +264,8 @@ export default class TowerClimb extends BaseGame {
     const x0 = P.p * HALF;
     const bg = g.createLinearGradient(0, 0, 0, H);
     const k = clamp(P.cam / this.finishY, 0, 1);
-    bg.addColorStop(0, k > 0.7 ? '#1B1450' : '#141A3A');
-    bg.addColorStop(1, '#0B1020');
+    bg.addColorStop(0, k > 0.7 ? '#3A2A8C' : '#2A3A80');
+    bg.addColorStop(1, '#1A1F4A');
     g.fillStyle = bg; g.fillRect(x0, 0, HALF, H);
     // estrellas de fondo con parallax
     g.fillStyle = 'rgba(255,255,255,0.5)';
@@ -274,8 +274,9 @@ export default class TowerClimb extends BaseGame {
       g.fillRect(sx, sy, 2, 2);
     }
     // pared de la torre
-    g.fillStyle = '#231B3D'; g.fillRect(x0 + PAD - 18, 0, 14, H); g.fillRect(x0 + PAD + TW + 4, 0, 14, H);
-    g.fillStyle = 'rgba(255,158,94,0.06)';
+    g.fillStyle = '#4A3A7A'; g.fillRect(x0 + PAD - 18, 0, 14, H); g.fillRect(x0 + PAD + TW + 4, 0, 14, H);
+    g.fillStyle = '#0D0B14'; g.fillRect(x0 + PAD - 20, 0, 3, H); g.fillRect(x0 + PAD - 5, 0, 3, H); g.fillRect(x0 + PAD + TW + 2, 0, 3, H); g.fillRect(x0 + PAD + TW + 17, 0, 3, H);
+    g.fillStyle = 'rgba(255,158,94,0.1)';
     const off = (P.cam * 0.5) % 40;
     for (let y = -40; y < H; y += 40) for (let x = 0; x < TW; x += 60) g.fillRect(x0 + PAD + x + ((Math.floor((y + P.cam * 0.5) / 40) % 2) * 30), y + off, 56, 36);
     // banderas de control
@@ -297,10 +298,11 @@ export default class TowerClimb extends BaseGame {
       if (c?.state === 'gone') continue;
       const shake = c?.state === 'shake' ? Math.sin(t * 60) * 2 : 0;
       const col = plat.type === 'f' ? '#48D597' : plat.type === 'm' ? '#9AA3BE' : plat.type === 'c' ? '#B07A52' : plat.type === 's' ? '#48D597' : '#FF9E5E';
-      g.fillStyle = shade(col, -0.35);
-      roundRect(g, px + shake, y + 4, plat.w, PT, 6); g.fill();
-      g.fillStyle = col;
-      roundRect(g, px + shake, y, plat.w, PT, 6); g.fill();
+      g.fillStyle = '#0D0B14'; g.fillRect(px + shake + 3, y + 5, plat.w, PT);
+      g.fillStyle = shade(col, -0.35); g.fillRect(px + shake, y + 3, plat.w, PT);
+      g.fillStyle = col; g.fillRect(px + shake, y, plat.w, PT - 3);
+      g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(px + shake + 4, y + 2, plat.w - 8, 3);
+      g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.strokeRect(px + shake, y, plat.w, PT + 3);
       if (plat.type === 'c') { g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(px + plat.w * 0.3, y); g.lineTo(px + plat.w * 0.4, y + PT); g.moveTo(px + plat.w * 0.7, y); g.lineTo(px + plat.w * 0.6, y + PT); g.stroke(); }
       if (plat.type === 's') { g.strokeStyle = '#E8ECF8'; g.lineWidth = 3; g.beginPath(); for (let i = 0; i < 4; i++) { g.moveTo(px + plat.w / 2 - 12, y - 4 - i * 4); g.lineTo(px + plat.w / 2 + 12, y - 6 - i * 4); } g.stroke(); }
       if (plat.type === 'f') text(g, '★ CIMA ★', px + plat.w / 2, y - 26, { size: 26, color: '#BFFFE0', glow: '#48D597' });

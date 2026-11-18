@@ -387,8 +387,7 @@ export default class ReactionRush extends BaseGame {
     }
     if (this.state === 'resolve' && this.msg) {
       const k = Math.min(1, this.st * 3);
-      panel(g, W / 2 - 330, 410, 660, 64, { r: 32, fill: 'rgba(11,16,32,0.88)', stroke: this.roundWinner >= 0 ? this.color(this.roundWinner) : '#8C96B8' });
-      text(g, this.msg, W / 2, 442, { size: 28 * (0.7 + 0.3 * ease.outBack(k)), color: '#fff' });
+      this.callout(g, this.msg, { y: 442, size: 34, k, color: this.roundWinner >= 0 ? this.color(this.roundWinner) : '#FFD23F' });
     }
   }
 }

@@ -4,7 +4,7 @@
 // trampas de sombra que frenan a quien las pisa. Gana quien tenga más cristales al final.
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, glowCircle, quality, shade, mulberry32 } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, glowCircle, quality, shade, mulberry32, halftone, comicPanel } from '../core/utils.js';
 
 const COLS = 25, ROWS = 13, CELL = 44;
 const OX = (W - COLS * CELL) / 2, OY = 118;
@@ -44,7 +44,7 @@ export default class ShadowSneak extends BaseGame {
     this.traps = [];
     this.lantern = null;
     this.lanternT = 9;
-    this.light = 235 - this.diff * 30;
+    this.light = 250 - this.diff * 30;
     this.spawnGems(10);
     if (this.extraObstacles) this.lanternT = 5;
   }
@@ -251,31 +251,8 @@ export default class ShadowSneak extends BaseGame {
   // ------------------------------------------------------------------ dibujo
   cx(x) { return OX + x * CELL + CELL / 2; }
   cy(y) { return OY + y * CELL + CELL / 2; }
-  render(g) {
-    const t = this.realTime;
-    this.arenaBG(g, '#0C1030', '#070A18');
-    // suelo
-    g.fillStyle = '#121735';
-    roundRect(g, OX - 6, OY - 6, COLS * CELL + 12, ROWS * CELL + 12, 14); g.fill();
-    this.grid(g, OX, OY, COLS * CELL, ROWS * CELL, CELL, 'rgba(111,124,255,0.06)');
-    // trampas
-    for (const tr of this.traps) {
-      const a = Math.min(1, tr.t);
-      g.fillStyle = `rgba(20,22,48,${0.85 * a})`;
-      g.beginPath(); g.arc(this.cx(tr.x), this.cy(tr.y), 16 + Math.sin(t * 5) * 2, 0, TAU); g.fill();
-      g.strokeStyle = rgba(this.color(tr.owner), 0.5 * a); g.lineWidth = 2; g.stroke();
-    }
-    // cristales
-    for (const gm of this.gems) this.drawGem(g, gm, t);
-    if (this.lantern) {
-      const x = this.cx(this.lantern.x), y = this.cy(this.lantern.y);
-      glowCircle(g, x, y, 60 + Math.sin(t * 6) * 8, '#FFE9A8', 0.5);
-      g.fillStyle = '#FFE9A8'; roundRect(g, x - 8, y - 12, 16, 22, 5); g.fill();
-      g.fillStyle = '#6F5A1C'; g.fillRect(x - 9, y - 15, 18, 4);
-    }
-    // muros
-    g.strokeStyle = '#6F7CFF'; g.lineWidth = 6; g.lineCap = 'round';
-    if (quality.glow) { g.shadowColor = '#6F7CFF'; g.shadowBlur = 10; }
+  // muros del laberinto (contorno de tinta + bloque de piedra violeta)
+  wallPath(g) {
     g.beginPath();
     for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
       const X = OX + x * CELL, Y = OY + y * CELL;
@@ -283,30 +260,71 @@ export default class ShadowSneak extends BaseGame {
       if (this.wallD[y][x] && y < ROWS - 1) { g.moveTo(X, Y + CELL); g.lineTo(X + CELL, Y + CELL); }
     }
     g.rect(OX, OY, COLS * CELL, ROWS * CELL);
-    g.stroke();
-    g.shadowBlur = 0;
-    // jugadores
+  }
+  render(g) {
+    const t = this.realTime;
+    // piso del laberinto (quieto): baldosas a cuadros con tramado
+    if (!this._floor) {
+      const c = document.createElement('canvas'); c.width = W * 2; c.height = H * 2;
+      const cg = c.getContext('2d'); cg.scale(2, 2);
+      cg.fillStyle = '#10143A'; cg.fillRect(0, 0, W, H);
+      cg.fillStyle = halftone(cg, 'rgba(111,124,255,0.18)', 12, 2.4); cg.fillRect(0, 0, W, H);
+      for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+        cg.fillStyle = (x + y) % 2 ? '#262C66' : '#2C3374';
+        cg.fillRect(OX + x * CELL, OY + y * CELL, CELL, CELL);
+      }
+      cg.fillStyle = halftone(cg, 'rgba(13,11,20,0.25)', 8, 1.6); cg.fillRect(OX, OY, COLS * CELL, ROWS * CELL);
+      cg.lineCap = 'round'; cg.lineJoin = 'round';
+      this.wallPath(cg); cg.strokeStyle = '#0D0B14'; cg.lineWidth = 15; cg.stroke();
+      this.wallPath(cg); cg.strokeStyle = '#8F9BFF'; cg.lineWidth = 8; cg.stroke();
+      this.wallPath(cg); cg.strokeStyle = 'rgba(255,255,255,0.35)'; cg.lineWidth = 2; cg.stroke();
+      this._floor = c;
+    }
+    g.drawImage(this._floor, 0, 0, W, H);
+    // trampas: charcos de sombra con el color de quien la puso
+    for (const tr of this.traps) {
+      const a = Math.min(1, tr.t);
+      g.fillStyle = `rgba(13,11,20,${0.85 * a})`;
+      g.beginPath(); g.ellipse(this.cx(tr.x), this.cy(tr.y) + 6, 18 + Math.sin(t * 5) * 2, 10, 0, 0, TAU); g.fill();
+      g.strokeStyle = rgba(this.color(tr.owner), 0.8 * a); g.lineWidth = 3; g.stroke();
+    }
+    // cristales
+    for (const gm of this.gems) this.drawGem(g, gm, t);
+    if (this.lantern) {
+      const x = this.cx(this.lantern.x), y = this.cy(this.lantern.y);
+      glowCircle(g, x, y, 64 + Math.sin(t * 6) * 8, '#FFE9A8', 0.6);
+      g.fillStyle = '#FFE08A'; roundRect(g, x - 9, y - 12, 18, 24, 4); g.fill();
+      g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.stroke();
+      g.fillStyle = '#0D0B14'; g.fillRect(x - 11, y - 16, 22, 5);
+      g.fillStyle = '#FFF4E0'; g.fillRect(x - 4, y - 6, 8, 10);
+    }
+    // jugadores (más grandes)
     for (const pl of this.pl) {
       const x = this.cx(pl.x), y = this.cy(pl.y);
-      if (pl.hunter > 0) glowCircle(g, x, y, 54 + Math.sin(t * 10) * 6, '#FFE9A8', 0.45);
+      if (pl.hunter > 0) glowCircle(g, x, y, 58 + Math.sin(t * 10) * 6, '#FFE9A8', 0.55);
       const moving = pl.dir[0] || pl.dir[1];
-      drawCharacter(g, { id: this.players[pl.p].char, x, y: y + 16, s: 0.36, color: this.color(pl.p), anim: pl.stun > 0 ? 'dizzy' : moving ? 'run' : 'idle', t: t + pl.p, facing: pl.face, acc: this.players[pl.p].acc, shadow: false });
-      if (pl.slow > 0) this.label(g, x, y - 30, 'LENTO', '#2A2F55');
+      g.fillStyle = 'rgba(13,11,20,0.45)'; g.beginPath(); g.ellipse(x, y + 16, 16, 6, 0, 0, TAU); g.fill();
+      drawCharacter(g, { id: this.players[pl.p].char, x, y: y + 16, s: 0.46, color: this.color(pl.p), anim: pl.stun > 0 ? 'dizzy' : moving ? 'run' : 'idle', t: t + pl.p, facing: pl.face, acc: this.players[pl.p].acc, shadow: false });
+      if (pl.hunter > 0) text(g, '¡CAZADOR!', x, y - 40, { size: 16, color: '#FFE08A' });
+      if (pl.slow > 0) this.label(g, x, y - 34, 'LENTO', '#2A2F55');
     }
     // oscuridad: solo se ve alrededor de cada jugador (igual para los dos)
     this.renderDark(g, t);
+    // el laberinto se adivina en la oscuridad (para planear el camino); cristales y rival, no
+    g.save(); g.globalAlpha = 0.22; g.lineCap = 'round'; this.wallPath(g); g.strokeStyle = '#8F9BFF'; g.lineWidth = 6; g.stroke(); g.restore();
     // los cristales dorados brillan apenas a través de la oscuridad
-    for (const gm of this.gems) if (gm.gold) glowCircle(g, this.cx(gm.x), this.cy(gm.y), 22, '#FFD16B', 0.18);
-    if (this.lantern) glowCircle(g, this.cx(this.lantern.x), this.cy(this.lantern.y), 40, '#FFE9A8', 0.35);
-    this.vignette(g);
+    for (const gm of this.gems) if (gm.gold) glowCircle(g, this.cx(gm.x), this.cy(gm.y), 24, '#FFD16B', 0.25);
+    if (this.lantern) glowCircle(g, this.cx(this.lantern.x), this.cy(this.lantern.y), 46, '#FFE9A8', 0.45);
   }
   drawGem(g, gm, t) {
     const x = this.cx(gm.x), y = this.cy(gm.y) + Math.sin(t * 3 + gm.t) * 3;
     const col = gm.gold ? '#FFD16B' : '#7CF7FF';
     glowCircle(g, x, y, gm.gold ? 26 : 18, col, 0.4);
     g.save(); g.translate(x, y); g.rotate(Math.PI / 4 + Math.sin(t * 2 + gm.t) * 0.2);
-    g.fillStyle = col; const s = gm.gold ? 9 : 7; g.fillRect(-s, -s, s * 2, s * 2);
-    g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(-s, -s, s, s * 0.6);
+    const s = gm.gold ? 10 : 8;
+    g.fillStyle = col; g.fillRect(-s, -s, s * 2, s * 2);
+    g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.strokeRect(-s, -s, s * 2, s * 2);
+    g.fillStyle = 'rgba(255,255,255,0.75)'; g.fillRect(-s + 2, -s + 2, s * 0.9, s * 0.6);
     g.restore();
   }
   renderDark(g, t) {
@@ -317,7 +335,7 @@ export default class ShadowSneak extends BaseGame {
     const d = this._dark.getContext('2d');
     d.globalCompositeOperation = 'source-over';
     d.clearRect(0, 0, W, H);
-    d.fillStyle = 'rgba(4,6,16,0.9)';
+    d.fillStyle = 'rgba(4,6,16,0.82)';
     d.fillRect(OX - 8, OY - 8, COLS * CELL + 16, ROWS * CELL + 16);
     d.globalCompositeOperation = 'destination-out';
     for (const pl of this.pl) {
@@ -339,9 +357,8 @@ export default class ShadowSneak extends BaseGame {
     this.hudTimeBar(g, 86);
     if (this.pl.some((p) => p.hunter > 0)) {
       const h = this.pl.find((p) => p.hunter > 0);
-      const a = 0.6 + Math.sin(t * 8) * 0.4;
-      panel(g, W / 2 - 170, H - 40, 340, 30, { r: 15, fill: 'rgba(11,16,32,0.8)', stroke: '#FFE9A8' });
-      text(g, `¡${this.name(h.p).toUpperCase()} ES EL CAZADOR!`, W / 2, H - 25, { size: 15, color: '#FFE9A8', alpha: a, body: true, weight: 800 });
+      comicPanel(g, W / 2 - 200, H - 48, 400, 36, '#FFD23F', { skew: 10, line: 3, dotColor: 'rgba(13,11,20,0.15)' });
+      text(g, `¡${this.name(h.p).toUpperCase()} ES EL CAZADOR!`, W / 2, H - 30, { size: 20, color: '#15121F', comic: false, alpha: 0.75 + Math.sin(t * 8) * 0.25 });
     }
   }
 }

@@ -5,7 +5,7 @@
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
 import { compileSong, SONGS } from '../core/audioManager.js';
-import { W, H, TAU, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, ease } from '../core/utils.js';
+import { W, H, TAU, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, ease, cachedLayer, halftone } from '../core/utils.js';
 
 const LANES = ['left', 'down', 'up', 'right'];
 const HIT_Y = 610, TOP = 108, LANE_W = 72;
@@ -267,11 +267,20 @@ export default class BeatBattle extends BaseGame {
     const t = this.realTime;
     const beat = this.songTime * (this.song.bpm / 60);
     const pulse = this.songTime > 0 ? Math.pow(1 - (beat % 1), 3) : 0;
-    const bg = g.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#1F0F35');
-    bg.addColorStop(1, '#0B0820');
-    g.fillStyle = bg;
-    g.fillRect(0, 0, W, H);
+    // escenario de recital (quieto): telón, reflectores y tramado
+    cachedLayer(g, 'beat:stage', (cg) => {
+      const bg = cg.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#3A1466'); bg.addColorStop(1, '#14082E');
+      cg.fillStyle = bg; cg.fillRect(0, 0, W, H);
+      cg.fillStyle = halftone(cg, 'rgba(255,95,162,0.16)', 12, 2.4); cg.fillRect(0, 0, W, H);
+      for (let i = 0; i < 6; i++) {
+        const x = 110 + i * 212;
+        cg.fillStyle = 'rgba(255,244,224,0.07)';
+        cg.beginPath(); cg.moveTo(x - 20, 0); cg.lineTo(x + 20, 0); cg.lineTo(x + 140, H); cg.lineTo(x - 140, H); cg.closePath(); cg.fill();
+      }
+      cg.fillStyle = '#2A0E4A'; cg.fillRect(0, H - 60, W, 60);
+      cg.lineWidth = 5; cg.strokeStyle = '#0D0B14'; cg.beginPath(); cg.moveTo(0, H - 60); cg.lineTo(W, H - 60); cg.stroke();
+    });
     // ecualizador de fondo
     for (let i = 0; i < 40; i++) {
       const hgt = 40 + Math.abs(Math.sin(i * 1.7 + beat * 1.5)) * 120 * (0.4 + pulse * 0.6);
@@ -292,16 +301,21 @@ export default class BeatBattle extends BaseGame {
     const cx = this.fieldX[p];
     const col = this.color(p);
     const fw = LANE_W * 4 + 16;
-    panel(g, cx - fw / 2, TOP - 6, fw, H - TOP - 4, { r: 20, fill: 'rgba(8,10,24,0.82)', stroke: rgba(col, 0.5 + pulse * 0.3), lineWidth: 2 });
+    // pista de notas: panel de tinta con carriles de color y separadores
+    g.fillStyle = '#0D0B14'; g.fillRect(cx - fw / 2 + 6, TOP - 6 + 6, fw, H - TOP - 4);
+    g.fillStyle = '#1A1030'; g.fillRect(cx - fw / 2, TOP - 6, fw, H - TOP - 4);
     const laneCols = ['#FF5FA2', '#25CFE6', '#48D597', '#FFC93C'];
     for (let l = 0; l < 4; l++) {
       const x = this.laneX(p, l);
-      g.fillStyle = rgba(laneCols[l], 0.05 + this.laneFlash[p][l] * 0.25);
+      g.fillStyle = rgba(laneCols[l], 0.12 + this.laneFlash[p][l] * 0.35);
       g.fillRect(x - LANE_W / 2 + 3, TOP, LANE_W - 6, H - TOP - 14);
+      g.fillStyle = 'rgba(13,11,20,0.6)'; g.fillRect(x + LANE_W / 2 - 1.5, TOP, 3, H - TOP - 14);
     }
+    g.lineWidth = 5; g.strokeStyle = '#0D0B14'; g.strokeRect(cx - fw / 2, TOP - 6, fw, H - TOP - 4);
+    g.lineWidth = 3; g.strokeStyle = rgba(col, 0.6 + pulse * 0.4); g.strokeRect(cx - fw / 2 + 5, TOP - 1, fw - 10, H - TOP - 14);
     // línea de golpe y receptores
-    g.fillStyle = rgba('#F6F7FB', 0.5);
-    g.fillRect(cx - fw / 2 + 6, HIT_Y - 2, fw - 12, 4);
+    g.fillStyle = '#0D0B14'; g.fillRect(cx - fw / 2 + 6, HIT_Y - 4, fw - 12, 8);
+    g.fillStyle = '#FFF4E0'; g.fillRect(cx - fw / 2 + 6, HIT_Y - 2, fw - 12, 4);
     for (let l = 0; l < 4; l++) {
       const x = this.laneX(p, l);
       const fl = this.laneFlash[p][l];

@@ -361,8 +361,7 @@ export default class MemoryWar extends BaseGame {
     text(g, `TURNO J${this.turn + 1} · ${this.cards.length / 2 - this.pairs[0] - this.pairs[1]} parejas restantes`, W / 2, 98, { size: 13, body: true, weight: 800, color: this.color(this.turn) });
     if (this.msg) {
       const a = Math.min(1, this.msg.t * 3);
-      panel(g, W / 2 - 230, 640, 460, 50, { r: 25, fill: 'rgba(11,16,32,0.9)', stroke: this.msg.color });
-      text(g, this.msg.text, W / 2, 665, { size: 22, color: '#fff', alpha: a });
+      this.callout(g, this.msg.text, { y: 662, size: 26, alpha: a, k: 1, color: this.msg.color, light: /^#FF[CD]/i.test(this.msg.color) });
     }
   }
 }
