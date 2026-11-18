@@ -2407,3 +2407,167 @@ body { font-weight: 600; }
 .solo-game:nth-child(odd) { transform: rotate(-0.6deg); } .solo-game:nth-child(even) { transform: rotate(0.5deg); }
 .solo-game .gicon, .solo-game canvas { background: #fff4e0; border: 2px solid var(--ink); border-radius: 50%; }
 .solo-game.sel { outline: 4px solid #fff !important; outline-offset: 1px; transform: translate(-2px, -2px) rotate(-1deg) scale(1.03); z-index: 1; }
+
+/* =====================================================================
+   v6.3 SISTEMA DE HISTORIETA (revisión estricta): una sola regla para todo el juego.
+   Paneles casi rectos con tinta gruesa y sombra dura; nada de vidrio, sombras difusas,
+   pastillas grises ni enlaces de página web. Textos con contraste y tamaño legibles.
+   ===================================================================================== */
+:root { --muted: #CFC7E8; }
+/* paneles: esquinas casi rectas */
+.card, .dialog, .solo-side, .solo-main, .home-stage, .home-card, .home-link, .ol-card, .ps-panel, .ps-row, .store-featured,
+.store-bal, .item-card, .solo-daily, .solo-goal, .ss, .news-card, .tb-slot, .acc-row, .item-big, .pcard.mini, .tf, .lang-card,
+.qp-opts, .notif, .chest-card, .ci-box, .mast, .ach, .res-col, .pass-head, .club-empty, .ch-row, .season-row, .online-card,
+.need-acc, .stats-table, .solo-game, .mode-card, .game-card, .pass-cell, .tb-mid, .bind-btn, .acc-input { border-radius: 6px !important; }
+/* selectores (antes pastillas chiquitas): carteles con tinta */
+.seg { gap: 8px !important; }
+.seg-btn { min-height: 36px; padding: 0 13px !important; border-radius: 4px !important; border: 3px solid var(--ink) !important; background: #2A2440 !important;
+  color: #FFF4E0 !important; font-family: var(--display) !important; font-weight: 400 !important; font-size: 16px !important; letter-spacing: 1px;
+  box-shadow: 3px 3px 0 var(--ink) !important; transition: transform 0.08s; }
+.seg-btn.active { background: var(--yellow) !important; color: #15121F !important; transform: rotate(-2deg) scale(1.04); }
+.seg-btn:hover, .seg-btn:focus { outline: 3px solid #FFF4E0; outline-offset: 1px; box-shadow: 3px 3px 0 var(--ink) !important; }
+/* interruptores (antes estilo teléfono): caja de historieta con ✓ / ✕ */
+.toggle { width: 78px !important; height: 36px !important; border-radius: 5px !important; border: 3px solid var(--ink) !important; background: #3A2F55 !important; box-shadow: 3px 3px 0 var(--ink) !important; }
+.toggle::after { top: 3px !important; left: 3px !important; width: 28px !important; height: 24px !important; border-radius: 3px !important; background: #FFF4E0 !important; border: 2px solid var(--ink); box-shadow: none !important; }
+.toggle.on { background: #3DDC97 !important; }
+.toggle.on::after { left: 41px !important; }
+.toggle::before { content: '✕'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-weight: 900; font-size: 16px; color: #FFF4E0; }
+.toggle.on::before { content: '✓'; left: 11px; right: auto; color: #15121F; }
+.toggle:focus { outline: 3px solid #FFF4E0; outline-offset: 1px; }
+/* deslizadores */
+input[type='range'] { height: 18px !important; border-radius: 3px !important; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+  background: linear-gradient(90deg, #FFD23F var(--v, 50%), #2A2440 var(--v, 50%)) !important; }
+input[type='range']::-webkit-slider-thumb { width: 22px !important; height: 30px !important; border-radius: 4px !important; background: #FFF4E0 !important; border: 3px solid var(--ink) !important; box-shadow: 2px 2px 0 var(--ink) !important; }
+input[type='range']::-moz-range-thumb { width: 18px; height: 26px; border-radius: 4px; background: #FFF4E0; border: 3px solid var(--ink); }
+input[type='range']:focus { outline: 3px solid #FFF4E0; outline-offset: 3px; box-shadow: 3px 3px 0 var(--ink); }
+/* etiquetas de opciones: título en letra de historieta y explicación legible */
+.opt-label b { font-family: var(--display); font-weight: 400; font-size: 18px !important; letter-spacing: 0.8px; }
+.opt-label span, .ol-card .opt-label span { font-size: 13px !important; color: #CFC7E8 !important; line-height: 1.3; }
+/* títulos de paneles: carteles amarillos (iguales en todo el juego) */
+.card > h3, .solo-side > h3, .solo-main > h3, .ol-card h3, .ci-box > h3, .set-body .card > h3 {
+  display: inline-block !important; align-self: flex-start; background: var(--yellow); color: #15121F !important; text-shadow: none !important;
+  padding: 3px 11px 1px !important; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transform: rotate(-1.5deg);
+  font-family: var(--display) !important; font-weight: 400 !important; font-size: 17px !important; letter-spacing: 1px; margin: 0 0 12px !important; }
+/* textos secundarios: más grandes y con contraste */
+.muted, small.muted, p.muted { color: #CFC7E8 !important; }
+.card p, .solo-side p, .solo-main p, .ol-card p { font-size: 13.5px; line-height: 1.4; }
+/* botones fantasma: siempre claros sobre fondo oscuro (antes en la intro quedaba oscuro sobre oscuro) */
+.btn.ghost { background: #2A2440 !important; color: #FFF4E0 !important; border-color: var(--ink) !important; }
+.btn.ghost:hover, .btn.ghost:focus { background: #3A3158 !important; }
+/* enlaces de la cuenta (antes azules subrayados, de página web): botones chicos de historieta */
+.acc-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.linkbtn { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border: 3px solid var(--ink) !important; border-radius: 4px; background: #2A2440 !important;
+  color: #FFF4E0 !important; text-decoration: none !important; font-family: var(--display); font-size: 14px; letter-spacing: 0.8px; box-shadow: 3px 3px 0 var(--ink); cursor: pointer; }
+.linkbtn:hover, .linkbtn:focus { background: #3A3158 !important; outline: none; }
+.linkbtn.acc-delete { background: #FF3B5C !important; color: #fff !important; }
+/* botones de íconos: sombra dura (no difusa) */
+.icon-btn { box-shadow: 3px 3px 0 var(--ink) !important; }
+.store-logo { box-shadow: 3px 3px 0 var(--ink) !important; }
+/* fichas y chips sueltos */
+.chip { background: #2A2440 !important; border: 2px solid var(--ink) !important; color: #FFF4E0 !important; border-radius: 4px !important; }
+.ls { border: 2px solid var(--ink); border-radius: 4px !important; color: #15121F !important; font-weight: 900; }
+.ls.easy { background: #3DDC97 !important; } .ls.normal { background: #5FA8FF !important; } .ls.hard { background: #FF9E5E !important; } .ls.expert { background: #FF5C77 !important; }
+.lvl { border: 2px solid var(--ink) !important; }
+.keycap { border: 2px solid var(--ink) !important; background: #FFF4E0 !important; color: #15121F !important; border-radius: 4px !important; box-shadow: 2px 2px 0 var(--ink); }
+.notif.unread { background: #2E2752 !important; border-left: 6px solid var(--yellow) !important; }
+.notif-ico { background: var(--yellow) !important; color: #15121F !important; border: 2px solid var(--ink); }
+.acc-row.on, .acc-status.on { background: #1F3A2E !important; border: 3px solid var(--ink) !important; }
+.cc-odds { background: #15121F !important; border: 2px solid var(--ink); border-radius: 4px; }
+.ready-chip { background: #3DDC97 !important; color: #15121F !important; border: 3px solid var(--ink) !important; border-radius: 4px !important; }
+.ps-row, .ps-char, .ps-acc { background: #221C33 !important; }
+.ps-name { background: #15121F !important; border: 3px solid var(--ink) !important; border-radius: 4px !important; }
+
+/* ---------------------------------------------------------------- NOVEDADES: cartel de inicio */
+.news-banner { gap: 10px !important; }
+.nb-main { border-radius: 6px !important; border: 4px solid var(--ink) !important; box-shadow: 5px 5px 0 var(--ink) !important; padding: 8px 14px !important;
+  background: radial-gradient(circle, rgba(13, 11, 20, 0.18) 1.6px, transparent 2px) 0 0 / 8px 8px, var(--c) !important; color: #15121F !important; transform: rotate(-0.6deg); }
+.nb-main:hover, .nb-main:focus { transform: translate(-2px, -2px) rotate(-0.6deg); box-shadow: 7px 7px 0 var(--ink), 0 0 0 3px #fff !important; }
+.nb-tag { background: #15121F !important; color: #FFD23F !important; border-radius: 3px !important; padding: 4px 9px !important; font-size: 15px !important; transform: rotate(-4deg); box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35); }
+.nb-text b { color: #15121F !important; font-size: 21px !important; text-shadow: none !important; }
+.nb-text span { color: #15121F !important; font-weight: 700; font-size: 13.5px !important; }
+.nb-more { background: #15121F; color: #FFF4E0 !important; padding: 6px 10px; border-radius: 3px; font-family: var(--display); font-weight: 400 !important; font-size: 15px !important; letter-spacing: 1px !important; }
+.nb-bug { border-radius: 6px !important; border: 4px solid var(--ink) !important; box-shadow: 5px 5px 0 var(--ink) !important; background: #FFF4E0 !important; color: #15121F !important; font-family: var(--display); font-weight: 400 !important; font-size: 14px !important; letter-spacing: 0.5px; transform: rotate(1deg); }
+.nb-bug .icon { color: #FF3B5C !important; }
+/* NOVEDADES: cada versión es una viñeta con cartel de versión */
+.news-card { background: #221C33 !important; border: 4px solid var(--ink) !important; box-shadow: 6px 6px 0 var(--ink) !important; padding: 0 0 14px !important; overflow: hidden; }
+.nc-head { display: flex; align-items: center; gap: 10px; background: var(--c); padding: 8px 14px; border-bottom: 4px solid var(--ink);
+  background-image: radial-gradient(circle, rgba(13, 11, 20, 0.2) 1.6px, transparent 2px); background-size: 8px 8px; }
+.nc-tag { background: #15121F !important; color: #FFD23F !important; font-family: var(--display); font-size: 16px !important; padding: 3px 9px !important; border-radius: 3px !important; transform: rotate(-3deg); }
+.nc-head small { color: #15121F !important; font-weight: 900 !important; font-size: 13px !important; }
+.nc-title { margin: 12px 18px 4px !important; font-family: var(--display); font-weight: 400; font-size: 30px !important; letter-spacing: 1px; color: #FFF4E0; text-shadow: 3px 3px 0 var(--ink); }
+.nc-intro { margin: 0 18px 8px !important; font-size: 15px !important; color: #E9E4FF !important; font-weight: 700; }
+.nc-block { margin: 10px 18px 0 !important; }
+.nc-kind { display: inline-flex !important; align-items: center; gap: 6px; background: var(--k); color: #15121F !important; border: 3px solid var(--ink); padding: 2px 10px 1px; font-family: var(--display); font-size: 15px !important; letter-spacing: 1px; box-shadow: 3px 3px 0 var(--ink); transform: rotate(-1deg); }
+.nc-kind .icon { color: #15121F !important; }
+.nc-block ul { margin: 8px 0 0 !important; padding-left: 0 !important; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.nc-block li { position: relative; padding: 6px 10px 6px 30px; background: #15121F; border-left: 5px solid var(--k); font-size: 14px !important; line-height: 1.35; color: #FFF4E0; }
+.nc-block li::before { content: '★'; position: absolute; left: 10px; top: 6px; color: var(--k); }
+
+/* ---------------------------------------------------------------- RESULTADOS */
+.res-col { background: radial-gradient(circle, rgba(13, 11, 20, 0.25) 1.6px, transparent 2px) 0 0 / 9px 9px, linear-gradient(180deg, color-mix(in srgb, var(--c) 45%, #221C33), #221C33 75%) !important;
+  border: 4px solid var(--ink) !important; box-shadow: 6px 6px 0 var(--ink) !important; }
+.res-col.win { box-shadow: 6px 6px 0 var(--ink), 0 0 0 4px var(--yellow) !important; }
+.res-emote { top: -14px !important; left: 10px !important; transform: rotate(-6deg) !important; }
+.res-col.right .res-emote { left: auto !important; right: 10px; transform: rotate(6deg) !important; }
+.res-name { text-shadow: 2px 2px 0 var(--ink); }
+.res-score { text-shadow: 4px 4px 0 var(--ink) !important; color: #FFD23F !important; }
+.res-score small { color: #FFF4E0 !important; font-size: 13px !important; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px !important; }
+.res-reward { border: 3px solid var(--ink) !important; border-radius: 4px !important; box-shadow: 3px 3px 0 var(--ink); }
+.res-reward.wait { background: #FFF4E0 !important; color: #15121F !important; font-weight: 900; }
+.res-reward { background: #15121F !important; font-size: 13px !important; }
+/* desplegables y botones de opción de un jugador: mismo cartel que los selectores */
+select { border-radius: 4px !important; border: 3px solid var(--ink) !important; background-color: #2A2440 !important; color: #FFF4E0 !important;
+  font-family: var(--display) !important; font-size: 15px !important; letter-spacing: 0.8px; min-height: 36px; padding: 0 10px; box-shadow: 3px 3px 0 var(--ink); }
+.solo-chip { border-radius: 4px !important; border: 3px solid var(--ink) !important; background: #2A2440 !important; color: #FFF4E0 !important;
+  font-family: var(--display) !important; font-weight: 400 !important; font-size: 15px !important; letter-spacing: 0.8px; box-shadow: 3px 3px 0 var(--ink) !important; min-height: 34px; }
+.solo-chip.on, .solo-chip.sel, .solo-chip.active { background: var(--yellow) !important; color: #15121F !important; transform: rotate(-2deg); }
+.acc-input::placeholder, input::placeholder { color: #8F86AE; }
+.bug-kind, textarea, .bug-who { border-radius: 6px !important; border: 3px solid var(--ink) !important; box-shadow: 3px 3px 0 var(--ink); }
+.bug-kind { background: #221C33 !important; }
+.bug-kind.on { background: var(--yellow) !important; color: #15121F !important; }
+.bug-kind.on b, .bug-kind.on span, .bug-kind.on small { color: #15121F !important; }
+textarea { background: #15121F !important; }
+/* revisión estricta, segunda pasada: lo último que quedaba genérico */
+.rank-row, .rec-card, .stat-tile, .loadout, .ce-step, .prof-wallet, .pcard { border-radius: 6px !important; }
+.rank-row, .rec-card, .stat-tile, .loadout, .prof-wallet { border: 3px solid var(--ink) !important; box-shadow: 4px 4px 0 var(--ink) !important; }
+.rank-row { background: #221C33 !important; }
+.rank-row.top1 { background: linear-gradient(90deg, #6B5200, #221C33 55%) !important; }
+.rank-row.top3 { background: linear-gradient(90deg, #4A4F66, #221C33 55%) !important; }
+.rank-row.top10 { background: linear-gradient(90deg, #2E2752, #221C33 55%) !important; }
+.rec-card, .stat-tile, .loadout, .prof-wallet { background: #221C33 !important; }
+.ce-step { background: #15121F !important; border: 2px solid var(--ink); }
+.ce-ico, .oc-go { background: #FFD23F !important; color: #15121F !important; border: 2px solid var(--ink); }
+.pc-stat { background: rgba(13, 11, 20, 0.72) !important; }
+.ph-jack { background: #15121F !important; border: 2px solid var(--ink); border-radius: 4px; padding: 6px 10px; }
+.bug-who { background: #15121F !important; }
+.gv-top, .gv-new { font-size: 11.5px !important; }
+.pc-title { font-size: max(11px, 1em) !important; }
+.pass small, .pass-col small { font-size: 11px !important; }
+.emote { box-shadow: 3px 3px 0 var(--ink) !important; }
+/* avisos (toasts): viñetas de historieta con banda de color */
+.toast { border-radius: 6px !important; border: 4px solid var(--ink) !important; border-left: 10px solid var(--yellow) !important; background: #221C33 !important;
+  box-shadow: 5px 5px 0 var(--ink) !important; backdrop-filter: none !important; }
+.toast.warn { border-left-color: #FF3B5C !important; }
+.toast.ok { border-left-color: #3DDC97 !important; }
+.toast.achievement, .toast.record, .toast.mastery, .toast.t-legendary, .toast.t-mythic { box-shadow: 5px 5px 0 var(--ink) !important; }
+.toast.achievement { border-left-color: var(--yellow) !important; background: radial-gradient(circle, rgba(255, 210, 63, 0.14) 1.6px, transparent 2px) 0 0 / 8px 8px, #221C33 !important; }
+.toast-badge { border-radius: 6px !important; border: 3px solid var(--ink); background: #FFD23F !important; color: #15121F !important; box-shadow: 2px 2px 0 var(--ink); }
+.toast-title { font-size: 12.5px !important; color: #FFD23F !important; }
+.toast.warn .toast-title { color: #FF8FA3 !important; }
+.toast-name { color: #FFF4E0; }
+.toast-text { font-size: 14px !important; color: #E9E4FF !important; }
+.rs-slot { background: #1A1628 !important; }
+.rs-slot.empty { border-color: #6A5F8E !important; }
+.rs-slot small { font-size: 12px !important; }
+.ol-who { border-width: 3px !important; border-color: var(--ink) !important; }
+.lock, .ps-ready-badge { background: rgba(13, 11, 20, 0.85) !important; }
+/* Inicio: escenario de portada de historieta (azul contra rojo con "VS") */
+.home-stage { position: relative;
+  background: radial-gradient(circle, rgba(13, 11, 20, 0.28) 1.7px, transparent 2.1px) 0 0 / 10px 10px,
+    linear-gradient(105deg, #2D6BE0 0 49.4%, #0D0B14 49.4% 50.6%, #E8433A 50.6% 100%) !important; }
+.home-stage::before { content: 'VS'; position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%) rotate(-8deg); z-index: 2; pointer-events: none;
+  font-family: var(--display); font-size: 68px; line-height: 1; color: #FFD23F; -webkit-text-stroke: 3px #0D0B14; text-shadow: 5px 5px 0 #0D0B14; }
+/* barras de progreso del pase y desafíos: tinta + relleno amarillo */
+.ph-bar, .ch-bar, .tg-bar { height: 14px !important; border-radius: 3px !important; background: #15121F !important; border: 3px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); overflow: hidden; }
+.ph-bar i, .ch-bar i, .tg-bar i { border-radius: 0 !important; background: #FFD23F !important; }
+.hp-row b { font-family: var(--display); font-weight: 400; font-size: 20px; letter-spacing: 1px; }

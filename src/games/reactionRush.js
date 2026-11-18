@@ -28,7 +28,7 @@ export default class ReactionRush extends BaseGame {
       g.fillStyle = on ? '#48D597' : '#2A3566';
       roundRect(g, 44, 54, 112, 72, 14); g.fill();
       if (on) { glowCircle(g, 100, 90, 90, '#48D597', 0.7); }
-      text(g, on ? '¡YA!' : '...', 100, 92, { size: 34, color: on ? '#0B1020' : '#8C96B8' });
+      text(g, on ? '¡YA!' : '...', 100, 92, { size: 34, color: on ? '#FFF4E0' : '#8C96B8' });
       g.fillStyle = '#FFC93C';
       g.beginPath(); g.ellipse(100, 168, 40, 14, 0, 0, TAU); g.fill();
       g.fillStyle = '#C9922B';
@@ -319,7 +319,7 @@ export default class ReactionRush extends BaseGame {
     }
     switch (this.sig) {
       case 'flash':
-        if (signal) text(g, '¡YA!', cx, cy, { size: 120, color: '#0B1020' });
+        if (signal) text(g, '¡YA!', cx, cy, { size: 120, color: '#FFF4E0' });
         else if (decoy) text(g, '¡NO!', cx, cy, { size: 100, color: '#FFD1C9' });
         else text(g, '•  •  •', cx, cy, { size: 50, color: `rgba(140,150,184,${0.4 + Math.sin(t * 5) * 0.3})` });
         break;
@@ -341,7 +341,7 @@ export default class ReactionRush extends BaseGame {
         break;
       }
       case 'word': {
-        if (signal) text(g, '¡YA!', cx, cy, { size: 120, color: '#0B1020' });
+        if (signal) text(g, '¡YA!', cx, cy, { size: 120, color: '#FFF4E0' });
         else if (decoy) text(g, decoy.word, cx, cy, { size: 96, color: '#FF8A78' });
         else text(g, WORDS[this.wordIdx % WORDS.length], cx, cy, { size: 62, color: '#C7CEE8' });
         break;
@@ -363,7 +363,7 @@ export default class ReactionRush extends BaseGame {
         g.fillStyle = shade(bc, -0.3);
         g.beginPath(); g.arc(0, 170, 14, 0, TAU); g.fill();
         g.restore();
-        if (signal) text(g, '¡DING!', cx + 170, cy - 60, { size: 40, color: '#0B1020' });
+        if (signal) text(g, '¡DING!', cx + 170, cy - 60, { size: 40, color: '#FFF4E0' });
         break;
       }
     }

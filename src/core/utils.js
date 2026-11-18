@@ -156,7 +156,9 @@ export function text(g, str, x, y, o = {}) {
   g.textBaseline = o.baseline || 'middle';
   if (o.alpha != null) g.globalAlpha *= o.alpha;
   // letras de historieta: los títulos grandes llevan contorno de tinta y sombra dura (en lugar de brillo)
-  const comic = !o.body && size >= 20 && o.comic !== false;
+  // texto oscuro: sin contorno de tinta (si no, letra y contorno se funden en una mancha negra)
+  const darkFill = typeof o.color === 'string' && /^#[0-9a-f]{6}$/i.test(o.color) && (() => { const [r, g2, b] = hexToRgb(o.color); return r * 0.299 + g2 * 0.587 + b * 0.114 < 70; })();
+  const comic = !o.body && size >= 20 && o.comic !== false && !darkFill;
   const stroke = o.stroke || (comic ? '#0D0B14' : null);
   if (comic) {
     const d = Math.max(2, size * 0.07);

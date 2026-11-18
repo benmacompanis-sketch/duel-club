@@ -582,7 +582,7 @@ export class MinigameRunner {
     g.fillStyle = '#0D0B14'; g.fillRect(-w / 2 + 5, -21, w, 46);
     g.fillStyle = '#FFE45C'; g.fillRect(-w / 2, -25, w, 46);
     g.strokeStyle = '#0D0B14'; g.lineWidth = 3; g.strokeRect(-w / 2, -25, w, 46);
-    text(g, txt, 0, -2, { size: 20, color: '#15121F' });
+    text(g, txt, 0, -2, { size: 20, color: '#15121F', comic: false });
     g.restore();
   }
 

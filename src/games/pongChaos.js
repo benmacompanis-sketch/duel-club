@@ -393,7 +393,7 @@ export default class PongChaos extends BaseGame {
     });
     if (this.banner) {
       const k = 1 - this.banner.t / 1.6;
-      this.callout(g, this.banner.text, { y: 400, size: 54, k: k * 3, alpha: Math.min(1, this.banner.t * 3), color: this.banner.color, light: true });
+      this.callout(g, this.banner.text, { y: this.goalMsg ? 560 : 420, size: 50, k: k * 3, alpha: Math.min(1, this.banner.t * 3), color: this.banner.color, light: true });
     }
     if (this.goalMsg) {
       const m = this.goalMsg;

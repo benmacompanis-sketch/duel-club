@@ -13,7 +13,7 @@ import { errorText } from '../net/api.js';
  * @param {(fn) => () => void} o.subscribe  recibe {from, user, text, mine}
  * @param {string} o.context  para los reportes (código de sala o id de la serie)
  */
-export function mountMatchChat(app, { authors, send, subscribe, context }) {
+export function mountMatchChat(app, { authors, send, subscribe, context, visible = null }) {
   const ui = app.ui;
   const svc = app.accounts;
   let open = false, unread = 0, author = 0;
@@ -88,14 +88,16 @@ export function mountMatchChat(app, { authors, send, subscribe, context }) {
   });
   // T abre el chat (si no estás escribiendo en otro lado); Escape lo minimiza
   const onKey = (e) => {
-    if (e.code === 'KeyT' && !open && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) { e.preventDefault(); setOpen(true); }
+    if (e.code === 'KeyT' && !open && el.style.display !== 'none' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) { e.preventDefault(); setOpen(true); }
     else if (e.code === 'Escape' && open && document.activeElement === input) { e.stopPropagation(); setOpen(false); }
   };
   window.addEventListener('keydown', onKey, true);
+  // solo se ve donde corresponde (en la sala o durante la partida); si navegás a otro lado, se esconde
+  const vis = visible ? setInterval(() => { const v = !!visible(); el.style.display = v ? '' : 'none'; if (!v && open) setOpen(false); }, 400) : null;
   if (!app.chatBlocks && svc.slotAccount(0)) svc.blocks(0).then((b) => { app.chatBlocks = b; }).catch(() => {});
   paintWho();
   return {
     refresh: paintWho,
-    destroy() { unsub(); window.removeEventListener('keydown', onKey, true); el.remove(); },
+    destroy() { unsub(); clearInterval(vis); window.removeEventListener('keydown', onKey, true); el.remove(); },
   };
 }

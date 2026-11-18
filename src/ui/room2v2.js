@@ -106,7 +106,7 @@ export function enterRoom(app, ses, kind = 'private') {
   let chat = null;
   const showLobby = () => { if (!ses.closed) ui.show(roomScreen, { ses, kind }); };
   const authors = () => ses.view.slots.filter((s) => s.kind === 'local' && s.dev === ses.me).map((s) => ({ name: s.name || 'Invitado', username: s.username || '', p: s.username && s.username === app.accounts.slotUser(1) ? 1 : 0 }));
-  chat = mountMatchChat(app, { authors, send: (a, t) => ses.sendChat(a, t), subscribe: (fn) => ses.onChat(fn), context: `sala ${ses.view.code}` });
+  chat = mountMatchChat(app, { authors, send: (a, t) => ses.sendChat(a, t), subscribe: (fn) => ses.onChat(fn), context: `sala ${ses.view.code}`, visible: () => !ses.closed && (app.runner.active || !!document.querySelector('.room-page')) });
   ses.on(async () => {
     chat.refresh();
     const v = ses.view;

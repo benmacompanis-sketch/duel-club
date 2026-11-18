@@ -4,6 +4,32 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-18-v6-3',
+    date: '2026-11-18',
+    version: '6.3',
+    title: 'Todo el club en historieta',
+    tag: 'v6.3',
+    color: '#3DDC97',
+    intro: 'Revisamos pantalla por pantalla: todo el juego habla el mismo idioma de historieta.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'Selectores, interruptores, deslizadores y desplegables nuevos, con tinta y fáciles de tocar en el celular.',
+        'Paneles, ventanas y avisos con borde de tinta y sombra dura; títulos de cada panel en carteles amarillos.',
+        'Inicio: escenario de portada, azul contra rojo con "VS".',
+        'Novedades: cada versión es una viñeta con su cartel y lista fácil de leer.',
+        'Textos secundarios más grandes y con más contraste.',
+        'Botones de la cuenta (cambiar nombre, vincular Google o email) en vez de enlaces de página web.',
+      ] },
+      { kind: 'arreglo', items: [
+        'El emote ya no tapa tu nombre en la pantalla de resultados.',
+        'En la presentación de cada minijuego, el botón VOLVER se ve bien.',
+        'Pong Chaos: el cartel de ¡GOL! y el del caos ya no se enciman.',
+        'Reaction Rush: el "¡YA!" de la pantalla verde se lee bien (antes era una mancha negra).',
+        'El chat de la sala 2v2 ya no queda flotando en otras pantallas.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-18-v6-2',
     date: '2026-11-18',
     version: '6.2',
