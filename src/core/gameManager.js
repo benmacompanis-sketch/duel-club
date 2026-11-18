@@ -522,6 +522,7 @@ export class MinigameRunner {
       g.translate(W, 0);
       g.scale(-1, 1);
     }
+    game.camera?.(g); // cámara del minijuego (acercar la acción); solo visual
     game.render(g);
     game.fx.render(g);
     g.restore();

@@ -3,7 +3,8 @@
 // multibola, paletas mini y turbo. La pelota acelera con cada golpe.
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, ease } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, ease, cachedLayer, halftone, mix, burst } from '../core/utils.js';
+import { drawPortrait } from '../core/characters.js';
 
 const TOP = 100, BOT = 704, PW = 16, BR = 11;
 const CHAOS = [
@@ -87,6 +88,8 @@ export default class PongChaos extends BaseGame {
   }
 
   update(dt) {
+    if (this.goalMsg) { this.goalMsg.t -= dt; if (this.goalMsg.t <= 0) this.goalMsg = null; }
+    if (this.frozen(dt)) return;
     this.ambient(dt);
     // paletas
     for (let p = 0; p < this.np; p++) {
@@ -240,7 +243,8 @@ export default class PongChaos extends BaseGame {
     this.fx.flash(this.color(p), 0.25);
     this.fx.shake(10);
     this.fx.burst(p ? 20 : W - 20, b.y, [this.color(p), '#fff', '#FFC93C'], 40, { angle: p ? 0 : Math.PI, spread: 1.2, speed: 600 });
-    this.fx.float(p ? 220 : W - 220, (TOP + BOT) / 2, '¡GOL!', this.color(p), 52);
+    this.goalMsg = { p, t: 1.3 };
+    this.impact(0.12);
     if (this.score[p] >= this.target) return this.end();
     if (!this.balls.length) {
       this.serveT = 1.0;
@@ -288,89 +292,95 @@ export default class PongChaos extends BaseGame {
   // ------------------------------------------------------------------ dibujo
   render(g) {
     const t = this.realTime;
-    this.arenaBG(g, '#0E1430', '#0A0F22');
-    // halos de arco
+    // mesa de juego de historieta (quieta): fondo violeta, tramado, rieles amarillo y negro, arcos del color de cada uno
+    const c0 = this.color(0), c1 = this.color(1);
+    cachedLayer(g, `pong:${c0}:${c1}`, (cg) => {
+      cg.fillStyle = '#1A1240'; cg.fillRect(0, 0, W, H);
+      cg.fillStyle = halftone(cg, 'rgba(155,108,255,0.22)', 12, 2.4); cg.fillRect(0, 0, W, H);
+      const tb = cg.createLinearGradient(0, TOP, 0, BOT);
+      tb.addColorStop(0, '#2C1F6B'); tb.addColorStop(1, '#22185A');
+      cg.fillStyle = tb; cg.fillRect(0, TOP, W, BOT - TOP);
+      cg.fillStyle = halftone(cg, 'rgba(13,11,20,0.25)', 10, 2); cg.fillRect(0, TOP, W, BOT - TOP);
+      // mitades con el color de cada jugador
+      for (const [x0, col] of [[0, c0], [W - 220, c1]]) {
+        const grd = cg.createLinearGradient(x0 ? W : 0, 0, x0 ? W - 220 : 220, 0);
+        grd.addColorStop(0, rgba(col, 0.45)); grd.addColorStop(1, rgba(col, 0));
+        cg.fillStyle = grd; cg.fillRect(x0, TOP, 220, BOT - TOP);
+      }
+      cg.strokeStyle = 'rgba(255,244,224,0.35)'; cg.lineWidth = 6;
+      cg.setLineDash([22, 18]); cg.beginPath(); cg.moveTo(W / 2, TOP); cg.lineTo(W / 2, BOT); cg.stroke(); cg.setLineDash([]);
+      cg.beginPath(); cg.arc(W / 2, (TOP + BOT) / 2, 90, 0, TAU); cg.stroke();
+      cg.beginPath(); cg.arc(0, (TOP + BOT) / 2, 150, -Math.PI / 2, Math.PI / 2); cg.stroke();
+      cg.beginPath(); cg.arc(W, (TOP + BOT) / 2, 150, Math.PI / 2, Math.PI * 1.5); cg.stroke();
+      // rieles
+      for (const y of [TOP - 14, BOT]) {
+        cg.fillStyle = '#0D0B14'; cg.fillRect(0, y - 3, W, 20);
+        cg.save(); cg.beginPath(); cg.rect(0, y, W, 14); cg.clip();
+        cg.fillStyle = '#FFD23F'; cg.fillRect(0, y, W, 14);
+        cg.fillStyle = '#0D0B14';
+        for (let x = -20; x < W + 20; x += 36) { cg.beginPath(); cg.moveTo(x, y + 14); cg.lineTo(x + 14, y); cg.lineTo(x + 28, y); cg.lineTo(x + 14, y + 14); cg.fill(); }
+        cg.restore();
+      }
+    });
+    // marcador gigante de fondo (tinta suave)
     for (const p of [0, 1]) {
-      const x = p ? W : 0;
-      const grd = g.createLinearGradient(x, 0, p ? W - 200 : 200, 0);
-      grd.addColorStop(0, rgba(this.color(p), 0.22 + (this.react[p] ? 0.2 : 0)));
-      grd.addColorStop(1, rgba(this.color(p), 0));
-      g.fillStyle = grd;
-      g.fillRect(p ? W - 200 : 0, TOP, 200, BOT - TOP);
+      const k = this.react[p] > 0 ? 1 + Math.sin(this.react[p] * 12) * 0.06 : 1;
+      text(g, String(this.score[p]), p ? W * 0.75 : W * 0.25, (TOP + BOT) / 2, { size: 190 * k, color: rgba(this.color(p), this.react[p] > 0 ? 0.55 : 0.22), comic: false });
     }
-    this.grid(g, 0, TOP, W, BOT - TOP, 40);
-    // personajes de fondo
-    for (const p of [0, 1]) {
-      const anim = this.react[p] > 0 ? 'win' : this.react[1 - p] > 0 ? 'lose' : 'idle';
-      g.save();
-      g.globalAlpha = 0.18;
-      drawCharacter(g, { id: this.players[p].char, x: p ? W * 0.75 : W * 0.25, y: BOT - 30, s: 3.2, color: this.color(p), anim, t: t + p, facing: p ? -1 : 1, acc: this.players[p].acc, shadow: false });
-      g.restore();
-      text(g, String(this.score[p]), p ? W * 0.75 : W * 0.25, 250, { size: 150, color: rgba(this.color(p), 0.22) });
-    }
-    // bordes
-    g.fillStyle = '#9B6CFF';
-    g.fillRect(0, TOP - 4, W, 4);
-    g.fillRect(0, BOT, W, 4);
-    g.strokeStyle = 'rgba(246,247,251,0.18)';
-    g.lineWidth = 4;
-    g.setLineDash([14, 16]);
-    g.beginPath(); g.moveTo(W / 2, TOP); g.lineTo(W / 2, BOT); g.stroke();
-    g.setLineDash([]);
-    g.beginPath(); g.arc(W / 2, (TOP + BOT) / 2, 80, 0, TAU); g.stroke();
-    // bumpers
+    // bumpers: hongos de flipper con contorno
     for (const bm of this.bumpers) {
       const by = bm.y + Math.sin(bm.ph) * bm.amp;
-      g.strokeStyle = 'rgba(155,108,255,0.15)';
-      g.lineWidth = 2;
+      g.strokeStyle = 'rgba(13,11,20,0.5)'; g.lineWidth = 4;
       g.beginPath(); g.moveTo(bm.x, bm.y - bm.amp); g.lineTo(bm.x, bm.y + bm.amp); g.stroke();
-      glowCircle(g, bm.x, by, bm.r * 2.6, '#9B6CFF', 0.6 + bm.hit);
-      g.fillStyle = bm.hit > 0 ? '#E3D6FF' : '#9B6CFF';
-      g.beginPath(); g.arc(bm.x, by, bm.r * (1 + bm.hit * 0.2), 0, TAU); g.fill();
-      g.fillStyle = '#0B1020';
-      g.beginPath(); g.arc(bm.x, by, bm.r * 0.45, 0, TAU); g.fill();
+      const r = bm.r * (1 + bm.hit * 0.25);
+      g.fillStyle = '#0D0B14'; g.beginPath(); g.arc(bm.x + 4, by + 4, r + 3, 0, TAU); g.fill();
+      g.fillStyle = bm.hit > 0 ? '#FFF4E0' : '#FF3D8B'; g.beginPath(); g.arc(bm.x, by, r, 0, TAU); g.fill();
+      g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.stroke();
+      g.fillStyle = '#FFD23F'; g.beginPath(); g.arc(bm.x, by, r * 0.45, 0, TAU); g.fill(); g.stroke();
     }
     if (this.wall) {
-      g.fillStyle = '#9B6CFF';
-      if (quality.glow) { g.save(); g.shadowColor = '#9B6CFF'; g.shadowBlur = 20; }
-      roundRect(g, this.wall.x - 12, this.wall.y - 70, 24, 140, 10); g.fill();
-      if (quality.glow) g.restore();
+      g.fillStyle = '#0D0B14'; g.fillRect(this.wall.x - 12 + 4, this.wall.y - 70 + 4, 24, 140);
+      g.fillStyle = '#B49BFF'; g.fillRect(this.wall.x - 12, this.wall.y - 70, 24, 140);
+      g.fillStyle = halftone(g, 'rgba(13,11,20,0.3)', 7, 1.6); g.fillRect(this.wall.x - 12, this.wall.y - 70, 24, 140);
+      g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.strokeRect(this.wall.x - 12, this.wall.y - 70, 24, 140);
     }
-    // estela
+    // estela: líneas de velocidad
     for (const tr of this.trail) {
-      g.globalAlpha = Math.max(0, tr.a) * 0.6;
-      g.fillStyle = tr.s ? '#FFC93C' : tr.c;
-      g.beginPath(); g.arc(tr.x, tr.y, BR * tr.a * (tr.s ? 1.3 : 1), 0, TAU); g.fill();
+      g.globalAlpha = Math.max(0, tr.a) * 0.7;
+      g.fillStyle = tr.s ? '#FF8E3C' : tr.c;
+      g.beginPath(); g.arc(tr.x, tr.y, BR * tr.a * (tr.s ? 1.4 : 1), 0, TAU); g.fill();
     }
     g.globalAlpha = 1;
-    // paletas
+    // paletas: bloques gruesos con tinta y la cara del jugador
     for (let p = 0; p < this.np; p++) {
       const pd = this.paddles[p];
       const col = this.color(p);
       const charge = pd.smash > 0;
+      const x = pd.x - PW / 2 - 4, y = pd.y - pd.h / 2, w = PW + 8;
+      g.fillStyle = '#0D0B14'; g.fillRect(x + 5, y + 5, w, pd.h);
+      g.fillStyle = charge ? '#FFD23F' : pd.flash > 0.5 ? '#FFF4E0' : col;
+      g.fillRect(x, y, w, pd.h);
+      g.fillStyle = 'rgba(255,255,255,0.4)'; g.fillRect(x + 4, y + 6, 5, pd.h - 12);
+      g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.strokeRect(x, y, w, pd.h);
+      if (charge) { burst(g, pd.x, pd.y, 30, '#FFD23F', { points: 10, rot: t * 6, inner: 0.6, sx: 1, alpha: 0.85, line: 3 }); }
+      const side = pd.side;
+      drawPortrait(g, pd.x + (side ? 34 : -34), pd.y, 16, this.players[p], { t: t + p, facing: side ? -1 : 1 });
       if (this.team) text(g, `J${p + 1}`, pd.x, pd.y - pd.h / 2 - 16, { size: 16, color: col, body: true, weight: 900 });
-      g.save();
-      if (quality.glow) { g.shadowColor = charge ? '#FFC93C' : col; g.shadowBlur = 18 + pd.flash * 20; }
-      g.fillStyle = charge ? '#FFE08A' : pd.flash > 0.5 ? '#ffffff' : col;
-      roundRect(g, pd.x - PW / 2, pd.y - pd.h / 2, PW, pd.h, 8); g.fill();
-      g.restore();
-      g.fillStyle = 'rgba(255,255,255,0.35)';
-      roundRect(g, pd.x - PW / 2 + 3, pd.y - pd.h / 2 + 6, 4, pd.h - 12, 2); g.fill();
     }
-    // pelotas
+    // pelotas: blancas con tinta; el smash se prende fuego
     for (const b of this.balls) {
-      glowCircle(g, b.x, b.y, 40, b.smash > 0 ? '#FFC93C' : '#ffffff', 0.7);
-      g.fillStyle = b.smash > 0 ? '#FFE08A' : '#ffffff';
-      g.beginPath(); g.arc(b.x, b.y, BR, 0, TAU); g.fill();
+      if (b.smash > 0) burst(g, b.x, b.y, BR * 2.2, '#FF8E3C', { points: 9, rot: t * 10, inner: 0.55, sx: 1, line: 3 });
+      g.fillStyle = b.smash > 0 ? '#FFD23F' : '#FFF4E0';
+      g.beginPath(); g.arc(b.x, b.y, BR + 1, 0, TAU); g.fill();
+      g.lineWidth = 3.5; g.strokeStyle = '#0D0B14'; g.stroke();
+      g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(b.x - 3, b.y - 3, 3, 0, TAU); g.fill();
     }
     if (!this.balls.length && this.serveT > 0 && this.time > 0) {
-      const k = this.serveT;
-      text(g, 'SAQUE', W / 2, (TOP + BOT) / 2, { size: 30, color: rgba('#F6F7FB', 0.5 + 0.5 * Math.sin(t * 10)) });
-      g.fillStyle = rgba('#F6F7FB', 0.5);
-      g.beginPath();
-      const d = this.serveTo === 0 ? -1 : 1;
-      g.moveTo(W / 2 + d * 70, (TOP + BOT) / 2); g.lineTo(W / 2 + d * 50, (TOP + BOT) / 2 - 12); g.lineTo(W / 2 + d * 50, (TOP + BOT) / 2 + 12); g.fill();
-      void k;
+      const d = this.serveTo === 0 ? -1 : 1, cy = (TOP + BOT) / 2;
+      text(g, 'SAQUE', W / 2, cy - 2, { size: 34, color: '#FFD23F', alpha: 0.6 + 0.4 * Math.sin(t * 10) });
+      g.fillStyle = '#FFD23F';
+      g.beginPath(); g.moveTo(W / 2 + d * 96, cy); g.lineTo(W / 2 + d * 70, cy - 16); g.lineTo(W / 2 + d * 70, cy + 16); g.closePath(); g.fill();
+      g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.stroke();
     }
   }
 
@@ -383,8 +393,11 @@ export default class PongChaos extends BaseGame {
     });
     if (this.banner) {
       const k = 1 - this.banner.t / 1.6;
-      const a = Math.min(1, this.banner.t * 3);
-      text(g, this.banner.text, W / 2, 400, { size: 64 * (0.7 + ease.outBack(Math.min(1, k * 3)) * 0.3), color: '#fff', glow: this.banner.color, stroke: '#0B1020', alpha: a });
+      this.callout(g, this.banner.text, { y: 400, size: 54, k: k * 3, alpha: Math.min(1, this.banner.t * 3), color: this.banner.color, light: true });
+    }
+    if (this.goalMsg) {
+      const m = this.goalMsg;
+      this.callout(g, '¡GOL!', { y: 300, size: 92, sub: this.name(m.p).toUpperCase(), k: (1.3 - m.t) * 3, alpha: Math.min(1, m.t * 3), color: this.color(m.p), rot: m.p ? 0.05 : -0.05 });
     }
   }
 }

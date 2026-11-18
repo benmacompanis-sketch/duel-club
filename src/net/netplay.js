@@ -416,7 +416,7 @@ export const RUNNER_KEYS = ['state', 't', 'playSeconds', 'lastCount', 'endT', 'p
 const NOFX = new Proxy({}, { get: () => () => {} });
 
 // =====================================================================================================
-export const PROTO = 3; // versión del protocolo entre compus (si no coincide, hay que recargar la página)
+export const PROTO = 4; // versión del protocolo entre compus (si no coincide, hay que recargar la página)
 const D_MIN = 2;
 const D_MAX = 12; // retardo de entrada máximo: 12 frames = 200 ms
 const MAX_PRED = 8; // rollback: al menos 8 frames (133 ms) por delante de las teclas del rival…

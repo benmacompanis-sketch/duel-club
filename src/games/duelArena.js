@@ -4,7 +4,7 @@
 // o tiene más vida al terminar el tiempo.
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, approach, ease } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, approach, ease, comicPanel, halftone, burst } from '../core/utils.js';
 import { drawStar } from '../core/renderer.js';
 
 const FLOOR = 610;
@@ -80,6 +80,7 @@ export default class DuelArena extends BaseGame {
   ambient(dt) {
     if (this.announce) { this.announce.t -= dt; if (this.announce.t <= 0) this.announce = null; }
     for (const f of this.f) {
+      f.comboShow = Math.max(0, (f.comboShow || 0) - dt);
       f.shownHp = approach(f.shownHp, f.hp, dt * 40);
       f.hitFlash = Math.max(0, f.hitFlash - dt * 5);
     }
@@ -223,6 +224,10 @@ export default class DuelArena extends BaseGame {
     o.en = Math.min(100, o.en + 6);
     this.st.hits[p]++;
     this.st.dmg[p] += dmg;
+    // contador de combo: golpes seguidos sin que el rival se recupere
+    f.comboN = (f.comboShow > 0 ? f.comboN || 0 : 0) + 1;
+    f.comboShow = 1.1;
+    o.comboN = 0; o.comboShow = 0;
     this.sfx(heavy ? 'hitHeavy' : 'hit', { pitch: 0.9 + Math.random() * 0.3 });
     this.fx.shake(heavy ? 10 : 5);
     this.hitStop = heavy ? 0.09 : 0.05;
@@ -365,70 +370,102 @@ export default class DuelArena extends BaseGame {
   }
 
   // ------------------------------------------------------------------ dibujo
+  // cámara: sigue a los dos luchadores y se acerca cuando están cerca (al final de la ronda, al ganador)
+  camera(g) {
+    const [a, b] = this.f;
+    let mx = (a.x + b.x) / 2, z = clamp(1.5 - Math.abs(a.x - b.x) / 1500, 1.16, 1.42);
+    if (this.state === 'roundEnd' && this.roundWinner >= 0) { mx = this.f[this.roundWinner].x; z = 1.55; }
+    const y0 = FLOOR - (H - 104) / z;
+    this.zoomCam(g, mx, y0 + H / (2 * z), z);
+  }
+  // escenario quieto: se dibuja una vez (en alta resolución, porque la cámara lo agranda) y después se copia
+  stageCanvas() {
+    if (this._stage?.id === this.stageId) return this._stage.c;
+    const k = 2;
+    const c = document.createElement('canvas');
+    c.width = W * k; c.height = H * k;
+    const g = c.getContext('2d');
+    g.scale(k, k);
+    const S = this.stage, INK = '#0D0B14';
+    const sky = g.createLinearGradient(0, 0, 0, FLOOR);
+    sky.addColorStop(0, S.sky[0]); sky.addColorStop(1, S.sky[1]);
+    g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    // tramado de historieta en el cielo, más fuerte arriba
+    g.fillStyle = halftone(g, 'rgba(255,255,255,0.06)', 12, 2.4); g.fillRect(0, 0, W, FLOOR * 0.6);
+    g.lineJoin = 'round';
+    if (this.stageId === 'dojo') {
+      // cortinas, farolitos de papel y vigas con contorno de tinta
+      g.fillStyle = '#3A1E6E'; g.fillRect(0, 96, W, 40);
+      g.strokeStyle = INK; g.lineWidth = 5; g.strokeRect(-10, 96, W + 20, 40);
+      for (let i = 0; i < 5; i++) {
+        const x = 140 + i * 250;
+        g.fillStyle = '#2A1A58'; g.fillRect(x - 10, 136, 20, FLOOR - 136);
+        g.strokeRect(x - 10, 136, 20, FLOOR - 136);
+        glowCircle(g, x, 210, 90, '#FF5FA2', 0.55);
+        g.fillStyle = '#FF5FA2'; roundRect(g, x - 30, 170, 60, 74, 22); g.fill(); g.stroke();
+        g.fillStyle = 'rgba(13,11,20,0.25)'; g.fillRect(x - 30, 196, 60, 5); g.fillRect(x - 30, 218, 60, 5);
+        g.fillStyle = '#FFD23F'; g.fillRect(x - 8, 160, 16, 12); g.strokeRect(x - 8, 160, 16, 12);
+      }
+    } else if (this.stageId === 'roof') {
+      glowCircle(g, 1040, 170, 150, '#FFE08A', 0.7);
+      g.fillStyle = '#FFF3C9'; g.beginPath(); g.arc(1040, 170, 50, 0, TAU); g.fill();
+      g.strokeStyle = INK; g.lineWidth = 5; g.stroke();
+      g.fillStyle = 'rgba(13,11,20,0.12)'; g.beginPath(); g.arc(1024, 160, 12, 0, TAU); g.arc(1056, 190, 8, 0, TAU); g.fill();
+      for (let i = 0; i < 18; i++) {
+        const bw = 60 + (i * 31) % 50, bh = 120 + (i * 67) % 220, x = i * 74;
+        g.fillStyle = i % 3 ? '#16264A' : '#1B2E58'; g.fillRect(x, FLOOR - bh, bw, bh);
+        g.strokeStyle = INK; g.lineWidth = 4; g.strokeRect(x, FLOOR - bh, bw, bh);
+        g.fillStyle = '#FFE08A';
+        for (let k2 = 0; k2 < 6; k2++) if ((i * 7 + k2 * 3) % 4 === 0) g.fillRect(x + 10 + (k2 % 2) * 22, FLOOR - bh + 16 + k2 * 22, 10, 12);
+      }
+    } else {
+      g.fillStyle = '#4A1626';
+      g.beginPath(); g.moveTo(140, FLOOR); g.lineTo(540, 210); g.lineTo(740, 210); g.lineTo(1140, FLOOR); g.closePath(); g.fill();
+      g.strokeStyle = INK; g.lineWidth = 6; g.stroke();
+      g.fillStyle = halftone(g, 'rgba(13,11,20,0.25)', 10, 2.2);
+      g.beginPath(); g.moveTo(640, 210); g.lineTo(740, 210); g.lineTo(1140, FLOOR); g.lineTo(760, FLOOR); g.closePath(); g.fill();
+      // ríos de lava
+      g.strokeStyle = '#FF8E3C'; g.lineWidth = 10; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(620, 214); g.quadraticCurveTo(590, 360, 520, FLOOR - 20); g.moveTo(680, 214); g.quadraticCurveTo(730, 380, 800, FLOOR - 10); g.stroke();
+    }
+    // piso: tablones en perspectiva con borde de tinta grueso
+    g.fillStyle = S.floor; g.fillRect(0, FLOOR, W, H - FLOOR);
+    g.fillStyle = halftone(g, 'rgba(13,11,20,0.28)', 9, 2); g.fillRect(0, FLOOR, W, H - FLOOR);
+    g.strokeStyle = 'rgba(13,11,20,0.55)'; g.lineWidth = 3;
+    g.beginPath();
+    for (let x = -200; x < W + 200; x += 90) { g.moveTo(x, FLOOR); g.lineTo(W / 2 + (x - W / 2) * 1.8, H); }
+    g.moveTo(0, FLOOR + 40); g.lineTo(W, FLOOR + 40);
+    g.stroke();
+    g.fillStyle = shade(S.floor, 0.35); g.fillRect(0, FLOOR, W, 8);
+    g.strokeStyle = INK; g.lineWidth = 6; g.beginPath(); g.moveTo(0, FLOOR); g.lineTo(W, FLOOR); g.stroke();
+    this._stage = { id: this.stageId, c };
+    return c;
+  }
   render(g) {
     const t = this.realTime;
     const S = this.stage;
-    const sky = g.createLinearGradient(0, 0, 0, FLOOR);
-    sky.addColorStop(0, S.sky[0]);
-    sky.addColorStop(1, S.sky[1]);
-    g.fillStyle = sky;
-    g.fillRect(0, 0, W, H);
-    if (this.stageId === 'dojo') {
-      for (let i = 0; i < 5; i++) {
-        const x = 140 + i * 250;
-        g.fillStyle = '#251A52';
-        g.fillRect(x - 6, 120, 12, FLOOR - 120);
-        glowCircle(g, x, 200, 80, '#FF5FA2', 0.5);
-        g.fillStyle = '#FF5FA2';
-        roundRect(g, x - 26, 170, 52, 60, 14); g.fill();
-        g.fillStyle = '#2A1F4F';
-        g.fillRect(x - 26, 196, 52, 4);
-      }
-      g.strokeStyle = 'rgba(255,95,162,0.3)';
-      g.lineWidth = 3;
-      g.beginPath(); g.moveTo(0, 150); g.quadraticCurveTo(W / 2, 110, W, 150); g.stroke();
-    } else if (this.stageId === 'roof') {
-      for (let i = 0; i < 18; i++) {
-        const bw = 60 + (i * 31) % 50, bh = 120 + (i * 67) % 220, x = i * 74;
-        g.fillStyle = '#13213F';
-        g.fillRect(x, FLOOR - bh, bw, bh);
-        g.fillStyle = 'rgba(37,207,230,0.35)';
-        for (let k = 0; k < 5; k++) if ((i + k) % 2) g.fillRect(x + 10, FLOOR - bh + 16 + k * 22, 8, 10);
-      }
-      glowCircle(g, 1040, 170, 120, '#FFE08A', 0.6);
-      g.fillStyle = '#FFF3C9';
-      g.beginPath(); g.arc(1040, 170, 44, 0, TAU); g.fill();
-    } else {
-      g.fillStyle = '#2A0F18';
-      g.beginPath(); g.moveTo(200, FLOOR); g.lineTo(560, 200); g.lineTo(720, 200); g.lineTo(1080, FLOOR); g.fill();
-      glowCircle(g, 640, 200, 200, '#FF654F', 0.6 + Math.sin(t * 2) * 0.1);
-      g.fillStyle = '#FF8E3C';
-      g.beginPath(); g.ellipse(640, 204, 80, 14, 0, 0, TAU); g.fill();
-    }
-    // suelo
-    g.fillStyle = S.floor;
-    g.fillRect(0, FLOOR, W, H - FLOOR);
-    g.fillStyle = shade(S.floor, 0.25);
-    g.fillRect(0, FLOOR, W, 6);
-    g.strokeStyle = 'rgba(255,255,255,0.06)';
-    for (let x = 0; x < W; x += 80) { g.beginPath(); g.moveTo(x, FLOOR); g.lineTo(x - 50, H); g.stroke(); }
+    g.drawImage(this.stageCanvas(), 0, 0, W, H);
+    if (this.stageId === 'volcano') glowCircle(g, 640, 210, 220, '#FF654F', 0.55 + Math.sin(t * 2) * 0.12);
     if (S.platform) {
       const pl = S.platform;
       g.fillStyle = '#3B4A7A';
-      roundRect(g, pl.x, pl.y, pl.w, 18, 6); g.fill();
+      roundRect(g, pl.x, pl.y, pl.w, 20, 4); g.fill();
+      g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.stroke();
       g.fillStyle = '#25CFE6';
-      g.fillRect(pl.x + 6, pl.y + 2, pl.w - 12, 3);
+      g.fillRect(pl.x + 6, pl.y + 3, pl.w - 12, 4);
     }
     for (const v of this.ventList) {
       g.fillStyle = v.state === 'warn' ? (Math.sin(t * 30) > 0 ? '#FF8E3C' : '#7A2A1A') : '#4A1F1F';
-      roundRect(g, v.x - 46, FLOOR - 4, 92, 12, 6); g.fill();
+      roundRect(g, v.x - 46, FLOOR - 4, 92, 12, 4); g.fill();
+      g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.stroke();
       if (v.state === 'fire') {
         const grd = g.createLinearGradient(0, FLOOR, 0, FLOOR - 260);
-        grd.addColorStop(0, 'rgba(255,142,60,0.8)');
+        grd.addColorStop(0, 'rgba(255,142,60,0.85)');
         grd.addColorStop(1, 'rgba(255,101,79,0)');
         g.fillStyle = grd;
         g.fillRect(v.x - 40, FLOOR - 260, 80, 260);
       }
+      if (v.state === 'warn') text(g, '¡!', v.x, FLOOR - 40, { size: 30, color: '#FFD23F' });
     }
     // orbes
     for (const ob of this.orbs) {
@@ -486,55 +523,63 @@ export default class DuelArena extends BaseGame {
       const f = this.f[p];
       const col = this.color(p);
       const left = p === 0;
-      const bx = left ? 30 : W - 30 - 480;
-      panel(g, bx - 10, 14, 500, 92, { r: 22, fill: 'rgba(11,16,32,0.75)', stroke: rgba(col, 0.6) });
-      text(g, this.name(p).toUpperCase(), left ? bx + 4 : bx + 476, 32, { size: 17, align: left ? 'left' : 'right', color: '#fff' });
-      // victorias de ronda
+      const bx = left ? 22 : W - 22 - 500;
+      // panel de historieta del color del jugador
+      comicPanel(g, bx, 10, 500, 96, shade(col, -0.5), { skew: left ? 12 : -12, tilt: left ? 3 : -3, dotColor: rgba(col, 0.3) });
+      text(g, this.name(p).toUpperCase(), left ? bx + 26 : bx + 474, 30, { size: 20, align: left ? 'left' : 'right', color: '#fff' });
+      // rondas ganadas: estrellas
       for (let i = 0; i < 2; i++) {
-        const cx = left ? bx + 300 + i * 26 : bx + 180 - i * 26;
-        g.fillStyle = i < this.roundWins[p] ? '#FFC93C' : 'rgba(255,255,255,0.15)';
-        drawStar(g, cx, 32, 10, 4.5, 5); g.fill();
+        const cx = left ? bx + 440 - i * 30 : bx + 60 + i * 30;
+        g.fillStyle = i < this.roundWins[p] ? '#FFD23F' : 'rgba(13,11,20,0.6)';
+        drawStar(g, cx, 30, 12, 5.5, 5); g.fill();
+        g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.stroke();
       }
-      // vida
-      const hw = 480;
-      g.fillStyle = 'rgba(255,255,255,0.08)';
-      roundRect(g, bx, 48, hw, 22, 11); g.fill();
+      // vida: barra gruesa con tinta, la parte perdida queda clara un momento
+      const hw = 450, hx = left ? bx + 24 : bx + 26, hy = 46;
+      g.fillStyle = '#15121F'; g.fillRect(hx, hy, hw, 26);
       const k1 = f.shownHp / 100, k2 = f.hp / 100;
-      g.fillStyle = '#FFE0D9';
-      if (left) roundRect(g, bx, 48, hw * k1, 22, 11); else roundRect(g, bx + hw * (1 - k1), 48, hw * k1, 22, 11);
-      g.fill();
-      g.fillStyle = k2 < 0.25 ? '#FF654F' : col;
-      if (left) roundRect(g, bx, 48, hw * k2, 22, 11); else roundRect(g, bx + hw * (1 - k2), 48, hw * k2, 22, 11);
-      g.fill();
-      // energía
-      const ew = 300;
-      const ex = left ? bx : bx + hw - ew;
-      g.fillStyle = 'rgba(255,255,255,0.08)';
-      roundRect(g, ex, 78, ew, 12, 6); g.fill();
+      g.fillStyle = '#FFF4E0';
+      if (left) g.fillRect(hx, hy, hw * k1, 26); else g.fillRect(hx + hw * (1 - k1), hy, hw * k1, 26);
+      g.fillStyle = k2 < 0.25 ? (Math.sin(t * 12) > 0 ? '#FF3B5C' : '#FF654F') : col;
+      if (left) g.fillRect(hx, hy, hw * k2, 26); else g.fillRect(hx + hw * (1 - k2), hy, hw * k2, 26);
+      g.fillStyle = 'rgba(255,255,255,0.25)';
+      if (left) g.fillRect(hx, hy + 3, hw * k2, 6); else g.fillRect(hx + hw * (1 - k2), hy + 3, hw * k2, 6);
+      g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.strokeRect(hx, hy, hw, 26);
+      // energía (para el especial)
+      const ew = 260, ex = left ? hx : hx + hw - ew, ey = 80;
       const full = f.en >= 50;
-      g.fillStyle = full ? (Math.sin(t * 10) > 0 ? '#FFE45C' : '#FFC93C') : '#9B6CFF';
-      if (left) roundRect(g, ex, 78, ew * (f.en / 100), 12, 6); else roundRect(g, ex + ew * (1 - f.en / 100), 78, ew * (f.en / 100), 12, 6);
-      g.fill();
-      g.fillStyle = 'rgba(11,16,32,0.9)';
-      g.fillRect(ex + ew / 2 - 1, 78, 2, 12);
-      const cdTxt = f.specCd > 0 ? `ESPECIAL ${f.specCd.toFixed(1)} s` : full ? 'ESPECIAL LISTO' : 'ENERGÍA';
-      text(g, cdTxt, left ? ex + ew + 12 : ex - 12, 84, { size: 12, align: left ? 'left' : 'right', body: true, weight: 800, color: full && f.specCd <= 0 ? '#FFE45C' : 'rgba(246,247,251,0.6)' });
+      g.fillStyle = '#15121F'; g.fillRect(ex, ey, ew, 14);
+      g.fillStyle = full ? (Math.sin(t * 10) > 0 ? '#FFE45C' : '#FFC93C') : '#B49BFF';
+      if (left) g.fillRect(ex, ey, ew * (f.en / 100), 14); else g.fillRect(ex + ew * (1 - f.en / 100), ey, ew * (f.en / 100), 14);
+      g.fillStyle = '#0D0B14'; g.fillRect(ex + ew / 2 - 1.5, ey, 3, 14);
+      g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.strokeRect(ex, ey, ew, 14);
+      const cdTxt = f.specCd > 0 ? `ESPECIAL ${f.specCd.toFixed(1)} s` : full ? '¡ESPECIAL LISTO!' : 'ENERGÍA';
+      text(g, cdTxt, left ? ex + ew + 10 : ex - 10, ey + 7, { size: 13, align: left ? 'left' : 'right', body: true, weight: 900, color: full && f.specCd <= 0 ? '#FFE45C' : '#FFF4E0' });
+      // combo en curso
+      if (f.comboShow > 0 && f.comboN >= 2) {
+        const a = Math.min(1, f.comboShow * 3);
+        const cx = left ? 150 : W - 150;
+        burst(g, cx, 150, 46, col, { points: 12, rot: t, inner: 0.75, sx: 1.4, alpha: a });
+        text(g, `${f.comboN} GOLPES`, cx, 152, { size: 24, color: '#fff', alpha: a });
+      }
     }
     const left = Math.max(0, this.roundTime - this.rt);
-    panel(g, W / 2 - 60, 18, 120, 76, { r: 22, fill: 'rgba(11,16,32,0.85)', stroke: left < 10 ? '#FF654F' : 'rgba(155,108,255,0.7)' });
-    text(g, String(Math.ceil(left)), W / 2, 50, { size: 38, color: left < 10 ? '#FF8A78' : '#fff' });
-    text(g, `R${this.round} · ${this.stage.name}`, W / 2, 80, { size: 11, body: true, weight: 800, color: 'rgba(246,247,251,0.6)' });
+    const low = left <= 10;
+    const pulse = low ? 1 + Math.max(0, Math.sin(t * 10)) * 0.08 : 1;
+    burst(g, W / 2, 50, 50 * pulse, low ? '#FF4B3E' : '#FFD23F', { points: 12, rot: t * 0.3, inner: 0.8, sx: 1.35 });
+    text(g, String(Math.ceil(left)), W / 2, 50, { size: 38 * pulse, color: low ? '#fff' : '#15121F', comic: low });
+    comicPanel(g, W / 2 - 70, 100, 140, 26, '#15121F', { skew: 8, dots: false, line: 3 });
+    text(g, `RONDA ${this.round} · ${this.stage.name.toUpperCase()}`, W / 2, 113, { size: 12, body: true, weight: 900, color: '#FFF4E0' });
     if (this.announce) {
       const k = this.announce.t;
       const a = Math.min(1, k * 3);
-      const sc = this.announce.big ? 1.4 : 1;
-      text(g, this.announce.text, W / 2, 330, { size: 90 * sc * (0.8 + 0.2 * ease.outBack(Math.min(1, (1.6 - k) * 4))), color: '#fff', glow: '#FF654F', stroke: '#0B1020', strokeWidth: 12, alpha: a });
+      const intro = Math.min(1, ((this.announce.big ? 1.6 : 1.2) - k) * 4);
+      this.callout(g, this.announce.text, { y: 300, size: this.announce.big ? 96 : 70, k: intro, alpha: a, color: this.announce.big ? '#FF3B5C' : '#FFD23F', rot: -0.06 });
     }
     if (this.state === 'roundEnd' && this.endT > 1.0) {
       const w = this.roundWinner;
-      const msg = w >= 0 ? `${this.name(w).toUpperCase()} GANA LA RONDA` : 'RONDA EMPATADA';
-      panel(g, W / 2 - 300, 420, 600, 64, { r: 32, fill: 'rgba(11,16,32,0.9)', stroke: w >= 0 ? this.color(w) : '#8C96B8' });
-      text(g, msg, W / 2, 452, { size: 28, color: '#fff' });
+      const msg = w >= 0 ? `¡${this.name(w).toUpperCase()} GANA LA RONDA!` : 'RONDA EMPATADA';
+      this.callout(g, msg, { y: 470, size: 34, k: (this.endT - 1) * 3, color: w >= 0 ? this.color(w) : '#FFD23F' });
     }
   }
 }

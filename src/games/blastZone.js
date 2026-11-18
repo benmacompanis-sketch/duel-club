@@ -5,7 +5,8 @@
 // Gana el último con escudos o, si ambos aguantan, el que tenga más escudos al final.
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, glowCircle, quality, shade, choice } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, glowCircle, quality, shade, choice, cachedLayer, halftone, burst, mix } from '../core/utils.js';
+import { drawStar } from '../core/renderer.js';
 
 const AX = 90, AY = 112, AW = W - 180, AH = H - 140;
 const CX = AX + AW / 2, CY = AY + AH / 2;
@@ -20,7 +21,7 @@ export default class BlastZone extends BaseGame {
   static meta = {
     id: 'blast', num: 16, name: 'BLAST ZONE', short: 'BLAST', category: 'Supervivencia', color: '#FF4D6D', isNew: true,
     tagline: 'Esquivá todo lo que se mueve. Y lo que está por estallar, también.',
-    description: 'Las zonas marcadas estallan en energía después del aviso: salí rápido. Cada 15 segundos la arena cambia y suma peligros (láseres, orbes, anillo que se cierra). Tenés 3 escudos. ACCIÓN 1 = esquive con invulnerabilidad. ACCIÓN 2 = empujón al rival si está cerca.',
+    description: 'Las zonas marcadas estallan en energía después del aviso: salí rápido. Cada 15 segundos la arena cambia y suma peligros (láseres, orbes, anillo que se cierra). Tenés 3 escudos y cada tanto aparece uno para agarrar (si estás lleno, te da unos segundos de estrella invencible). ACCIÓN 1 = esquive con invulnerabilidad. ACCIÓN 2 = empujón: mandá a tu rival contra el peligro.',
     goal: 'Ser el último con escudos, o tener más escudos al terminar.',
     controls: [{ actions: ['up', 'down', 'left', 'right'], label: 'Moverse' }, { actions: ['a'], label: 'Esquive' }, { actions: ['b'], label: 'Empujón' }],
     events: ['speed', 'short', 'mirror', 'invert', 'obstacles'],
@@ -50,39 +51,42 @@ export default class BlastZone extends BaseGame {
     this.lasers = []; // {axis,pos,dir,speed,warn,t}
     this.orbs = []; // {x,y,vx,vy,r}
     this.ring = Math.hypot(AW, AH) / 2 + 40;
-    this.zoneT = 1.2;
+    this.zoneT = 1.6;
     this.laserT = 4;
+    this.pickups = []; // escudos para agarrar {x, y, t}
+    this.pickT = 9;
     this.phase = 0;
-    this.banner = { text: PHASES[0].name, color: PHASES[0].color, t: 2 };
+    this.phaseMsg = { text: PHASES[0].name, color: PHASES[0].color, t: 2 };
     this.target = 0;
   }
 
   get rate() {
-    return 1 + this.time / 40 + this.diff * 0.3 + (this.extraObstacles ? 0.25 : 0);
+    return 0.85 + this.time / 50 + this.diff * 0.3 + (this.extraObstacles ? 0.25 : 0);
   }
 
   update(dt) {
     if (this.time >= this.duration || this.teamOut()) return this.end();
+    if (this.frozen(dt)) return;
     const ph = Math.min(3, Math.floor(this.time / 15));
     if (ph !== this.phase) {
       this.phase = ph;
-      this.banner = { text: PHASES[ph].name, color: PHASES[ph].color, t: 2 };
+      this.phaseMsg = { text: PHASES[ph].name, color: PHASES[ph].color, t: 2 };
       this.sfx('alarm');
       if (ph >= 2) for (let i = 0; i < 2; i++) this.addOrb();
     }
-    if (this.banner) { this.banner.t -= dt; if (this.banner.t <= 0) this.banner = null; }
+    if (this.phaseMsg) { this.phaseMsg.t -= dt; if (this.phaseMsg.t <= 0) this.phaseMsg = null; }
     for (const P of this.pl) this.updatePlayer(P, dt);
     this.pushCheck();
     // zonas: se apuntan alternadamente a cada jugador (justo para los dos)
     this.zoneT -= dt * this.rate;
     if (this.zoneT <= 0) {
-      this.zoneT = rand(1.1, 1.6);
+      this.zoneT = this.phase === 0 ? rand(1.5, 2.0) : rand(1.1, 1.6);
       const P = this.pl[this.target];
       this.target = (this.target + 1) % this.np;
       const lead = 0.55;
       const x = clamp(P.x + P.vx * lead + rand(-70, 70), AX + 40, AX + AW - 40);
       const y = clamp(P.y + P.vy * lead + rand(-70, 70), AY + 40, AY + AH - 40);
-      this.zones.push({ x, y, r: rand(62, 92) + this.phase * 6, warn: Math.max(0.75, 1.25 - this.time / 120), t: 0, boom: false });
+      this.zones.push({ x, y, r: rand(62, 92) + this.phase * 6, warn: Math.max(0.8, 1.45 - this.time / 110), t: 0, boom: false });
       if (this.phase >= 1 && Math.random() < 0.35) {
         // zona espejada para el otro lado de la arena
         this.zones.push({ x: 2 * CX - x, y: 2 * CY - y, r: rand(62, 90), warn: 1.2, t: 0, boom: false });
@@ -95,10 +99,29 @@ export default class BlastZone extends BaseGame {
         this.sfx('crash', { gap: 40 });
         this.fx.burst(z.x, z.y, ['#FF4D6D', '#FFC93C', '#FFFFFF'], 18, { speed: 260 });
         this.fx.shake(4);
-        for (const P of this.pl) if (Math.hypot(P.x - z.x, P.y - z.y) < z.r + 14) this.hit(P, z.x, z.y);
+        for (const P of this.pl) if (Math.hypot(P.x - z.x, P.y - z.y) < z.r + 16) this.hit(P, z.x, z.y);
       }
     }
     this.zones = this.zones.filter((z) => z.t < z.warn + 0.35);
+    // escudos para agarrar: aparecen lejos de las zonas y duran 7 s
+    this.pickT -= dt;
+    if (this.pickT <= 0 && this.pickups.length < 2) {
+      this.pickT = rand(10, 13);
+      this.pickups.push({ x: rand(AX + 90, AX + AW - 90), y: rand(AY + 80, AY + AH - 80), t: 0 });
+    }
+    for (const k of this.pickups) {
+      k.t += dt;
+      for (const P of this.pl) {
+        if (!P.alive || k.got || Math.hypot(P.x - k.x, P.y - k.y) > 40) continue;
+        k.got = true;
+        if (P.lives < 3) { P.lives++; this.fx.float(P.x, P.y - 60, '+1 ESCUDO', '#3DDC97', 26); }
+        else { P.star = 3; P.inv = Math.max(P.inv, 3); this.fx.float(P.x, P.y - 60, '¡ESTRELLA!', '#FFD23F', 28); }
+        P.picks = (P.picks || 0) + 1;
+        this.sfx('coin');
+        this.fx.ring(k.x, k.y, '#3DDC97', 70, 0.4, 5);
+      }
+    }
+    this.pickups = this.pickups.filter((k) => !k.got && k.t < 7);
     // láseres desde la fase 2
     if (this.phase >= 1) {
       this.laserT -= dt * this.rate;
@@ -147,6 +170,7 @@ export default class BlastZone extends BaseGame {
     P.pushCd = Math.max(0, P.pushCd - dt);
     P.dash = Math.max(0, P.dash - dt);
     P.stun = Math.max(0, P.stun - dt);
+    P.star = Math.max(0, (P.star || 0) - dt);
     let ax = inp.axisX(), ay = inp.axisY();
     const len = Math.hypot(ax, ay) || 1;
     ax /= len; ay /= len;
@@ -186,9 +210,11 @@ export default class BlastZone extends BaseGame {
       P.pushReq = 0;
       P.pushCd = 1.6;
       this.sfx('whoosh');
-      if (d < 90 && O.alive) {
+      if (d < 100 && O.alive) {
         const nx = (O.x - P.x) / (d || 1), ny = (O.y - P.y) / (d || 1);
-        O.vx = nx * 700; O.vy = ny * 700; O.stun = 0.35; O.dash = 0.18;
+        O.vx = nx * 860; O.vy = ny * 860; O.stun = 0.5; O.dash = 0.22;
+        this.impact(0.06);
+        this.fx.float((a.x + b.x) / 2, (a.y + b.y) / 2 - 50, '¡PUM!', '#FFE08A', 26);
         P.pushes++;
         this.sfx('hit');
         this.fx.ring((a.x + b.x) / 2, (a.y + b.y) / 2, '#ffffff', 60, 0.35, 3);
@@ -205,6 +231,8 @@ export default class BlastZone extends BaseGame {
     P.vx = ((P.x - fx) / d) * 420; P.vy = ((P.y - fy) / d) * 420; P.dash = 0.15;
     this.sfx('hitHeavy');
     this.fx.flash(this.color(P.p), 0.25);
+    this.fx.shake(8);
+    this.impact(0.08);
     this.fx.float(P.x, P.y - 40, P.lives > 0 ? `-1 ESCUDO` : '¡SIN ESCUDOS!', '#fff', 22);
     if (P.lives <= 0) {
       P.alive = false;
@@ -242,87 +270,133 @@ export default class BlastZone extends BaseGame {
   render(g) {
     const t = this.realTime;
     const ph = PHASES[this.phase];
-    this.arenaBG(g, ph.bg, '#0B1020');
-    g.fillStyle = 'rgba(255,255,255,0.03)';
-    roundRect(g, AX, AY, AW, AH, 20); g.fill();
-    this.grid(g, AX, AY, AW, AH, 40, rgba(ph.color, 0.08));
-    g.strokeStyle = rgba(ph.color, 0.6); g.lineWidth = 3;
-    roundRect(g, AX, AY, AW, AH, 20); g.stroke();
+    // piso de la arena (quieto, uno por fase): baldosas de historieta con borde de tinta
+    cachedLayer(g, `blast:${this.phase}`, (cg) => {
+      cg.fillStyle = mix(ph.bg, '#0B1020', 0.3); cg.fillRect(0, 0, W, H);
+      cg.fillStyle = halftone(cg, rgba(ph.color, 0.18), 12, 2.4); cg.fillRect(0, 0, W, H);
+      cg.save();
+      roundRect(cg, AX, AY, AW, AH, 14); cg.clip();
+      const T = 55;
+      for (let y = AY; y < AY + AH; y += T) for (let x = AX; x < AX + AW; x += T) {
+        cg.fillStyle = ((x - AX) / T + (y - AY) / T) % 2 ? mix(ph.bg, ph.color, 0.16) : mix(ph.bg, ph.color, 0.08);
+        cg.fillRect(x, y, T, T);
+      }
+      cg.fillStyle = halftone(cg, 'rgba(13,11,20,0.22)', 9, 1.8); cg.fillRect(AX, AY, AW, AH);
+      cg.strokeStyle = 'rgba(13,11,20,0.35)'; cg.lineWidth = 2;
+      cg.beginPath();
+      for (let x = AX; x <= AX + AW; x += T) { cg.moveTo(x, AY); cg.lineTo(x, AY + AH); }
+      for (let y = AY; y <= AY + AH; y += T) { cg.moveTo(AX, y); cg.lineTo(AX + AW, y); }
+      cg.stroke();
+      // círculo central
+      cg.strokeStyle = rgba(ph.color, 0.5); cg.lineWidth = 6;
+      cg.beginPath(); cg.arc(CX, CY, 120, 0, TAU); cg.stroke();
+      cg.restore();
+      // borde: valla de peligro amarilla y negra
+      cg.lineWidth = 16; cg.strokeStyle = '#0D0B14'; roundRect(cg, AX - 6, AY - 6, AW + 12, AH + 12, 18); cg.stroke();
+      cg.setLineDash([22, 22]); cg.lineWidth = 8; cg.strokeStyle = '#FFD23F'; roundRect(cg, AX - 6, AY - 6, AW + 12, AH + 12, 18); cg.stroke(); cg.setLineDash([]);
+    });
     // anillo seguro
     if (this.phase >= 3) {
       g.save();
       g.beginPath(); g.rect(AX, AY, AW, AH); g.arc(CX, CY, this.ring, 0, TAU, true); g.clip('evenodd');
-      g.fillStyle = 'rgba(155,108,255,0.22)'; g.fillRect(AX, AY, AW, AH);
+      g.fillStyle = 'rgba(120,70,230,0.38)'; g.fillRect(AX, AY, AW, AH);
+      g.fillStyle = halftone(g, 'rgba(13,11,20,0.35)', 10, 2.4); g.fillRect(AX, AY, AW, AH);
       g.restore();
-      g.strokeStyle = '#B49BFF'; g.lineWidth = 4; g.setLineDash([14, 10]);
+      g.lineWidth = 9; g.strokeStyle = '#0D0B14';
+      g.beginPath(); g.arc(CX, CY, this.ring, 0, TAU); g.stroke();
+      g.strokeStyle = '#D9C8FF'; g.lineWidth = 4; g.setLineDash([16, 12]); g.lineDashOffset = -t * 40;
       g.beginPath(); g.arc(CX, CY, this.ring, 0, TAU); g.stroke(); g.setLineDash([]);
     }
-    // zonas
+    // escudos para agarrar
+    for (const k of this.pickups) {
+      const bob = Math.sin(t * 4 + k.x) * 5, blink = k.t > 5.5 && Math.floor(t * 10) % 2;
+      if (blink) continue;
+      g.fillStyle = 'rgba(13,11,20,0.35)'; g.beginPath(); g.ellipse(k.x, k.y + 22, 22, 7, 0, 0, TAU); g.fill();
+      g.save(); g.translate(k.x, k.y - 6 + bob);
+      g.beginPath(); g.moveTo(0, -22); g.lineTo(18, -14); g.lineTo(16, 6); g.lineTo(0, 20); g.lineTo(-16, 6); g.lineTo(-18, -14); g.closePath();
+      g.fillStyle = '#3DDC97'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.stroke();
+      g.fillStyle = '#fff'; g.fillRect(-3, -10, 6, 18); g.fillRect(-9, -4, 18, 6);
+      g.restore();
+    }
+    // zonas: círculo de peligro con franjas que se llena; al estallar, globo de "¡BOOM!"
     for (const z of this.zones) {
       if (!z.boom) {
         const k = z.t / z.warn;
-        g.fillStyle = `rgba(255,77,109,${0.12 + k * 0.2})`;
+        g.fillStyle = `rgba(255,77,109,${0.18 + k * 0.22})`;
         g.beginPath(); g.arc(z.x, z.y, z.r, 0, TAU); g.fill();
-        g.strokeStyle = `rgba(255,77,109,${0.5 + Math.sin(t * 20) * 0.3})`; g.lineWidth = 3;
-        g.beginPath(); g.arc(z.x, z.y, z.r, 0, TAU); g.stroke();
-        g.fillStyle = 'rgba(255,77,109,0.45)';
+        g.fillStyle = 'rgba(255,77,109,0.55)';
         g.beginPath(); g.arc(z.x, z.y, z.r * k, 0, TAU); g.fill();
+        g.lineWidth = 7; g.strokeStyle = '#0D0B14';
+        g.beginPath(); g.arc(z.x, z.y, z.r, 0, TAU); g.stroke();
+        g.lineWidth = 5; g.strokeStyle = '#FFD23F'; g.setLineDash([12, 10]); g.lineDashOffset = t * 30;
+        g.beginPath(); g.arc(z.x, z.y, z.r, 0, TAU); g.stroke(); g.setLineDash([]);
+        if (k > 0.55 && Math.floor(t * 12) % 2) text(g, '!', z.x, z.y, { size: 40, color: '#FFD23F' });
       } else {
         const k = (z.t - z.warn) / 0.35;
-        glowCircle(g, z.x, z.y, z.r * (1 + k * 0.3), '#FFC93C', 0.7 * (1 - k));
+        burst(g, z.x, z.y, z.r * (0.9 + k * 0.35), k < 0.5 ? '#FFD23F' : '#FF8E3C', { points: 12, rot: z.x, inner: 0.62, sx: 1.1, alpha: 1 - k * 0.8 });
+        if (k < 0.7) text(g, 'BOOM', z.x, z.y, { size: 30 * (1 + k * 0.3), color: '#FF3B5C', alpha: 1 - k });
       }
     }
-    // láseres
+    // láseres: emisores en el borde y rayo con contorno
     for (const L of this.lasers) {
       const warn = L.t < L.warn;
-      g.save();
-      if (!warn && quality.glow) { g.shadowColor = '#25CFE6'; g.shadowBlur = 18; }
-      g.fillStyle = warn ? `rgba(37,207,230,${0.25 + Math.sin(t * 24) * 0.2})` : '#7CF7FF';
-      const thick = warn ? 4 : 8;
+      const thick = warn ? 6 : 16;
+      const seg = (x, y, w, h) => {
+        if (w <= 0 || h <= 0) return;
+        g.fillStyle = '#0D0B14'; g.fillRect(x - 3, y - 3, w + 6, h + 6);
+        g.fillStyle = warn ? (Math.floor(t * 16) % 2 ? '#25CFE6' : '#0F3A48') : '#25CFE6'; g.fillRect(x, y, w, h);
+        if (!warn) { g.fillStyle = '#E6FDFF'; if (w > h) g.fillRect(x, y + h / 2 - 2, w, 4); else g.fillRect(x + w / 2 - 2, y, 4, h); }
+      };
       if (L.horiz) {
         const gx = AX + L.gap * AW;
-        g.fillRect(AX, L.pos - thick / 2, gx - 0.09 * AW - AX, thick);
-        g.fillRect(gx + 0.09 * AW, L.pos - thick / 2, AX + AW - gx - 0.09 * AW, thick);
+        seg(AX, L.pos - thick / 2, gx - 0.09 * AW - AX, thick);
+        seg(gx + 0.09 * AW, L.pos - thick / 2, AX + AW - gx - 0.09 * AW, thick);
       } else {
         const gy = AY + L.gap * AH;
-        g.fillRect(L.pos - thick / 2, AY, thick, gy - 0.09 * AH - AY);
-        g.fillRect(L.pos - thick / 2, gy + 0.09 * AH, thick, AY + AH - gy - 0.09 * AH);
+        seg(L.pos - thick / 2, AY, thick, gy - 0.09 * AH - AY);
+        seg(L.pos - thick / 2, gy + 0.09 * AH, thick, AY + AH - gy - 0.09 * AH);
       }
-      g.restore();
     }
-    // orbes
+    // orbes: bombas con pinchos
     for (const o of this.orbs) {
-      glowCircle(g, o.x, o.y, o.r * 2.4, '#FFC93C', 0.4);
-      g.fillStyle = '#FFE08A'; g.beginPath(); g.arc(o.x, o.y, o.r, 0, TAU); g.fill();
-      g.fillStyle = '#FF8E3C'; g.beginPath(); g.arc(o.x, o.y, o.r * 0.55, 0, TAU); g.fill();
+      g.save(); g.translate(o.x, o.y); g.rotate(t * 3);
+      g.fillStyle = '#0D0B14';
+      for (let i = 0; i < 8; i++) { g.rotate(TAU / 8); g.beginPath(); g.moveTo(-6, -o.r + 2); g.lineTo(0, -o.r - 12); g.lineTo(6, -o.r + 2); g.fill(); }
+      g.restore();
+      g.fillStyle = '#FF8E3C'; g.beginPath(); g.arc(o.x, o.y, o.r + 2, 0, TAU); g.fill();
+      g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.stroke();
+      g.fillStyle = '#FFE08A'; g.beginPath(); g.arc(o.x - 5, o.y - 6, o.r * 0.35, 0, TAU); g.fill();
     }
-    // jugadores
-    for (const P of this.pl) {
+    // jugadores (más grandes que antes)
+    for (const P of [...this.pl].sort((a, b) => a.y - b.y)) {
       if (!P.alive) continue;
-      const blink = P.inv > 0 && Math.floor(t * 14) % 2 === 0;
-      g.strokeStyle = rgba(this.color(P.p), 0.7); g.lineWidth = 3;
-      g.beginPath(); g.ellipse(P.x, P.y + 14, 22, 8, 0, 0, TAU); g.stroke();
-      // escudos alrededor
-      for (let i = 0; i < P.lives; i++) {
-        const a = t * 2 + (i * TAU) / 3 + P.p;
-        g.fillStyle = this.color(P.p);
-        g.beginPath(); g.arc(P.x + Math.cos(a) * 30, P.y - 18 + Math.sin(a) * 12, 4.5, 0, TAU); g.fill();
+      const col = this.color(P.p);
+      const blink = P.inv > 0 && !(P.star > 0) && Math.floor(t * 14) % 2 === 0;
+      g.fillStyle = 'rgba(13,11,20,0.4)'; g.beginPath(); g.ellipse(P.x, P.y + 22, 30, 10, 0, 0, TAU); g.fill();
+      g.lineWidth = 4; g.strokeStyle = col; g.beginPath(); g.ellipse(P.x, P.y + 22, 30, 10, 0, 0, TAU); g.stroke();
+      if (P.star > 0) { g.fillStyle = Math.floor(t * 12) % 2 ? '#FFD23F' : '#FFF4E0'; drawStar(g, P.x, P.y - 20, 50, 26, 5, t * 4); g.fill(); }
+      drawCharacter(g, { id: this.players[P.p].char, x: P.x, y: P.y + 22, s: 0.72, color: col, anim: P.stun > 0 ? 'dizzy' : P.dash > 0 ? 'jump' : Math.hypot(P.vx, P.vy) > 40 ? 'run' : 'idle', t: t + P.p, facing: P.face, acc: this.players[P.p].acc, alpha: blink ? 0.35 : 1, shadow: false });
+      // escudos: corazones-escudo sobre la cabeza
+      for (let i = 0; i < 3; i++) {
+        const sx = P.x - 26 + i * 26, sy = P.y - 92;
+        g.save(); g.translate(sx, sy);
+        g.beginPath(); g.moveTo(0, -10); g.lineTo(9, -6); g.lineTo(8, 3); g.lineTo(0, 10); g.lineTo(-8, 3); g.lineTo(-9, -6); g.closePath();
+        g.fillStyle = i < P.lives ? col : 'rgba(13,11,20,0.55)'; g.fill();
+        g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.stroke();
+        g.restore();
       }
-      drawCharacter(g, { id: this.players[P.p].char, x: P.x, y: P.y + 14, s: 0.5, color: this.color(P.p), anim: P.stun > 0 ? 'dizzy' : P.dash > 0 ? 'jump' : Math.hypot(P.vx, P.vy) > 40 ? 'run' : 'idle', t: t + P.p, facing: P.face, acc: this.players[P.p].acc, alpha: blink ? 0.35 : 1, shadow: false });
     }
-    this.vignette(g);
   }
   renderHUD(g) {
-    const t = this.realTime;
     const sc = [0, 1].map((t) => this.pl.filter((P) => P.p % 2 === t).reduce((a, P) => a + Math.max(0, P.lives), 0));
     const sub = this.team
       ? [0, 1].map((t) => this.pl.filter((P) => P.p % 2 === t).map((P) => `J${P.p + 1}: ${P.alive ? Math.max(0, P.lives) + ' escudos' : 'fuera'}`).join(' · '))
       : this.pl.map((P) => `Esquive ${P.dashCd > 0 ? P.dashCd.toFixed(1) + ' s' : 'LISTO'} · Empujón ${P.pushCd > 0 ? P.pushCd.toFixed(1) + ' s' : 'LISTO'}`);
     this.hudTop(g, { scores: sc, timer: this.remaining, sub });
     this.hudTimeBar(g, 86);
-    if (this.banner) {
-      const a = Math.min(1, this.banner.t);
-      text(g, this.banner.text, W / 2, H / 2 - 40, { size: 58, color: '#fff', glow: this.banner.color, alpha: a * (0.7 + Math.sin(t * 10) * 0.3), stroke: 'rgba(11,16,32,0.9)', strokeWidth: 10 });
+    if (this.phaseMsg) {
+      const m = this.phaseMsg;
+      this.callout(g, m.text, { y: H / 2 - 40, size: 54, k: (2 - m.t) * 3, alpha: Math.min(1, m.t * 2), color: m.color, light: m.color === '#FFC93C' });
     }
   }
 }

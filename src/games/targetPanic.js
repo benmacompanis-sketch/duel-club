@@ -4,7 +4,7 @@
 // Los aciertos seguidos suben el multiplicador; fallar lo reinicia.
 import { BaseGame } from './baseGame.js';
 import { drawPortrait } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, ease } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, ease, cachedLayer, halftone } from '../core/utils.js';
 import { drawStar } from '../core/renderer.js';
 
 const MAG = 6; // tiros por cargador
@@ -254,27 +254,49 @@ export default class TargetPanic extends BaseGame {
   ghostScore(p) { return this.score[p]; }
   render(g) {
     const t = this.realTime;
-    // galería de tiro
-    const bg = g.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#1A1030');
-    bg.addColorStop(1, '#0E0A20');
-    g.fillStyle = bg;
-    g.fillRect(0, 0, W, H);
-    for (let i = 0; i < 16; i++) {
-      g.fillStyle = i % 2 ? 'rgba(155,108,255,0.05)' : 'rgba(255,201,60,0.03)';
-      g.fillRect(i * 80, TOP - 10, 80, H);
-    }
-    g.strokeStyle = 'rgba(255,201,60,0.25)';
-    g.lineWidth = 2;
-    for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(0, 220 + i * 140); g.lineTo(W, 220 + i * 140); g.stroke(); }
+    // galería de tiro de feria (quieta): pared de madera, estantes, cortinas rojas y toldo a rayas
+    cachedLayer(g, 'target:booth', (cg) => {
+      const wall = cg.createLinearGradient(0, 0, 0, H);
+      wall.addColorStop(0, '#5A2E1E'); wall.addColorStop(1, '#3A1C14');
+      cg.fillStyle = wall; cg.fillRect(0, 0, W, H);
+      cg.strokeStyle = 'rgba(13,11,20,0.45)'; cg.lineWidth = 3;
+      for (let x = 0; x < W; x += 64) { cg.beginPath(); cg.moveTo(x, TOP); cg.lineTo(x, H); cg.stroke(); }
+      cg.fillStyle = halftone(cg, 'rgba(13,11,20,0.25)', 10, 2); cg.fillRect(0, 0, W, H);
+      // estantes donde corren los blancos
+      for (let i = 0; i < 4; i++) {
+        const y = 230 + i * 140;
+        cg.fillStyle = '#0D0B14'; cg.fillRect(0, y - 2, W, 18);
+        cg.fillStyle = '#C98B4B'; cg.fillRect(0, y, W, 12);
+        cg.fillStyle = 'rgba(255,255,255,0.25)'; cg.fillRect(0, y + 2, W, 3);
+      }
+      // cortinas
+      for (const [x0, dir] of [[0, 1], [W, -1]]) {
+        cg.fillStyle = '#C8203A';
+        cg.beginPath(); cg.moveTo(x0, TOP - 10); cg.lineTo(x0 + dir * 90, TOP - 10);
+        cg.quadraticCurveTo(x0 + dir * 40, 420, x0 + dir * 70, H); cg.lineTo(x0, H); cg.closePath(); cg.fill();
+        cg.lineWidth = 5; cg.strokeStyle = '#0D0B14'; cg.stroke();
+        cg.strokeStyle = 'rgba(13,11,20,0.35)'; cg.lineWidth = 3;
+        for (let k = 1; k < 4; k++) { cg.beginPath(); cg.moveTo(x0 + dir * k * 20, TOP); cg.quadraticCurveTo(x0 + dir * k * 9, 420, x0 + dir * k * 16, H); cg.stroke(); }
+      }
+      // toldo a rayas con borde ondulado
+      for (let x = 0, i = 0; x < W; x += 80, i++) { cg.fillStyle = i % 2 ? '#FFF4E0' : '#E8203A'; cg.fillRect(x, 0, 80, TOP - 20); }
+      cg.beginPath(); cg.moveTo(0, TOP - 20);
+      for (let x = 0; x < W; x += 80) cg.arc(x + 40, TOP - 20, 40, Math.PI, 0, true);
+      cg.lineTo(W, 0); cg.lineTo(0, 0); cg.closePath();
+      cg.save(); cg.clip();
+      for (let x = 0, i = 0; x < W; x += 80, i++) { cg.fillStyle = i % 2 ? '#FFF4E0' : '#E8203A'; cg.fillRect(x, 0, 80, TOP + 30); }
+      cg.restore();
+      cg.lineWidth = 5; cg.strokeStyle = '#0D0B14'; cg.stroke();
+    });
     // bombillas de feria
     for (let i = 0; i < 32; i++) {
       const on = Math.sin(t * 6 + i * 0.8) > 0;
-      g.fillStyle = on ? '#FFE08A' : '#5A4A2A';
-      g.beginPath(); g.arc(20 + i * 40, TOP - 6, 5, 0, TAU); g.fill();
+      g.fillStyle = on ? '#FFE08A' : '#7A5A2A';
+      g.beginPath(); g.arc(20 + i * 40, TOP + 14, 6, 0, TAU); g.fill();
+      g.lineWidth = 2.5; g.strokeStyle = '#0D0B14'; g.stroke();
     }
     for (const h of this.holes) {
-      g.fillStyle = `rgba(0,0,0,${0.5 * h.a})`;
+      g.fillStyle = `rgba(13,11,20,${0.7 * h.a})`;
       g.beginPath(); g.arc(h.x, h.y, 5, 0, TAU); g.fill();
     }
     for (const tg of this.targets) this.drawTarget(g, tg, t);
@@ -287,39 +309,41 @@ export default class TargetPanic extends BaseGame {
     g.save();
     g.translate(tg.x, tg.y);
     g.globalAlpha = Math.min(1, k * 4);
+    g.lineJoin = 'round';
     if (tg.owner === 'bomb') {
-      glowCircle(g, 0, 0, r * 2, '#9B6CFF', 0.8);
-      g.fillStyle = '#2A1F4F';
-      for (let i = 0; i < 8; i++) { g.rotate(TAU / 8); g.beginPath(); g.moveTo(-5, -r * 0.8); g.lineTo(0, -r * 1.2); g.lineTo(5, -r * 0.8); g.fill(); }
-      g.fillStyle = '#9B6CFF';
+      g.fillStyle = '#0D0B14';
+      for (let i = 0; i < 8; i++) { g.rotate(TAU / 8); g.beginPath(); g.moveTo(-6, -r * 0.8); g.lineTo(0, -r * 1.25); g.lineTo(6, -r * 0.8); g.fill(); }
+      g.fillStyle = '#7B3FE4';
       g.beginPath(); g.arc(0, 0, r * 0.85, 0, TAU); g.fill();
-      g.strokeStyle = '#0B1020'; g.lineWidth = 5; g.lineCap = 'round';
-      g.beginPath(); g.moveTo(-r * 0.3, -r * 0.3); g.lineTo(r * 0.3, r * 0.3); g.moveTo(r * 0.3, -r * 0.3); g.lineTo(-r * 0.3, r * 0.3); g.stroke();
+      g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.stroke();
+      g.fillStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.arc(-r * 0.3, -r * 0.3, r * 0.2, 0, TAU); g.fill();
+      g.strokeStyle = '#FFF4E0'; g.lineWidth = 5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-r * 0.28, -r * 0.28); g.lineTo(r * 0.28, r * 0.28); g.moveTo(r * 0.28, -r * 0.28); g.lineTo(-r * 0.28, r * 0.28); g.stroke();
     } else if (tg.owner === 'gold') {
       glowCircle(g, 0, 0, r * 2.4, '#FFC93C', 1);
-      g.fillStyle = '#FFC93C';
-      drawStar(g, 0, 0, r * 1.1, r * 0.5, 5, t * 2); g.fill();
-      g.fillStyle = '#fff';
-      g.beginPath(); g.arc(0, 0, r * 0.25, 0, TAU); g.fill();
+      drawStar(g, 3, 4, r * 1.15, r * 0.52, 5, t * 2); g.fillStyle = '#0D0B14'; g.fill();
+      drawStar(g, 0, 0, r * 1.15, r * 0.52, 5, t * 2); g.fillStyle = '#FFD23F'; g.fill();
+      g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.stroke();
+      g.fillStyle = '#FFF4E0'; g.beginPath(); g.arc(0, 0, r * 0.22, 0, TAU); g.fill();
     } else {
       const col = this.color(tg.owner);
-      g.fillStyle = 'rgba(0,0,0,0.3)';
-      g.beginPath(); g.arc(4, 6, r, 0, TAU); g.fill();
-      g.fillStyle = col;
-      g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
-      g.fillStyle = '#F6F7FB';
-      g.beginPath(); g.arc(0, 0, r * 0.68, 0, TAU); g.fill();
-      g.fillStyle = col;
-      g.beginPath(); g.arc(0, 0, r * 0.4, 0, TAU); g.fill();
-      g.fillStyle = '#F6F7FB';
-      g.beginPath(); g.arc(0, 0, r * 0.14, 0, TAU); g.fill();
-      text(g, this.team ? (tg.owner ? 'ROJO' : 'AZUL') : `J${tg.owner + 1}`, 0, -r - 10, { size: 12, body: true, weight: 800, color: col });
+      // palito de feria
+      g.fillStyle = '#0D0B14'; g.fillRect(-5, r - 4, 10, 30);
+      g.fillStyle = '#C98B4B'; g.fillRect(-3, r - 4, 6, 28);
+      g.fillStyle = '#0D0B14'; g.beginPath(); g.arc(4, 6, r + 2, 0, TAU); g.fill();
+      g.fillStyle = col; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+      g.fillStyle = '#FFF4E0'; g.beginPath(); g.arc(0, 0, r * 0.68, 0, TAU); g.fill();
+      g.fillStyle = col; g.beginPath(); g.arc(0, 0, r * 0.4, 0, TAU); g.fill();
+      g.fillStyle = '#FFF4E0'; g.beginPath(); g.arc(0, 0, r * 0.14, 0, TAU); g.fill();
+      g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.stroke();
+      text(g, this.team ? (tg.owner ? 'ROJO' : 'AZUL') : `J${tg.owner + 1}`, 0, -r - 12, { size: 13, body: true, weight: 900, color: '#FFF4E0', stroke: '#0D0B14' });
     }
     // anillo de vida restante
-    g.globalAlpha = 0.8;
-    g.strokeStyle = tg.owner === 'bomb' ? '#9B6CFF' : 'rgba(246,247,251,0.7)';
-    g.lineWidth = 3;
-    g.beginPath(); g.arc(0, 0, r + 6, -Math.PI / 2, -Math.PI / 2 + TAU * k); g.stroke();
+    g.globalAlpha = 0.9;
+    g.lineWidth = 6; g.strokeStyle = '#0D0B14';
+    g.beginPath(); g.arc(0, 0, r + 8, -Math.PI / 2, -Math.PI / 2 + TAU * k); g.stroke();
+    g.lineWidth = 3; g.strokeStyle = tg.owner === 'bomb' ? '#B49BFF' : k < 0.3 ? '#FF654F' : '#FFF4E0';
+    g.stroke();
     g.restore();
   }
 
@@ -330,14 +354,14 @@ export default class TargetPanic extends BaseGame {
     const r = (precise ? 14 : 20) + a.recoil * 6;
     g.save();
     g.translate(a.x, a.y);
-    if (quality.glow) { g.shadowColor = col; g.shadowBlur = 12; }
-    g.strokeStyle = col;
-    g.lineWidth = 4;
-    g.beginPath(); g.arc(0, 0, r, 0, TAU); g.stroke();
-    g.beginPath();
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { g.moveTo(dx * (r - 6), dy * (r - 6)); g.lineTo(dx * (r + 12), dy * (r + 12)); }
-    g.stroke();
-    g.shadowBlur = 0;
+    g.lineCap = 'round';
+    for (const [lw, c] of [[9, '#0D0B14'], [4.5, col]]) {
+      g.strokeStyle = c; g.lineWidth = lw;
+      g.beginPath(); g.arc(0, 0, r, 0, TAU); g.stroke();
+      g.beginPath();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { g.moveTo(dx * (r - 6), dy * (r - 6)); g.lineTo(dx * (r + 12), dy * (r + 12)); }
+      g.stroke();
+    }
     g.fillStyle = '#fff';
     g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
     // fogonazo del disparo
@@ -366,8 +390,7 @@ export default class TargetPanic extends BaseGame {
     });
     this.hudTimeBar(g);
     if (this.banner) {
-      const a = Math.min(1, this.banner.t * 3);
-      text(g, this.banner.text, W / 2, 380, { size: 80, color: '#fff', glow: this.banner.color, stroke: '#0B1020', alpha: a });
+      this.callout(g, this.banner.text, { y: 380, size: 64, k: (1.5 - this.banner.t) * 3, alpha: Math.min(1, this.banner.t * 3), color: this.banner.color, light: this.banner.color === '#FFC93C' || this.banner.color === '#FFD23F' });
     }
   }
 }

@@ -4,7 +4,7 @@
 // puede irse afuera o a la red. Cada 4 golpes del rally la pelota acelera (TURBO).
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, glowCircle, quality, shade } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, glowCircle, quality, shade, halftone, comicPanel } from '../core/utils.js';
 
 const SERVE_LIMIT = 5; // segundos máximos para sacar
 const GROUND = 612, NET_X = W / 2, NET_TOP = 528, COURT_L = 110, COURT_R = W - 110, BR = 11;
@@ -79,6 +79,7 @@ export default class TurboTennis extends BaseGame {
   }
 
   update(dt) {
+    if (this.frozen(dt)) return;
     if (this.time >= this.limit) return this.end();
     if (this.msg) { this.msg.t -= dt; if (this.msg.t <= 0) this.msg = null; }
     for (const pl of this.pl) this.updatePlayer(pl, dt);
@@ -190,8 +191,9 @@ export default class TurboTennis extends BaseGame {
     }
     this.sfx(smash ? 'hitHeavy' : 'hit', { pitch: 0.9 + q * 0.4 });
     this.fx.burst(b.x, b.y, smash ? '#FFC93C' : '#C6F04A', smash ? 20 : 10, { speed: 220 });
-    if (q > 0.82 && !serve) this.fx.float(hx, hy - 50, '¡PERFECTO!', this.color(pl.p), 20);
-    if (smash) this.fx.shake(8);
+    if (q > 0.82 && !serve && !smash) this.fx.float(hx, hy - 50, '¡PERFECTO!', this.color(pl.p), 22);
+    if (smash) { this.fx.shake(10); this.impact(0.08); this.fx.float(hx, hy - 60, '¡REMATE!', '#FFD23F', 30); }
+    else if (q > 0.82 && !serve) this.impact(0.04);
   }
   autoServe() {
     const pl = this.pl[this.server];
@@ -288,71 +290,110 @@ export default class TurboTennis extends BaseGame {
   }
 
   // ------------------------------------------------------------------ dibujo
+  // cámara: se acerca a la cancha y se abre cuando la pelota sube mucho (globos)
+  camera(g) {
+    const b = this.ball;
+    const high = b ? clamp((330 - b.y) / 220, 0, 1) : 0;
+    const z = 1.2 - high * 0.2;
+    const y0 = GROUND - (H - 150) / z - high * 140;
+    this.zoomCam(g, W / 2, y0 + H / (2 * z), z);
+  }
   render(g) {
     const t = this.realTime;
-    // cielo/estadio
-    const sky = g.createLinearGradient(0, 0, 0, GROUND);
-    sky.addColorStop(0, '#0E1638'); sky.addColorStop(1, '#1B2A5E');
-    g.fillStyle = sky; g.fillRect(0, 0, W, H);
-    for (let i = 0; i < 6; i++) glowCircle(g, 120 + i * 210, 120, 70, '#FFFFFF', 0.06);
-    // tribuna
-    g.fillStyle = '#141C3D'; g.fillRect(0, 300, W, GROUND - 300);
-    for (let i = 0; i < 90; i++) {
-      const x = (i * 97) % W, y = 320 + ((i * 53) % 150);
-      g.fillStyle = ['#3985FF', '#FF654F', '#9B6CFF', '#FFC93C'][i % 4];
-      g.globalAlpha = 0.25 + Math.abs(Math.sin(t * 2 + i)) * 0.15;
-      g.beginPath(); g.arc(x, y + Math.sin(t * 4 + i) * (this.msg ? 4 : 1), 6, 0, TAU); g.fill();
-    }
-    g.globalAlpha = 1;
-    // cancha
-    g.fillStyle = '#1F6B45'; g.fillRect(0, GROUND, W, H - GROUND);
-    g.fillStyle = '#2C8A59'; g.fillRect(COURT_L, GROUND, COURT_R - COURT_L, 26);
-    g.fillStyle = '#fff'; g.fillRect(COURT_L, GROUND, 4, 26); g.fillRect(COURT_R - 4, GROUND, 4, 26); g.fillRect(COURT_L, GROUND, COURT_R - COURT_L, 3);
-    // red
-    g.fillStyle = '#E8ECF8'; g.fillRect(NET_X - 3, NET_TOP, 6, GROUND - NET_TOP);
-    g.strokeStyle = 'rgba(232,236,248,0.45)'; g.lineWidth = 1;
-    for (let y = NET_TOP + 8; y < GROUND; y += 8) { g.beginPath(); g.moveTo(NET_X - 12, y); g.lineTo(NET_X + 12, y); g.stroke(); }
-    g.fillStyle = '#fff'; g.fillRect(NET_X - 14, NET_TOP - 4, 28, 6);
+    this.stageLayer(g, 'tennis', (cg) => {
+      const sky = cg.createLinearGradient(0, 0, 0, GROUND);
+      sky.addColorStop(0, '#1B2C6E'); sky.addColorStop(1, '#3A4FA8');
+      cg.fillStyle = sky; cg.fillRect(0, 0, W, H);
+      cg.fillStyle = halftone(cg, 'rgba(255,255,255,0.07)', 12, 2.4); cg.fillRect(0, 0, W, 300);
+      // torres de luz
+      for (const x of [90, W - 90]) {
+        cg.fillStyle = '#26306A'; cg.fillRect(x - 8, 80, 16, 230);
+        cg.lineWidth = 4; cg.strokeStyle = '#0D0B14'; cg.strokeRect(x - 8, 80, 16, 230);
+        glowCircle(cg, x, 80, 120, '#FFF4C0', 0.5);
+        cg.fillStyle = '#FFF4E0'; cg.fillRect(x - 40, 56, 80, 34); cg.strokeRect(x - 40, 56, 80, 34);
+        for (let i = 0; i < 4; i++) { cg.fillStyle = '#FFE08A'; cg.fillRect(x - 34 + i * 18, 62, 12, 22); }
+      }
+      // tribuna escalonada con público de historieta
+      const COLS = ['#3985FF', '#FF654F', '#9B6CFF', '#FFC93C', '#3DDC97', '#FF3D8B'];
+      for (let r = 0; r < 6; r++) {
+        const y = 300 + r * 46;
+        cg.fillStyle = r % 2 ? '#2A2F66' : '#30367A'; cg.fillRect(0, y, W, 46);
+        cg.lineWidth = 3; cg.strokeStyle = '#0D0B14'; cg.beginPath(); cg.moveTo(0, y); cg.lineTo(W, y); cg.stroke();
+        for (let i = 0; i < 34; i++) {
+          const x = 20 + i * 38 + (r % 2) * 19, c = COLS[(i * 7 + r * 3) % COLS.length];
+          cg.fillStyle = c; cg.beginPath(); cg.arc(x, y + 22, 13, Math.PI, 0); cg.lineTo(x + 13, y + 46); cg.lineTo(x - 13, y + 46); cg.closePath(); cg.fill();
+          cg.fillStyle = '#FFE0C2'; cg.beginPath(); cg.arc(x, y + 12, 9, 0, TAU); cg.fill();
+          cg.lineWidth = 2.5; cg.stroke();
+        }
+      }
+      // el público queda atrás (más oscuro) para que la pelota se vea siempre
+      cg.fillStyle = 'rgba(18,20,58,0.62)'; cg.fillRect(0, 300, W, GROUND - 300);
+      cg.fillStyle = halftone(cg, 'rgba(13,11,20,0.35)', 8, 1.8); cg.fillRect(0, 300, W, GROUND - 300);
+      // cartel publicitario
+      cg.fillStyle = '#0D0B14'; cg.fillRect(0, GROUND - 46, W, 46);
+      cg.fillStyle = '#FFD23F'; cg.fillRect(0, GROUND - 42, W, 38);
+      cg.font = '400 26px Bangers, sans-serif'; cg.fillStyle = '#15121F'; cg.textAlign = 'center'; cg.textBaseline = 'middle';
+      for (let x = 160; x < W; x += 320) cg.fillText('DUEL CLUB · TURBO TENNIS', x, GROUND - 22);
+      // cancha en perspectiva
+      cg.fillStyle = '#1C6A42'; cg.fillRect(0, GROUND, W, H - GROUND);
+      cg.fillStyle = '#2E9A5E';
+      cg.beginPath(); cg.moveTo(COURT_L, GROUND); cg.lineTo(COURT_R, GROUND); cg.lineTo(COURT_R + 60, H); cg.lineTo(COURT_L - 60, H); cg.closePath(); cg.fill();
+      cg.fillStyle = halftone(cg, 'rgba(13,11,20,0.18)', 9, 1.8); cg.fill();
+      cg.lineWidth = 5; cg.strokeStyle = '#FFFFFF'; cg.stroke();
+      cg.beginPath(); cg.moveTo(NET_X, GROUND); cg.lineTo(NET_X, H); cg.stroke();
+      cg.lineWidth = 5; cg.strokeStyle = '#0D0B14'; cg.beginPath(); cg.moveTo(0, GROUND); cg.lineTo(W, GROUND); cg.stroke();
+    });
+    // red con contorno de tinta
+    g.fillStyle = 'rgba(232,236,248,0.25)'; g.fillRect(NET_X - 12, NET_TOP, 24, GROUND - NET_TOP);
+    g.strokeStyle = 'rgba(13,11,20,0.6)'; g.lineWidth = 2;
+    g.beginPath();
+    for (let y = NET_TOP + 8; y < GROUND; y += 9) { g.moveTo(NET_X - 12, y); g.lineTo(NET_X + 12, y); }
+    for (let x = NET_X - 12; x <= NET_X + 12; x += 8) { g.moveTo(x, NET_TOP); g.lineTo(x, GROUND); }
+    g.stroke();
+    g.fillStyle = '#FFF4E0'; g.fillRect(NET_X - 16, NET_TOP - 6, 32, 8);
+    g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.strokeRect(NET_X - 16, NET_TOP - 6, 32, 8);
+    g.fillStyle = '#0D0B14'; g.fillRect(NET_X - 3, NET_TOP, 6, GROUND - NET_TOP);
     // jugadores
     for (const pl of this.pl) {
-      drawCharacter(g, { id: this.players[pl.p].char, x: pl.x, y: pl.y, s: 0.95, color: this.color(pl.p), anim: pl.anim, t: t + pl.p, facing: pl.s ? -1 : 1, acc: this.players[pl.p].acc });
-      // raqueta
+      g.fillStyle = 'rgba(13,11,20,0.35)'; g.beginPath(); g.ellipse(pl.x, GROUND + 4, 34, 8, 0, 0, TAU); g.fill();
+      drawCharacter(g, { id: this.players[pl.p].char, x: pl.x, y: pl.y, s: 0.95, color: this.color(pl.p), anim: pl.anim, t: t + pl.p, facing: pl.s ? -1 : 1, acc: this.players[pl.p].acc, shadow: false });
+      // raqueta con contorno
       const ang = pl.swing > 0 ? (1 - pl.swing / 0.22) * 2.2 - 1.2 : -0.4;
       g.save();
       g.translate(pl.x + (pl.s ? -18 : 18), pl.y - 58);
       g.scale(pl.s ? -1 : 1, 1);
       g.rotate(ang);
-      g.strokeStyle = '#E8ECF8'; g.lineWidth = 4;
-      g.beginPath(); g.moveTo(0, 0); g.lineTo(26, -10); g.stroke();
-      g.strokeStyle = this.color(pl.p); g.lineWidth = 4;
-      g.beginPath(); g.ellipse(40, -15, 15, 11, -0.35, 0, TAU); g.stroke();
+      g.lineCap = 'round';
+      g.strokeStyle = '#0D0B14'; g.lineWidth = 8; g.beginPath(); g.moveTo(0, 0); g.lineTo(26, -10); g.stroke();
+      g.strokeStyle = '#FFF4E0'; g.lineWidth = 4; g.beginPath(); g.moveTo(0, 0); g.lineTo(26, -10); g.stroke();
+      g.fillStyle = 'rgba(255,244,224,0.35)'; g.beginPath(); g.ellipse(40, -15, 15, 11, -0.35, 0, TAU); g.fill();
+      g.strokeStyle = '#0D0B14'; g.lineWidth = 8; g.stroke();
+      g.strokeStyle = this.color(pl.p); g.lineWidth = 4.5; g.stroke();
       g.restore();
     }
     // pelota
     const b = this.ball;
     if (b) {
-      this.trail.forEach((p, i) => { g.fillStyle = rgba('#C6F04A', (i / this.trail.length) * 0.35); g.beginPath(); g.arc(p.x, p.y, BR * (i / this.trail.length), 0, TAU); g.fill(); });
-      g.fillStyle = 'rgba(0,0,0,0.3)';
-      // sombra: se achica con la altura de la pelota (nunca con radio negativo, aunque suba mucho)
+      this.trail.forEach((p, i) => { g.fillStyle = rgba('#D8FF5A', (i / this.trail.length) * 0.5); g.beginPath(); g.arc(p.x, p.y, BR * (i / this.trail.length), 0, TAU); g.fill(); });
+      g.fillStyle = 'rgba(13,11,20,0.35)';
       g.beginPath(); g.ellipse(b.x, GROUND + 4, Math.max(2, BR * (1 - (GROUND - b.y) / 900)), 4, 0, 0, TAU); g.fill();
-      glowCircle(g, b.x, b.y, 26 * this.turbo, '#C6F04A', 0.4);
-      g.fillStyle = '#D8FF5A'; g.beginPath(); g.arc(b.x, b.y, BR, 0, TAU); g.fill();
+      if (this.turbo > 1.2) glowCircle(g, b.x, b.y, 30 * this.turbo, '#FF8E3C', 0.5);
+      g.fillStyle = '#D8FF5A'; g.beginPath(); g.arc(b.x, b.y, BR + 1, 0, TAU); g.fill();
+      g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.stroke();
       g.strokeStyle = '#FFFFFF'; g.lineWidth = 2; g.beginPath(); g.arc(b.x, b.y, BR - 3, 0.3 + t * 8 * (b.spin || 0.5), 1.8 + t * 8 * (b.spin || 0.5)); g.stroke();
     }
-    this.vignette(g);
   }
   renderHUD(g) {
     const sv = [0, 1].map((s) => (this.server === s ? 'SACA' : ''));
     this.hudTop(g, { scores: this.score, center: `A ${this.target}`, centerSub: `Rally ${this.rally}${this.turbo > 1.001 ? ' · TURBO x' + this.turbo.toFixed(2) : ''}`, sub: sv });
     if (this.msg) {
-      const a = Math.min(1, this.msg.t * 2);
-      text(g, this.msg.text, W / 2, 230, { size: 64, color: '#fff', glow: this.msg.col, alpha: a, stroke: 'rgba(11,16,32,0.9)', strokeWidth: 10 });
-      text(g, this.msg.sub, W / 2, 284, { size: 20, color: '#fff', alpha: a, body: true, weight: 800 });
+      const m = this.msg;
+      this.callout(g, m.text, { y: 250, size: 54, sub: m.sub, k: (1.4 - m.t) * 3, alpha: Math.min(1, m.t * 2), color: m.col === '#8C96B8' ? '#FFD23F' : m.col });
     }
     if (this.ball?.toss) {
-      panel(g, W / 2 - 190, H - 42, 380, 30, { r: 15, fill: 'rgba(11,16,32,0.8)', stroke: this.color(this.server) });
-      const left = this.ball?.toss ? Math.max(0, Math.ceil(SERVE_LIMIT - this.ball.tossT)) : null;
-      text(g, `Saca ${this.name(this.server)}: ACCIÓN cuando baje la pelota${left != null && left <= 3 ? ` · saque automático en ${left}` : ''}`, W / 2, H - 27, { size: 14, color: '#fff', body: true, weight: 700 });
+      const left = Math.max(0, Math.ceil(SERVE_LIMIT - this.ball.tossT));
+      comicPanel(g, W / 2 - 260, H - 50, 520, 36, '#15121F', { skew: 10, dots: false, line: 3 });
+      text(g, `SACA ${this.name(this.server).toUpperCase()}: ACCIÓN cuando baje la pelota${left <= 3 ? ` · automático en ${left}` : ''}`, W / 2, H - 32, { size: 15, color: '#FFF4E0', body: true, weight: 800 });
     }
   }
 }

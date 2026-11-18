@@ -354,6 +354,8 @@ const BRAINS = {
       }
       if (g.phase >= 3 && g.ring) { const dc = Math.hypot(x - CX, y - CY); if (dc > g.ring - 50) d += 2 + (dc - g.ring + 50) / 25; }
       if (x < AX + 40 || x > AX + AW - 40 || y < AY + 40 || y > AY + AH - 40) d += 1.2;
+      // escudos para agarrar: atraen (más si le faltan escudos)
+      for (const k of g.pickups || []) { const dk = Math.hypot(x - k.x, y - k.y); if (dk < 300) d -= (P.lives < 3 ? 2.4 : 1.1) * (1 - dk / 300) * (1 - b.L.noise * 0.3); }
       return d + Math.hypot(x - CX, y - CY) / 900;
     };
     const best = b.every('bz', Math.max(0.05, b.L.react * 0.45), () => {

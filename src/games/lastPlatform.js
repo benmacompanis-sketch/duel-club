@@ -3,7 +3,7 @@
 // Pierde la ronda quien cae al vacío. Al mejor de 3 rondas.
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
-import { W, H, TAU, rand, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, approach, ease } from '../core/utils.js';
+import { W, H, TAU, rand, clamp, choice, text, panel, rgba, roundRect, glowCircle, quality, shade, approach, ease, halftone, comicPanel } from '../core/utils.js';
 
 const TW = 40, TH = 18;
 const LAYOUTS = [
@@ -31,7 +31,7 @@ export default class LastPlatform extends BaseGame {
   static meta = {
     id: 'platform', num: 4, name: 'LAST PLATFORM', short: 'PLATFORM', category: 'Habilidad', color: '#48D597',
     tagline: 'El suelo se acaba. Tu equilibrio, no.',
-    description: 'Las baldosas se desmoronan si te quedás quieto encima y la arena se achica sin parar. Saltá entre plataformas, subite a las móviles, esquivá los láseres y empujá a tu rival con el dash.',
+    description: 'Las baldosas se desmoronan si te quedás quieto encima y la arena se achica sin parar. Saltá entre plataformas, subite a las móviles, esquivá los láseres y empujá a tu rival con el dash. Cada ronda tenés 2 vidas: si te caés, volvés en una nube.',
     goal: 'No caigas. Ganá 2 rondas.',
     controls: [
       { actions: ['left', 'right'], label: 'Moverse' },
@@ -76,7 +76,7 @@ export default class LastPlatform extends BaseGame {
     this.movers = L.movers.map((m) => ({ ...m, ox: m.x, oy: m.y, ph: m.ph || 0, dx: 0, dy: 0, px: m.x, py: m.y }));
     this.bodies = [0, 1].map((p) => ({
       x: L.spawn[p][0], y: L.spawn[p][1] - 2, vx: 0, vy: 0, w: 32, h: 54, ground: null, coyote: 0, buffer: 0,
-      face: p ? -1 : 1, dash: 0, dashCd: 0, stun: 0, dead: false, deadAt: 0, anim: 'idle', jumpHeld: false, dashHit: false,
+      face: p ? -1 : 1, dash: 0, dashCd: 0, stun: 0, dead: false, deadAt: 0, anim: 'idle', jumpHeld: false, dashHit: false, lives: 2, inv: 0,
     }));
     this.lasers = [];
     this.laserT = 3;
@@ -89,7 +89,7 @@ export default class LastPlatform extends BaseGame {
   }
 
   get standTime() {
-    return Math.max(0.55, 1.25 - this.diff * 0.45) * (this.sudden ? 0.5 : 1);
+    return Math.max(0.7, 1.45 - this.diff * 0.45) * (this.sudden ? 0.5 : 1);
   }
 
   ambient(dt) {
@@ -106,8 +106,12 @@ export default class LastPlatform extends BaseGame {
   }
 
   update(dt) {
+    if (this.frozen(dt)) return;
     this.roundTime += dt;
     for (const m of this.movers) this.moveMover(m, dt);
+    // las nubes de reaparición duran unos segundos
+    for (const m of this.movers) if (m.cloud) m.life -= dt;
+    this.movers = this.movers.filter((m) => !m.cloud || m.life > 0);
     if (this.state === 'play') {
       for (const p of [0, 1]) if (!this.bodies[p].dead) this.alive[p] += dt;
       if (this.roundTime > this.timed(45) && !this.sudden) {
@@ -291,6 +295,17 @@ export default class LastPlatform extends BaseGame {
       }
     }
     // caída al vacío
+    if (b.y > H + 80 && b.lives > 1 && this.state === 'play') {
+      // le queda otra vida: vuelve en una nube lejos del rival
+      b.lives--;
+      this.fallsCount[p]++;
+      this.sfx('lose');
+      this.fx.burst(b.x, H - 10, [this.color(p), '#fff'], 30, { angle: -Math.PI / 2, spread: 0.6, speed: 600 });
+      this.fx.shake(8);
+      this.respawn(p);
+      return;
+    }
+    b.inv = Math.max(0, b.inv - dt);
     if (b.y > H + 80) {
       b.dead = true;
       b.deadAt = this.roundTime;
@@ -305,6 +320,21 @@ export default class LastPlatform extends BaseGame {
     else if (!b.ground) b.anim = b.vy < 0 ? 'jump' : 'fall';
     else if (Math.abs(b.vx) > 40) b.anim = 'run';
     else b.anim = 'idle';
+  }
+
+  respawn(p) {
+    const b = this.bodies[p], o = this.bodies[1 - p];
+    const ok = this.tiles.filter((tl) => tl.state === 'ok');
+    let x = W / 2 - 60, y = 300;
+    if (ok.length) {
+      let best = ok[0];
+      for (const tl of ok) if (Math.abs(tl.x - o.x) - tl.y * 0.3 > Math.abs(best.x - o.x) - best.y * 0.3) best = tl;
+      x = clamp(best.x - TW, 40, W - 160); y = Math.max(170, best.y - 130);
+    }
+    this.movers.push({ cloud: true, life: 3.2, x, y, w: 3, ox: x, oy: y, ph: 0, sp: 0, dx: 0, dy: 0, px: x, py: y });
+    Object.assign(b, { x: x + 60, y: y - 2, vx: 0, vy: 0, stun: 0, dash: 0, ground: null, inv: 1.4 });
+    this.fx.burst(x + 60, y - 30, ['#fff', this.color(p)], 16, { speed: 200 });
+    this.fx.float(x + 60, y - 90, '¡OTRA VIDA!', this.color(p), 24);
   }
 
   bodyCollision() {
@@ -329,7 +359,7 @@ export default class LastPlatform extends BaseGame {
       b.x -= dir * ox / 2;
       // dash contra el rival = empujón fuerte
       for (const [s, o, sp] of [[a, b, 0], [b, a, 1]]) {
-        if (s.dash > 0 && !s.dashHit) {
+        if (s.dash > 0 && !s.dashHit && !(o.inv > 0)) {
           s.dashHit = true;
           o.vx = s.face * 720;
           o.vy = -380 * Math.sqrt(this.gravityScale);
@@ -339,6 +369,8 @@ export default class LastPlatform extends BaseGame {
           this.pushes[sp]++;
           this.sfx('hitHeavy');
           this.fx.shake(9);
+          this.impact(0.07);
+          this.fx.float((a.x + b.x) / 2, Math.min(a.y, b.y) - 70, '¡PAF!', '#FFE08A', 26);
           this.fx.burst((a.x + b.x) / 2, Math.min(a.y, b.y) - 30, ['#fff', '#FFC93C', this.color(sp)], 20, { speed: 380, kind: 'star' });
         }
       }
@@ -365,94 +397,107 @@ export default class LastPlatform extends BaseGame {
   }
 
   // ------------------------------------------------------------------ dibujo
+  camera(g) {
+    const live = this.bodies.filter((b) => !b.dead);
+    if (!live.length) return this.zoomCam(g, W / 2, H / 2, 1);
+    const xs = live.map((b) => b.x), ys = live.map((b) => b.y);
+    const span = Math.max(...xs) - Math.min(...xs) + (Math.max(...ys) - Math.min(...ys)) * 1.4;
+    const z = clamp(1.36 - span / 1700, 1.06, 1.3);
+    this.zoomCam(g, (Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2 - 40, z);
+  }
   render(g) {
     const t = this.realTime;
-    this.arenaBG(g, '#0F1A35', '#0B1020');
-    // cielo: luna, estrellas e islas flotantes lejanas
-    glowCircle(g, 1040, 200, 160, '#9FB7FF', 0.35);
-    g.fillStyle = '#DCE6FF';
-    g.beginPath(); g.arc(1040, 200, 46, 0, TAU); g.fill();
-    g.fillStyle = 'rgba(15,26,53,0.35)';
-    g.beginPath(); g.arc(1026, 190, 10, 0, TAU); g.arc(1056, 214, 7, 0, TAU); g.fill();
-    for (let i = 0; i < 40; i++) {
-      const x = (i * 197) % W, y = 100 + ((i * 89) % 260);
-      g.fillStyle = `rgba(246,247,251,${0.25 + 0.25 * Math.sin(t * 2 + i)})`;
-      g.fillRect(x, y, 2, 2);
-    }
-    for (const [ix, iy, iw] of [[140, 230, 120], [420, 170, 90], [760, 250, 140]]) {
-      const bob = Math.sin(t * 0.6 + ix) * 6;
-      g.fillStyle = '#18264D';
-      g.beginPath(); g.moveTo(ix, iy + bob); g.lineTo(ix + iw, iy + bob); g.lineTo(ix + iw * 0.6, iy + 50 + bob); g.lineTo(ix + iw * 0.35, iy + 40 + bob); g.closePath(); g.fill();
-      g.fillStyle = '#22345F';
-      g.fillRect(ix, iy - 6 + bob, iw, 8);
-    }
-    // montañas de fondo
-    g.fillStyle = '#131F40';
-    g.beginPath(); g.moveTo(0, 520);
-    for (let x = 0; x <= W; x += 80) g.lineTo(x, 430 + Math.sin(x * 0.011) * 50 + Math.sin(x * 0.03) * 20);
-    g.lineTo(W, H); g.lineTo(0, H); g.fill();
-    // vacío neón
-    const v = g.createLinearGradient(0, H - 120, 0, H);
+    this.stageLayer(g, 'platform', (cg) => {
+      const sky = cg.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, '#1A2E66'); sky.addColorStop(0.7, '#2B1F5C'); sky.addColorStop(1, '#4A1F4F');
+      cg.fillStyle = sky; cg.fillRect(0, 0, W, H);
+      cg.fillStyle = halftone(cg, 'rgba(255,255,255,0.06)', 12, 2.4); cg.fillRect(0, 0, W, H * 0.6);
+      // luna con contorno de tinta
+      glowCircle(cg, 1040, 200, 170, '#9FB7FF', 0.45);
+      cg.fillStyle = '#F2F5FF'; cg.beginPath(); cg.arc(1040, 200, 52, 0, TAU); cg.fill();
+      cg.lineWidth = 5; cg.strokeStyle = '#0D0B14'; cg.stroke();
+      cg.fillStyle = 'rgba(13,11,20,0.12)'; cg.beginPath(); cg.arc(1024, 188, 12, 0, TAU); cg.arc(1060, 216, 9, 0, TAU); cg.fill();
+      for (let i = 0; i < 40; i++) { cg.fillStyle = 'rgba(255,244,224,0.6)'; cg.fillRect((i * 197) % W, 100 + ((i * 89) % 260), 3, 3); }
+      // islas flotantes lejanas
+      for (const [ix, iy, iw] of [[140, 230, 120], [420, 170, 90], [760, 250, 140]]) {
+        cg.fillStyle = '#26386E';
+        cg.beginPath(); cg.moveTo(ix, iy); cg.lineTo(ix + iw, iy); cg.lineTo(ix + iw * 0.6, iy + 50); cg.lineTo(ix + iw * 0.35, iy + 40); cg.closePath(); cg.fill();
+        cg.lineWidth = 4; cg.strokeStyle = '#0D0B14'; cg.stroke();
+        cg.fillStyle = '#3DDC97'; cg.fillRect(ix, iy - 7, iw, 9); cg.strokeRect(ix, iy - 7, iw, 9);
+      }
+      // montañas con contorno
+      cg.fillStyle = '#1F2B5A';
+      cg.beginPath(); cg.moveTo(0, H);
+      for (let x = 0; x <= W; x += 80) cg.lineTo(x, 430 + Math.sin(x * 0.011) * 50 + Math.sin(x * 0.03) * 20);
+      cg.lineTo(W, H); cg.closePath(); cg.fill();
+      cg.lineWidth = 5; cg.strokeStyle = '#0D0B14'; cg.stroke();
+      cg.fillStyle = halftone(cg, 'rgba(13,11,20,0.3)', 9, 2); cg.fill();
+    });
+    // vacío: lava de historieta que late
+    const v = g.createLinearGradient(0, H - 130, 0, H);
     v.addColorStop(0, 'rgba(255,101,79,0)');
-    v.addColorStop(1, `rgba(255,101,79,${0.35 + Math.sin(t * 3) * 0.08})`);
-    g.fillStyle = v;
-    g.fillRect(0, H - 120, W, 120);
-    for (let i = 0; i < 12; i++) {
-      const x = (i * 113 + t * 30) % W, y = H - ((t * 40 + i * 37) % 120);
-      g.fillStyle = 'rgba(255,160,120,0.5)';
-      g.fillRect(x, y, 3, 3);
-    }
+    v.addColorStop(1, `rgba(255,101,79,${0.5 + Math.sin(t * 3) * 0.1})`);
+    g.fillStyle = v; g.fillRect(0, H - 130, W, 130);
+    g.fillStyle = '#FF8E3C';
+    g.beginPath(); g.moveTo(0, H);
+    for (let x = 0; x <= W; x += 40) g.lineTo(x, H - 18 - Math.sin(x * 0.05 + t * 3) * 7);
+    g.lineTo(W, H); g.closePath(); g.fill();
+    g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.stroke();
     // láseres (aviso)
     for (const lz of this.lasers) {
       if (lz.t < lz.warn) {
         const blink = Math.sin(lz.t * 22) > 0;
-        g.fillStyle = rgba('#FF654F', blink ? 0.16 : 0.06);
-        g.fillRect(lz.x - lz.w / 2, 90, lz.w, H);
-        g.strokeStyle = rgba('#FF654F', 0.6);
-        g.setLineDash([10, 10]);
-        g.lineWidth = 2;
-        g.strokeRect(lz.x - lz.w / 2, 90, lz.w, H);
+        g.fillStyle = rgba('#FF654F', blink ? 0.2 : 0.08);
+        g.fillRect(lz.x - lz.w / 2, 0, lz.w, H);
+        g.strokeStyle = '#FFD23F'; g.setLineDash([12, 10]); g.lineWidth = 3;
+        g.strokeRect(lz.x - lz.w / 2, 0, lz.w, H);
         g.setLineDash([]);
-        text(g, '!', lz.x, 120, { size: 34, color: '#FF8A78' });
+        text(g, '!', lz.x, 140, { size: 40, color: '#FFD23F' });
       }
     }
-    // baldosas
+    // baldosas: bloques de historieta (verde = firme, amarillo = gastada, naranja = por caer)
+    g.lineJoin = 'round';
     for (const tl of this.tiles) {
       const shake = tl.state === 'shake' ? Math.sin(tl.t * 60) * 2 : 0;
       const x = tl.x + shake, y = tl.y + tl.dy;
       const danger = tl.state === 'ok' ? tl.stand / this.standTime : 1;
-      const base = tl.state === 'ok' ? (danger > 0.5 ? '#C9B14A' : '#48D597') : tl.state === 'shake' ? '#FF8E3C' : '#7A5340';
+      const base = tl.state === 'ok' ? (danger > 0.5 ? '#FFD23F' : '#3DDC97') : tl.state === 'shake' ? '#FF8E3C' : '#8A5A44';
       g.globalAlpha = tl.state === 'fall' ? Math.max(0, 1 - tl.dy / 300) : 1;
-      g.fillStyle = shade(base, -0.45);
-      roundRect(g, x + 1, y + 4, TW - 2, TH, 5); g.fill();
-      g.fillStyle = base;
-      roundRect(g, x + 1, y, TW - 2, TH - 4, 5); g.fill();
-      g.fillStyle = 'rgba(255,255,255,0.25)';
-      g.fillRect(x + 5, y + 3, TW - 12, 3);
+      g.fillStyle = shade(base, -0.45); g.fillRect(x + 1, y + 2, TW - 2, TH);
+      g.fillStyle = base; g.fillRect(x + 1, y, TW - 2, TH - 5);
+      g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x + 4, y + 3, TW - 10, 3);
+      g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.strokeRect(x + 1, y, TW - 2, TH + 2);
       if (tl.state === 'shake' || danger > 0.5) {
-        g.strokeStyle = 'rgba(11,16,32,0.6)'; g.lineWidth = 1.5;
-        g.beginPath(); g.moveTo(x + 10, y); g.lineTo(x + 18, y + 8); g.lineTo(x + 26, y + 4); g.stroke();
+        g.lineWidth = 2;
+        g.beginPath(); g.moveTo(x + 10, y); g.lineTo(x + 18, y + 9); g.lineTo(x + 26, y + 4); g.lineTo(x + 32, y + 12); g.stroke();
       }
     }
     g.globalAlpha = 1;
-    // plataformas móviles
+    // plataformas móviles y nubes de reaparición
     for (const m of this.movers) {
       const mw = m.w * TW;
-      g.fillStyle = '#5B3FB5';
-      roundRect(g, m.x, m.y + 4, mw, TH, 6); g.fill();
-      g.fillStyle = '#9B6CFF';
-      roundRect(g, m.x, m.y, mw, TH - 4, 6); g.fill();
-      for (let i = 0; i < m.w; i++) { g.fillStyle = 'rgba(255,255,255,0.3)'; g.beginPath(); g.arc(m.x + TW / 2 + i * TW, m.y + 7, 3, 0, TAU); g.fill(); }
+      if (m.cloud) {
+        g.globalAlpha = Math.min(1, m.life * 2) * (m.life < 1 && Math.floor(t * 10) % 2 ? 0.5 : 1);
+        g.fillStyle = '#FFF4E0';
+        g.beginPath();
+        for (let i = 0; i < 4; i++) g.arc(m.x + 14 + i * (mw - 28) / 3, m.y + 6, 18, 0, TAU);
+        g.fill(); g.lineWidth = 4; g.strokeStyle = '#0D0B14'; g.stroke();
+        g.fillStyle = '#FFF4E0'; g.fillRect(m.x + 8, m.y, mw - 16, 18);
+        g.globalAlpha = 1;
+        continue;
+      }
+      g.fillStyle = '#5B3FB5'; g.fillRect(m.x, m.y + 4, mw, TH);
+      g.fillStyle = '#B49BFF'; g.fillRect(m.x, m.y, mw, TH - 4);
+      g.lineWidth = 3; g.strokeStyle = '#0D0B14'; g.strokeRect(m.x, m.y, mw, TH + 4);
+      for (let i = 0; i < m.w; i++) { g.fillStyle = '#FFF4E0'; g.beginPath(); g.arc(m.x + TW / 2 + i * TW, m.y + 7, 3.5, 0, TAU); g.fill(); }
     }
     // láseres activos
     for (const lz of this.lasers) {
       if (lz.t >= lz.warn && lz.t < lz.warn + lz.on) {
         const k = 1 - (lz.t - lz.warn) / lz.on;
-        glowCircle(g, lz.x, H / 2, 200, '#FF654F', k);
-        g.fillStyle = rgba('#FFE0D9', 0.9 * k);
-        g.fillRect(lz.x - lz.w * 0.18, 90, lz.w * 0.36, H);
-        g.fillStyle = rgba('#FF654F', 0.6 * k);
-        g.fillRect(lz.x - lz.w / 2, 90, lz.w, H);
+        g.fillStyle = rgba('#0D0B14', 0.8 * k); g.fillRect(lz.x - lz.w / 2 - 4, 0, lz.w + 8, H);
+        g.fillStyle = rgba('#FF3B5C', k); g.fillRect(lz.x - lz.w / 2, 0, lz.w, H);
+        g.fillStyle = rgba('#FFF4E0', k); g.fillRect(lz.x - lz.w * 0.16, 0, lz.w * 0.32, H);
       }
     }
     // jugadores
@@ -461,28 +506,32 @@ export default class LastPlatform extends BaseGame {
       if (b.dead) continue;
       let anim = b.anim;
       if (this.state === 'result') anim = this.roundWinner === p ? 'win' : 'idle';
-      drawCharacter(g, { id: this.players[p].char, x: b.x, y: b.y, s: 0.62, color: this.color(p), anim, t: t + p, facing: b.face, acc: this.players[p].acc });
+      const blink = b.inv > 0 && Math.floor(t * 14) % 2 === 0;
+      drawCharacter(g, { id: this.players[p].char, x: b.x, y: b.y, s: 0.7, color: this.color(p), anim, t: t + p, facing: b.face, acc: this.players[p].acc, alpha: blink ? 0.4 : 1 });
       if (b.dashCd > 0) {
-        g.fillStyle = 'rgba(255,255,255,0.15)';
-        g.fillRect(b.x - 16, b.y + 6, 32, 4);
-        g.fillStyle = this.color(p);
-        g.fillRect(b.x - 16, b.y + 6, 32 * (1 - b.dashCd / 1.1), 4);
+        g.fillStyle = '#0D0B14'; g.fillRect(b.x - 19, b.y + 6, 38, 8);
+        g.fillStyle = this.color(p); g.fillRect(b.x - 17, b.y + 8, 34 * (1 - b.dashCd / 1.1), 4);
       }
-      text(g, `J${p + 1}`, b.x, b.y - 78, { size: 13, color: this.color(p), body: true, weight: 800 });
+      // vidas sobre la cabeza
+      for (let i = 0; i < 2; i++) {
+        const hx = b.x - 10 + i * 20, hy = b.y - 92;
+        g.fillStyle = i < b.lives ? this.color(p) : 'rgba(13,11,20,0.55)';
+        g.beginPath(); g.arc(hx - 4, hy, 5, Math.PI, 0); g.arc(hx + 4, hy, 5, Math.PI, 0); g.lineTo(hx, hy + 10); g.closePath(); g.fill();
+        g.lineWidth = 2.5; g.strokeStyle = '#0D0B14'; g.stroke();
+      }
     }
   }
 
   renderHUD(g) {
+    const sub = this.bodies.map((b) => (b.dead ? 'Se cayó' : `${b.lives} ${b.lives === 1 ? 'vida' : 'vidas'} · ganá 2 rondas`));
     this.hudTop(g, {
-      scores: this.roundWins, sub: ['Ganá 2 rondas', 'Ganá 2 rondas'],
+      scores: this.roundWins, sub,
       center: `RONDA ${this.round}`, centerSub: this.sudden ? '¡MUERTE SÚBITA!' : this.layout.name,
     });
     if (this.state === 'result') {
-      const k = Math.min(1, this.roundEnd * 3);
       const w = this.roundWinner;
       const msg = w >= 0 ? `¡${this.name(w).toUpperCase()} GANA LA RONDA!` : '¡CAYERON LOS DOS!';
-      panel(g, W / 2 - 320, 300, 640, 80, { r: 40, fill: 'rgba(11,16,32,0.88)', stroke: w >= 0 ? this.color(w) : '#8C96B8' });
-      text(g, msg, W / 2, 340, { size: 32 * (0.6 + 0.4 * ease.outBack(k)), color: '#fff' });
+      this.callout(g, msg, { y: 330, size: 38, k: this.roundEnd * 3, color: w >= 0 ? this.color(w) : '#FFD23F' });
     }
   }
 }

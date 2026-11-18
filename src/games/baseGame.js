@@ -4,7 +4,7 @@
 import { FX } from '../core/renderer.js';
 import { PlayerInput } from '../core/inputManager.js';
 import { drawPortrait } from '../core/characters.js';
-import { W, H, text, panel, rgba, fmtTime, clamp, PALETTE, roundRect, quality, shade, burst, comicPanel, halftone, mix, cachedLayer } from '../core/utils.js';
+import { W, H, text, panel, rgba, fmtTime, clamp, PALETTE, roundRect, quality, shade, burst, comicPanel, halftone, mix, cachedLayer, ease, FONT_DISPLAY } from '../core/utils.js';
 
 export class BaseGame {
   constructor(app, opts) {
@@ -198,6 +198,72 @@ export class BaseGame {
     for (let gx = x; gx <= x + w; gx += step) { g.moveTo(gx, y); g.lineTo(gx, y + h); }
     for (let gy = y; gy <= y + h; gy += step) { g.moveTo(x, gy); g.lineTo(x + w, gy); }
     g.stroke();
+  }
+  /**
+   * Cartel grande de historieta para anuncios (ganó la ronda, ¡falta!, gol…): globo con estallido detrás,
+   * del color de quien lo provocó (o amarillo si es neutro), levemente inclinado y con entrada con rebote.
+   * k: 0..1 progreso de la entrada (1 = quieto).
+   */
+  callout(g, msg, o = {}) {
+    const y = o.y ?? H / 2, k = clamp(o.k ?? 1, 0, 1), size = o.size || 40;
+    const fill = o.color || '#FFD23F';
+    const light = o.light ?? fill.toUpperCase() === '#FFD23F';
+    g.save();
+    g.font = `400 ${size}px ${FONT_DISPLAY}`;
+    const tw = g.measureText(msg).width;
+    g.restore();
+    const bw = Math.min(W - 80, tw + 90), bh = size * 1.7 + (o.sub ? 22 : 0);
+    const s = 0.55 + 0.45 * ease.outBack(k);
+    g.save();
+    g.translate(W / 2, y);
+    g.rotate(o.rot ?? -0.03);
+    g.scale(s, s);
+    if (o.alpha != null) g.globalAlpha *= o.alpha;
+    burst(g, 0, 0, bh * 0.82, o.burst || '#FFF4E0', { points: 18, rot: 0.2, inner: 0.78, sx: (bw / (bh * 0.82 * 2)) * 1.18 });
+    comicPanel(g, -bw / 2, -bh / 2, bw, bh, fill, { skew: 16, tilt: 3, dotColor: light ? 'rgba(13,11,20,0.14)' : 'rgba(255,255,255,0.14)' });
+    text(g, msg, 0, o.sub ? -10 : 2, { size, color: light ? '#15121F' : '#FFFFFF', comic: !light });
+    if (o.sub) text(g, o.sub, 0, bh / 2 - 18, { size: 15, body: true, weight: 800, color: light ? '#15121F' : '#FFFFFF' });
+    g.restore();
+  }
+  /**
+   * Cámara suave que acerca la acción: centro (tx, ty) y zoom tz (1 = toda la pantalla). Nunca muestra fuera del
+   * escenario. Su estado empieza con "_" para quedar fuera de la simulación y de la comparación online.
+   */
+  zoomCam(g, tx, ty, tz) {
+    const c = this._cam || (this._cam = { x: tx, y: ty, z: tz, t: this.realTime });
+    const dt = clamp(this.realTime - c.t, 0, 0.1);
+    c.t = this.realTime;
+    const k = 1 - Math.exp(-dt * 4.5);
+    c.x += (tx - c.x) * k; c.y += (ty - c.y) * k; c.z += (tz - c.z) * k;
+    const z = Math.max(1, c.z), vw = W / z, vh = H / z;
+    const x0 = clamp(c.x - vw / 2, 0, W - vw), y0 = clamp(c.y - vh / 2, 0, H - vh);
+    g.scale(z, z);
+    g.translate(-x0, -y0);
+  }
+  /**
+   * Fondo quieto para juegos con cámara: se dibuja una vez al doble de resolución (la cámara lo agranda)
+   * y después solo se copia. Cambiar "key" lo vuelve a dibujar.
+   */
+  stageLayer(g, key, draw) {
+    if (this._layer?.key !== key) {
+      const c = document.createElement('canvas');
+      c.width = W * 2; c.height = H * 2;
+      const cg = c.getContext('2d');
+      cg.scale(2, 2);
+      draw(cg);
+      this._layer = { key, c };
+    }
+    g.drawImage(this._layer.c, 0, 0, W, H);
+  }
+  /** Pausa de impacto: el juego se congela unos centésimos para que el golpe "pese" (es parte de la simulación). */
+  impact(sec) {
+    this.stopT = Math.max(this.stopT || 0, sec);
+  }
+  /** Llamar al principio de update(): devuelve true mientras dura la pausa de impacto. */
+  frozen(dt) {
+    if (!(this.stopT > 0)) return false;
+    this.stopT -= dt;
+    return true;
   }
   /** Indicador de "controles invertidos" etc. sobre el personaje */
   label(g, x, y, str, col) {
