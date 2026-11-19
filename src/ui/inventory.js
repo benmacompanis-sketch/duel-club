@@ -2,10 +2,10 @@
 // rareza, equipar/desequipar, cómo se consiguió cada objeto y los objetos que todavía faltan.
 import { h, icon } from './dom.js';
 import { ALL_ITEMS, RARITIES } from '../data/catalog.js';
-import { tabs, empty, avatar, lookOf, titleOf } from './kit.js';
+import { tabs, empty, avatar, lookOf, titleOf, badgeEl } from './kit.js';
 import { CAT_TABS, itemCard, itemModal, isEquipped, toggleEquip } from './store.js';
 
-const SLOT_NAMES = { skin: 'Skin', hat: 'Sombrero', face: 'Máscara', body: 'Accesorio', entrance: 'Entrada', victory: 'Victoria', emote: 'Emote', frame: 'Marco', card: 'Tarjeta', title: 'Título' };
+const SLOT_NAMES = { skin: 'Skin', hat: 'Sombrero', face: 'Máscara', body: 'Accesorio', entrance: 'Entrada', victory: 'Victoria', emote: 'Emote', frame: 'Marco', card: 'Tarjeta', title: 'Título', badge: 'Insignia' };
 
 export function inventorySection(ui, owner, ctx) {
   const app = ui.app;
@@ -33,7 +33,7 @@ export function inventorySection(ui, owner, ctx) {
       h('div.lo-slots', Object.entries(SLOT_NAMES).map(([slot, name]) => {
         const it = ALL_ITEMS.find((x) => x.id === eq[slot]);
         return h('button.lo-slot' + (it ? '.rar-' + it.rarity : ''), { nav: true, style: { '--rr': it ? RARITIES[it.rarity].color : '#3A4466' }, onclick: () => { cat = slot === 'card' ? 'card' : slot; show = 'owned'; renderFilters(); renderGrid(); } },
-          h('small', name), h('b', it ? it.name : '—'));
+          h('small', name), h('b', slot === 'badge' && it ? badgeEl(it.id, 18) : null, it ? it.name : '—'));
       })));
   }
   function counts() {
@@ -57,7 +57,8 @@ export function inventorySection(ui, owner, ctx) {
       const own = svc.owns(p, it.id);
       return show === 'all' || (show === 'owned' ? own : !own);
     }).sort((a, b) => Number(isEquipped(me, b)) - Number(isEquipped(me, a)) || RARITIES[b.rarity].order - RARITIES[a.rarity].order);
-    grid.replaceChildren(...(list.length ? list.map((it) => itemCard(ui, owner, it, p, open)) : [empty(show === 'owned' ? 'Todavía no tenés objetos de este tipo. ¡Pasá por la PIE STORE o desbloqueá logros!' : 'Nada por acá.', 'card')]));
+    const hint = cat === 'badge' ? h('p.cat-hint', 'Tu insignia aparece al lado de tu nombre: arriba en la barra, en tu perfil, en el ranking, en Amigos, en la presentación de cada minijuego, en el marcador de la partida y en los resultados.') : null;
+    grid.replaceChildren(...(hint ? [hint] : []), ...(list.length ? list.map((it) => itemCard(ui, owner, it, p, open)) : [empty(show === 'owned' ? 'Todavía no tenés objetos de este tipo. ¡Pasá por la PIE STORE o desbloqueá logros!' : 'Nada por acá.', 'card')]));
   }
   function open(item) {
     app.audio.play('click');

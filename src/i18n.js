@@ -12,6 +12,8 @@ import { PUZZLE_EN } from './data/puzzles.js';
 import { CHEST_EN } from './data/chests.js';
 // textos de 2v2, SALAS, CHATS y TOP 10
 const V2_UI_EN = {
+  'Insignia': 'Badge', 'Insignia del Creador': 'Creator badge', 'Solo el creador': 'Creator only', 'Exclusiva del creador de DUEL CLUB: no se vende ni sale en cofres.': 'Exclusive to the creator of DUEL CLUB: not sold and not in chests.',
+  'Tu insignia aparece al lado de tu nombre: arriba en la barra, en tu perfil, en el ranking, en Amigos, en la presentación de cada minijuego, en el marcador de la partida y en los resultados.': 'Your badge appears next to your name: in the top bar, on your profile, in the ranking, in Friends, on each minigame intro, on the in-game scoreboard and on the results.',
   'partida': 'match', 'partidas': 'matches', 'victoria': 'win', 'victorias': 'wins',
   Insignias: 'Badges', 'Se muestra al lado de tu nombre.': 'Shown next to your name.', 'REPORTES DE CHAT': 'CHAT REPORTS', 'CHAT PRIVADO': 'PRIVATE CHAT', 'CHAT DE PARTIDA': 'MATCH CHAT',
   'Sin revisar': 'Unreviewed', Revisados: 'Reviewed', Descartados: 'Dismissed', Todos: 'All', REVISADO: 'REVIEWED', DESCARTAR: 'DISMISS', 'VER PERFIL': 'VIEW PROFILE',

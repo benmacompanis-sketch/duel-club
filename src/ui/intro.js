@@ -3,6 +3,7 @@
 import { h, icon, keycap } from './dom.js';
 import { gameIcon } from './widgets.js';
 import { EVENTS, eventIcon } from '../core/events.js';
+import { badgeEl } from './kit.js';
 
 export function introScreen(ui, { meta, opts, onStart, onBack }) {
   const app = ui.app;
@@ -30,7 +31,7 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
     const chip = pad != null ? h('div.ready-chip', `Joystick ${pad + 1}: pulsá A cuando estés listo`) : h('div.ready-chip', 'Pulsá ', keycap(b.a[0]), ' cuando estés listo');
     chips[p] = chip;
     return h('div.ctrl-box', { style: { '--c': prof.color } },
-      h('div.ctrl-head', h('b', prof.name), h('small', opts.team ? `J${p + 1} · EQUIPO ${p % 2 ? 'ROJO' : 'AZUL'}` : `JUGADOR ${p + 1}`)),
+      h('div.ctrl-head', h('b', prof.name, badgeEl(prof.acc?.badge, 18)), h('small', opts.team ? `J${p + 1} · EQUIPO ${p % 2 ? 'ROJO' : 'AZUL'}` : `JUGADOR ${p + 1}`)),
       ...meta.controls.map((c) => h('div.ctrl-row', h('span', c.label), h('span.keys', ...c.actions.map((a) => keycap(b[a][0]))))),
       chip);
   };

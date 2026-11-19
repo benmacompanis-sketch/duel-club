@@ -1,7 +1,7 @@
 // CLUB: amigos (online/offline, última actividad, invitar a jugar), buscador de jugadores,
 // solicitudes (recibidas/enviadas: aceptar, rechazar, cancelar) y cara a cara con presentación VS.
 import { h, icon } from './dom.js';
-import { tabs, loading, errorBox, empty, avatar, lookOf, levelBadge, resist, timeAgo, gameChip, profileCard, fmtN, titleOf } from './kit.js';
+import { tabs, loading, errorBox, empty, avatar, lookOf, levelBadge, resist, timeAgo, gameChip, profileCard, fmtN, titleOf, badgeEl } from './kit.js';
 import { GAME_NAMES } from '../data/catalog.js';
 import { errorText } from '../net/api.js';
 import { challengeFriend } from './online.js';
@@ -13,7 +13,7 @@ function personRow(ui, owner, a, actions, extra = null) {
   return h('div.person',
     avatar(ui, owner, lookOf(a), 52),
     h('div.person-main',
-      h('div.person-name', h('b', a.name), a.online ? h('span.dot-online', { title: 'En línea' }) : null, h('small', '@' + a.username)),
+      h('div.person-name', h('b', a.name), badgeEl(a.equipped?.badge, 18), a.online ? h('span.dot-online', { title: 'En línea' }) : null, h('small', '@' + a.username)),
       h('div.person-line', levelBadge(a.level), resist(a.rating, { short: true }), h('span.muted.small', a.online ? 'En línea' : `Activo ${timeAgo(a.last_seen)}`)),
       extra),
     h('div.person-act', actions));

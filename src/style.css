@@ -2571,3 +2571,9 @@ textarea { background: #15121F !important; }
 .ph-bar, .ch-bar, .tg-bar { height: 14px !important; border-radius: 3px !important; background: #15121F !important; border: 3px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); overflow: hidden; }
 .ph-bar i, .ch-bar i, .tg-bar i { border-radius: 0 !important; background: #FFD23F !important; }
 .hp-row b { font-family: var(--display); font-weight: 400; font-size: 20px; letter-spacing: 1px; }
+/* insignias junto al nombre en toda la interfaz */
+.badge-ico { display: inline-block; vertical-align: -4px; margin-left: 6px; flex: none; }
+.badge-ico svg { width: 100%; height: 100%; display: block; filter: drop-shadow(1.5px 1.5px 0 #0D0B14); }
+.tb-info b .badge-ico, .person-name .badge-ico, .ctrl-head b .badge-ico { vertical-align: -3px; }
+.lo-slot b .badge-ico { margin: 0 5px 0 0; }
+.cat-hint { grid-column: 1 / -1; margin: 0 0 4px; background: var(--ink); color: #FFF4E0; padding: 8px 12px; border-left: 6px solid var(--yellow); font-weight: 700; font-size: 14px; }

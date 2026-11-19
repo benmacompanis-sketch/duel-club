@@ -2,7 +2,7 @@
 // barra lateral con todas las secciones y área de contenido. Todo se puede usar con teclado o mouse.
 import { h, icon, toggleFullscreen } from './dom.js';
 import { duoStage } from './menu.js';
-import { pies, resist, levelBadge, xpBar, avatar, lookOf, titleOf, timeAgo, gameChip, errorBox, loading, fmtN } from './kit.js';
+import { pies, resist, levelBadge, xpBar, avatar, lookOf, titleOf, timeAgo, gameChip, errorBox, loading, fmtN, badgeEl } from './kit.js';
 import { levelInfo, GAME_NAMES } from '../data/catalog.js';
 import { accountModal } from './accountModal.js';
 import { notificationsModal } from './notifications.js';
@@ -97,7 +97,7 @@ export function hubScreen(ui, params = {}) {
     avatar(ui, scr, lookOf(me), 44, { seed: p }),
     h('div.tb-info',
       h('small', `J${p + 1} · ${titleOf(me)}`),
-      h('b', me.name, me.unread ? h('span.tb-dot', String(me.unread > 9 ? '9+' : me.unread)) : null),
+      h('b', me.name, badgeEl(me.equipped?.badge, 17), me.unread ? h('span.tb-dot', String(me.unread > 9 ? '9+' : me.unread)) : null),
       h('div.tb-line', levelBadge(L.level), xpBar(me.xp))),
     h('div.tb-cur', pies(me.pies), resist(me.rating, { short: true })));
   }

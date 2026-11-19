@@ -24,6 +24,11 @@ export const BADGE_ITEMS = DEF.map(([id, name, en, glyph, c1, c2, rarity]) => ({
   desc: id.startsWith('cx_') ? 'Exclusivo de cofres: no se vende en la tienda.' : 'Se muestra al lado de tu nombre.',
   sale: !id.startsWith('cx_'), chest: id.startsWith('cx_'), ...(id.startsWith('cx_') ? { unlock: 'Solo en cofres' } : {}),
 }));
+// Insignia exclusiva del creador de DUEL CLUB (benuchinb2): no se vende, no sale en cofres y no da ventajas
+BADGE_ITEMS.push({
+  id: 'badge_creador', category: 'badge', rarity: 'mythic', name: 'Insignia del Creador', en: 'Creator badge', glyph: 'crown', c1: 'creator', c2: '#FFD16B',
+  desc: 'Exclusiva del creador de DUEL CLUB: no se vende ni sale en cofres.', sale: false, chest: false, unlock: 'Solo el creador',
+});
 export const BADGE_BY_ID = Object.fromEntries(BADGE_ITEMS.map((b) => [b.id, b]));
 
 const GLYPH = {
@@ -46,8 +51,30 @@ const GLYPH = {
 export function badgeSvg(id) {
   const b = BADGE_BY_ID[id];
   if (!b) return '';
+  if (b.c1 === 'creator') {
+    // escudo violeta con ribete dorado doble, corona con gema y destellos
+    return `<svg viewBox="0 0 32 36" aria-hidden="true"><defs><linearGradient id="bcv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7B2FD8"/><stop offset="1" stop-color="#2A0F5C"/></linearGradient><linearGradient id="bcg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF1A8"/><stop offset=".5" stop-color="#FFC93C"/><stop offset="1" stop-color="#C98A12"/></linearGradient></defs>`
+      + `<path d="M16 1l14 5v11c0 9-6 15-14 18C8 32 2 26 2 17V6z" fill="url(#bcg)" stroke="#0D0B14" stroke-width="2.5"/>`
+      + `<path d="M16 4.6l11 4v8.4c0 7.2-4.7 12-11 14.6C9.7 29 5 24.2 5 17V8.6z" fill="url(#bcv)" stroke="#0D0B14" stroke-width="1.2"/>`
+      + `<path d="M8.5 12.5l3.6 3.4L16 10l3.9 5.9 3.6-3.4-1.8 9.1H10.3z" fill="url(#bcg)" stroke="#0D0B14" stroke-width="1.3" stroke-linejoin="round"/>`
+      + `<circle cx="16" cy="18" r="1.9" fill="#FF5FD2" stroke="#0D0B14" stroke-width=".9"/>`
+      + `<path d="M24.5 23.5l.7 1.5 1.5.7-1.5.7-.7 1.5-.7-1.5-1.5-.7 1.5-.7zM8 22.5l.5 1.1 1.1.5-1.1.5-.5 1.1-.5-1.1-1.1-.5 1.1-.5z" fill="#FFF4E0"/></svg>`;
+  }
   const fill = b.c1 === 'holo' ? 'url(#bh)' : b.c1;
   const holo = b.c1 === 'holo' ? '<defs><linearGradient id="bh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5ac8"/><stop offset=".35" stop-color="#5ac8ff"/><stop offset=".65" stop-color="#a0ff78"/><stop offset="1" stop-color="#ffe65a"/></linearGradient></defs>' : '';
   const stroke = ['leaf', 'sun', 'diamond', 'trophy', 'rocket'].includes(b.glyph);
   return `<svg viewBox="0 0 32 36" aria-hidden="true">${holo}<path d="M16 1l14 5v11c0 9-6 15-14 18C8 32 2 26 2 17V6z" fill="${fill}" stroke="#0D0B14" stroke-width="2.5"/><g transform="translate(5 7) scale(.92)"><path d="${GLYPH[b.glyph]}" fill="${stroke ? 'none' : b.c2}" stroke="${stroke ? b.c2 : '#0D0B14'}" stroke-width="${stroke ? 2.4 : 1.1}" stroke-linejoin="round" stroke-linecap="round"/></g></svg>`;
+}
+
+const IMG = new Map();
+/** Imagen de la insignia para dibujar en el canvas (marcadores de los minijuegos). Devuelve null mientras carga. */
+export function badgeImage(id) {
+  if (!id || !BADGE_BY_ID[id]) return null;
+  let im = IMG.get(id);
+  if (!im) {
+    im = new Image();
+    im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(badgeSvg(id).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="72" '));
+    IMG.set(id, im);
+  }
+  return im.complete && im.naturalWidth ? im : null;
 }

@@ -8,7 +8,7 @@ import { EVENTS } from '../core/events.js';
 import { TAU, rgba } from '../core/utils.js';
 import { drawVictory } from '../core/cosmetics.js';
 import { normLook } from '../core/characters.js';
-import { emoteBubble, phrase, fmtN } from './kit.js';
+import { emoteBubble, phrase, fmtN, badgeEl } from './kit.js';
 
 export function resultsScreen(ui, { session, res, rec, info, done }) {
   const app = ui.app;
@@ -47,7 +47,7 @@ export function resultsScreen(ui, { session, res, rec, info, done }) {
       }),
       emote,
       h('div.res-meta',
-        h('div.res-name', prof.name),
+        h('div.res-name', prof.name, badgeEl(normLook(prof.acc).badge, 22)),
         h('div.res-score', res.display[p], h('small', res.scoreLabel)),
         h('div.res-tags',
         pts != null ? h('span.chip.res-tag', { style: { borderColor: prof.color, color: '#fff', background: rgba(prof.color, 0.3) } }, `+${pts} PTS`) : null,

@@ -4,6 +4,7 @@
 import { FX } from '../core/renderer.js';
 import { PlayerInput } from '../core/inputManager.js';
 import { drawPortrait } from '../core/characters.js';
+import { badgeImage } from '../data/badges.js';
 import { W, H, text, panel, rgba, fmtTime, clamp, PALETTE, roundRect, quality, shade, burst, comicPanel, halftone, mix, cachedLayer, ease, FONT_DISPLAY } from '../core/utils.js';
 
 export class BaseGame {
@@ -124,6 +125,12 @@ export class BaseGame {
       const px = left ? x + 44 : x + 336;
       drawPortrait(g, px, 43, 26, this.players[p], { t: t + p, facing: left ? 1 : -1 });
       text(g, this.name(p).toUpperCase(), left ? x + 98 : x + 282, 30, { size: 20, align: left ? 'left' : 'right', color: PALETTE.white });
+      // insignia equipada al lado del nombre
+      const bim = !this.team && badgeImage(this.players[p].acc?.badge);
+      if (bim) {
+        g.save(); g.font = `400 20px ${FONT_DISPLAY}`; const nw = Math.min(170, g.measureText(this.name(p).toUpperCase()).width); g.restore();
+        g.drawImage(bim, left ? x + 98 + nw + 8 : x + 282 - nw - 8 - 20, 17, 20, 23);
+      }
       if (o.sub) text(g, o.sub[p], left ? x + 98 : x + 282, 56, { size: 13, align: left ? 'left' : 'right', color: rgba(PALETTE.white, 0.85), body: true, weight: 800 });
       if (o.scores) {
         text(g, String(o.scores[p]), left ? x + 360 : x + 20, 44, { size: o.scoreSize || 40, align: left ? 'right' : 'left', color: '#FFD23F' });

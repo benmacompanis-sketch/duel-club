@@ -4,6 +4,21 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-19-v6-4',
+    date: '2026-11-19',
+    version: '6.4',
+    title: 'Insignias a la vista',
+    tag: 'v6.4',
+    color: '#9B6CFF',
+    intro: 'Tu insignia ahora se ve en todos lados y tiene su lugar en Personalizar.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'Personalizar tiene el lugar INSIGNIA: tocalo para elegir cuál llevás.',
+        'La insignia aparece al lado de tu nombre en la barra de arriba, Amigos, la presentación de cada minijuego, el marcador de la partida y los resultados (además del perfil y el ranking).',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-18-v6-3',
     date: '2026-11-18',
     version: '6.3',
