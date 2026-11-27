@@ -31,7 +31,7 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
     const chip = pad != null ? h('div.ready-chip', `Joystick ${pad + 1}: pulsá A cuando estés listo`) : h('div.ready-chip', 'Pulsá ', keycap(b.a[0]), ' cuando estés listo');
     chips[p] = chip;
     return h('div.ctrl-box', { style: { '--c': prof.color } },
-      h('div.ctrl-head', h('b', prof.name, badgeEl(prof.acc?.badge, 18)), h('small', opts.team ? `J${p + 1} · EQUIPO ${p % 2 ? 'ROJO' : 'AZUL'}` : `JUGADOR ${p + 1}`)),
+      h('div.ctrl-head', h('b', prof.name, badgeEl(prof.acc?.badge, 18)), h('small', opts.team ? `J${p + 1} · EQUIPO ${p % 2 ? 'ROJO' : 'AZUL'}` : `JUGADOR ${app.runner.seat ? 2 - p : p + 1}`)),
       ...meta.controls.map((c) => h('div.ctrl-row', h('span', c.label), h('span.keys', ...c.actions.map((a) => keycap(b[a][0]))))),
       chip);
   };
@@ -97,6 +97,10 @@ export function introScreen(ui, { meta, opts, onStart, onBack }) {
       h('div.intro-controls' + (opts.solo ? '.solo' : '') + (opts.team ? '.team' : ''), ...Array.from({ length: N }, (_, p) => ctrlBox(p))),
       h('div.intro-actions',
         h('button.btn.ghost', { nav: true, onclick: back }, icon('back'), opts.mode === 'quick' ? 'VOLVER' : 'SALIR'),
+        app.runner.canSeatSwap?.() ? h('button.btn.seat-swap' + (app.runner.seat ? '.on' : ''), {
+          nav: true, title: 'Para cuando J1 está sentado a la derecha: J1 juega del lado derecho con las teclas de la derecha',
+          onclick: () => { app.save.seatSwap = !app.runner.seat; app.persist(); app.audio.play('click'); app.runner.applySeat(!app.runner.seat); },
+        }, '⇄ ', app.runner.seat ? 'J1 A LA DERECHA' : 'CAMBIAR DE LADO') : null,
         h('span.tip', 'Durante la partida: ', keycap('Escape'), ' o ', keycap('KeyP'), ' para pausar'),
         h('button.btn.primary', { nav: true, onclick: start }, icon('play'), 'EMPEZAR YA'))));
   scr.nav = false;

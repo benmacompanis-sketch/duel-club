@@ -185,6 +185,11 @@ export class MinigameRunner {
     this.Game = Game;
     this.gameId = gameId;
     this.opts = { ...opts, players: opts.players || this.app.profiles.map((p) => ({ ...p })) };
+    // CAMBIO DE LADO (misma compu): J1 juega a la derecha con las teclas de la derecha y J2 a la izquierda.
+    // Solo cambia dónde está cada uno: el resultado se vuelve a ordenar antes de guardarse (XP, PIES, ELO).
+    this.seat = false;
+    this.origPlayers = this.opts.players;
+    if (this.app.save.seatSwap && this.canSeatSwap()) this.applySeat(true, false);
     this.active = true;
     this.playSeconds = 0;
     this.app.renderer.showGame(true);
@@ -237,6 +242,35 @@ export class MinigameRunner {
     this.baseTimeScale = this.game.timeScale;
     // Dificultad CAOS: modificadores temporales, iguales para ambos jugadores y siempre anunciados antes
     this.caos = this.opts.caos ? { next: rand(7, 10), phase: 'off', t: 0, kind: null, bag: [] } : null;
+  }
+  /** ¿Se puede cambiar de lado? Solo con dos personas en esta compu (sin bots, online, 2v2 ni modos de uno). */
+  canSeatSwap() {
+    const o = this.opts || {};
+    return !o.online && !o.team && !o.bot && !o.bot0 && !o.bots && !o.solo && !o.ghost && !o.ghostRec && !o.rule && (o.players?.length || 2) === 2;
+  }
+  /** Pone (o saca) el cambio de lado. Los joysticks siguen a cada persona; el teclado queda por posición. */
+  applySeat(on, recreate = true) {
+    if (!!on === this.seat || !this.canSeatSwap()) return;
+    this.seat = !!on;
+    const P = this.opts.players;
+    this.opts = { ...this.opts, players: [P[1], P[0]] };
+    const pads = this.app.input.pads;
+    const a = pads[0], b = pads[1];
+    delete pads[0]; delete pads[1];
+    if (b != null) pads[0] = b;
+    if (a != null) pads[1] = a;
+    if (recreate && this.state === 'intro') { this.createGame(); this.showIntro(); }
+  }
+  /** Devuelve el resultado al orden real de las cuentas (J1, J2). */
+  unseat(res) {
+    if (!this.seat) return res;
+    const rev = (x) => (Array.isArray(x) && x.length === 2 ? [x[1], x[0]] : x);
+    return {
+      ...res,
+      winner: res.winner === 0 ? 1 : res.winner === 1 ? 0 : res.winner,
+      scores: rev(res.scores), display: rev(res.display), records: rev(res.records), flags: rev(res.flags),
+      stats: (res.stats || []).map((st) => ({ ...st, values: rev(st.values), raw: rev(st.raw) })),
+    };
   }
   showIntro() {
     this.app.ui.show(introScreen, {
@@ -335,6 +369,7 @@ export class MinigameRunner {
   }
   /** Libera el minijuego actual (después de mostrar resultados). */
   close() {
+    if (this.seat) this.applySeat(false, false);
     if (this.game) {
       try { this.game.destroy(); } catch (e) { console.error(e); }
     }
@@ -389,7 +424,8 @@ export class MinigameRunner {
       game.ambient(dt);
       if (this.endT > 1.7) {
         this.state = 'done';
-        const res = { ...game.result, gameId: this.gameId, event: game.event, playSeconds: this.playSeconds, players: this.opts.players };
+        const res = { ...this.unseat(game.result), gameId: this.gameId, event: game.event, playSeconds: this.playSeconds, players: this.origPlayers || this.opts.players };
+        if (this.seat) this.applySeat(false, false); // los joysticks vuelven a su dueño
         if (this.rule) res.rule = this.ruleOut || this.rule.end?.(game, res) || { win: false, text: '' };
         const resolve = this._resolve;
         this._resolve = this._reject = null;

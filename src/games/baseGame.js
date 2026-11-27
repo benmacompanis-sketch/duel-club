@@ -5,7 +5,7 @@ import { FX } from '../core/renderer.js';
 import { PlayerInput } from '../core/inputManager.js';
 import { drawPortrait } from '../core/characters.js';
 import { badgeImage } from '../data/badges.js';
-import { W, H, text, panel, rgba, fmtTime, clamp, PALETTE, roundRect, quality, shade, burst, comicPanel, halftone, mix, cachedLayer, ease, FONT_DISPLAY } from '../core/utils.js';
+import { W, H, text, panel, rgba, fmtTime, clamp, PALETTE, roundRect, quality, shade, burst, comicPanel, halftone, mix, cachedLayer, ease, FONT_DISPLAY, FONT_BODY } from '../core/utils.js';
 
 export class BaseGame {
   constructor(app, opts) {
@@ -217,7 +217,8 @@ export class BaseGame {
     const light = o.light ?? fill.toUpperCase() === '#FFD23F';
     g.save();
     g.font = `400 ${size}px ${FONT_DISPLAY}`;
-    const tw = g.measureText(msg).width;
+    let tw = g.measureText(msg).width;
+    if (o.sub) { g.font = `800 15px ${FONT_BODY}`; tw = Math.max(tw, g.measureText(o.sub).width); }
     g.restore();
     const bw = Math.min(W - 80, tw + 90), bh = size * 1.7 + (o.sub ? 22 : 0);
     const s = 0.55 + 0.45 * ease.outBack(k);

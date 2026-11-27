@@ -2577,3 +2577,5 @@ textarea { background: #15121F !important; }
 .tb-info b .badge-ico, .person-name .badge-ico, .ctrl-head b .badge-ico { vertical-align: -3px; }
 .lo-slot b .badge-ico { margin: 0 5px 0 0; }
 .cat-hint { grid-column: 1 / -1; margin: 0 0 4px; background: var(--ink); color: #FFF4E0; padding: 8px 12px; border-left: 6px solid var(--yellow); font-weight: 700; font-size: 14px; }
+.seat-swap { background: #2A2440 !important; color: #FFF4E0 !important; }
+.seat-swap.on { background: #25CFE6 !important; color: #15121F !important; transform: rotate(-1.5deg); }

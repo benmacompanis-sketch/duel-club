@@ -4,6 +4,21 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-27-v6-8',
+    date: '2026-11-27',
+    version: '6.8',
+    title: 'Cambio de lado y puestos rotativos',
+    tag: 'v6.8',
+    color: '#25CFE6',
+    intro: 'Jugá del lado donde estás sentado y, en Pong 2v2, todos pasan por el arco y por adelante.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        'CAMBIAR DE LADO: en la presentación de cada minijuego (dos jugadores en la misma compu), si J1 está sentado a la derecha, J1 juega del lado derecho con las teclas de la derecha. Los joysticks siguen a cada uno y XP, PIES y ELO se guardan bien.',
+        'Pong Chaos 2v2: después de cada gol los compañeros cambian de puesto (el de adelante pasa al arco y el del arco sale adelante).',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-27-v6-7',
     date: '2026-11-27',
     version: '6.7',

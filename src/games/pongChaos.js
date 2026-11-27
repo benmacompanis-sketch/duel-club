@@ -89,6 +89,7 @@ export default class PongChaos extends BaseGame {
 
   update(dt) {
     if (this.goalMsg) { this.goalMsg.t -= dt; if (this.goalMsg.t <= 0) this.goalMsg = null; }
+    if (this.swapMsg > 0) this.swapMsg -= dt;
     if (this.frozen(dt)) return;
     this.ambient(dt);
     // paletas
@@ -245,6 +246,20 @@ export default class PongChaos extends BaseGame {
     this.fx.burst(p ? 20 : W - 20, b.y, [this.color(p), '#fff', '#FFC93C'], 40, { angle: p ? 0 : Math.PI, spread: 1.2, speed: 600 });
     this.goalMsg = { p, t: 1.3 };
     this.impact(0.12);
+    // 2v2: después de cada gol los compañeros cambian de puesto (el de adelante pasa al arco y al revés)
+    if (this.team) {
+      for (const side of [0, 1]) {
+        for (const pp of [side, side + 2]) {
+          const pd = this.paddles[pp];
+          pd.front = !pd.front;
+          pd.x = pd.front ? (side ? W - 300 : 300) : side ? W - 60 : 60;
+          pd.h = pd.front ? 92 : 116;
+          pd.vy = 0;
+          this.fx.ring(pd.x, pd.y, this.color(pp), 70, 0.4, 4);
+        }
+      }
+      this.swapMsg = 2.9;
+    }
     if (this.score[p] >= this.target) return this.end();
     if (!this.balls.length) {
       this.serveT = 1.0;
@@ -394,6 +409,9 @@ export default class PongChaos extends BaseGame {
     if (this.banner) {
       const k = 1 - this.banner.t / 1.6;
       this.callout(g, this.banner.text, { y: this.goalMsg ? 560 : 420, size: 50, k: k * 3, alpha: Math.min(1, this.banner.t * 3), color: this.banner.color, light: true });
+    }
+    if (this.swapMsg > 0 && !this.goalMsg) {
+      this.callout(g, '¡CAMBIAN DE PUESTO!', { y: 560, size: 34, k: (1.6 - this.swapMsg) * 3, alpha: Math.min(1, this.swapMsg * 3), color: '#25CFE6', sub: 'El de adelante pasa al arco y el del arco sale adelante' });
     }
     if (this.goalMsg) {
       const m = this.goalMsg;
