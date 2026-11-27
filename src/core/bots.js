@@ -527,25 +527,46 @@ const BRAINS = {
       }
     }
     b.steerX(w, P.x, tx, 10);
-    // mientras dura el golpe, sostiene la dirección elegida (eso decide si la tira profunda o corta)
+    // mientras carga y pega, sostiene la dirección elegida (eso decide si la tira profunda o corta)
     if (b.mem.aim && b.t < b.mem.aim.until) { w.delete('left'); w.delete('right'); if (b.mem.aim.key) w.add(b.mem.aim.key); }
-    // pegar en el momento justo: mira dónde va a estar la pelota cuando el swing llegue a su punto dulce
-    const lead = 0.077 + gauss() * 0.03 * b.L.noise;
-    const fx = ball.x + ball.vx * lead, fy = ball.y + ball.vy * lead + 0.5 * g.g * lead * lead;
-    const d = Math.hypot(fx - hx, fy - hy);
-    if (mySide && d < REACH * (0.5 + 0.3 * (1 - b.L.noise)) && P.swingCd <= 0 && !(g.lastHit === s && g.bounces === 0)) {
-      if (b.chance(1 - b.L.slip)) {
-        // táctica: si el rival quedó atrás, la deja corta; si subió a la red, la tira profunda o por arriba
-        let O = null;
-        for (const Q of g.pl) if (Q.s !== s && (!O || Math.abs(Q.x - ball.x) < Math.abs(O.x - ball.x))) O = Q;
-        const far = O ? Math.abs(O.x - NET_X) : 300;
-        const fwdKey = s ? 'left' : 'right', backKey = s ? 'right' : 'left';
-        let plan;
-        if (R() < 1 - b.L.noise * 0.45) plan = far > 330 ? 'short' : far < 220 ? (R() < 0.55 ? 'deep' : 'lob') : (R() < 0.5 ? 'deep' : 'short');
-        else plan = ['deep', 'short', 'none', 'none'][Math.floor(R() * 4)];
-        b.mem.aim = { key: plan === 'deep' ? fwdKey : plan === 'short' ? backKey : null, until: b.t + 0.26 };
-        w.delete('left'); w.delete('right'); if (b.mem.aim.key) w.add(b.mem.aim.key);
-        w.add(plan === 'lob' ? 'b' : 'a');
+    // ¿en cuánto tiempo llega la pelota a su punto de golpe? (simula la pelota con piques, como el juego)
+    const myHx = tx + (s ? -22 : 22) * 0.4, myHy = hy;
+    const tc = b.every('tc', 0.05, () => {
+      if (!mySide && !coming) return null;
+      let x = ball.x, y = ball.y, vx = ball.vx, vy = ball.vy;
+      for (let i = 1; i <= 90; i++) {
+        vy += g.g / 60; x += vx / 60; y += vy / 60;
+        if (y > GROUND - BR_T) { y = GROUND - BR_T; vy *= -0.6; vx *= 0.74; }
+        if (((x < NET_X ? 0 : 1) === s) && Math.hypot(x - myHx, y - myHy) < REACH * 0.5) return i / 60;
+      }
+      return null;
+    });
+    const canHit = !(g.lastHit === s && g.bounces === 0);
+    const ch = b.mem.ch;
+    if (ch && P.charging) {
+      // soltar cuando llegó a la fuerza elegida o cuando la pelota ya está encima
+      const left = tc == null ? 0 : tc - (b.t - ch.at);
+      if (P.charge >= ch.power || left <= 0.08) { b.mem.ch = null; b.mem.aim = { key: ch.key, until: b.t + 0.26 }; }
+      else w.add('a');
+    } else if (ch && !P.charging && b.t - ch.at > 0.1) b.mem.ch = null;
+    if (!b.mem.ch && !P.charging && mySide && canHit && P.swingCd <= 0 && tc != null && b.chance(1 - b.L.slip * 0.5)) {
+      // táctica: si el rival quedó atrás, la deja corta; si subió a la red, la tira profunda o por arriba
+      let O = null;
+      for (const Q of g.pl) if (Q.s !== s && (!O || Math.abs(Q.x - ball.x) < Math.abs(O.x - ball.x))) O = Q;
+      const far = O ? Math.abs(O.x - NET_X) : 300;
+      const fwdKey = s ? 'left' : 'right', backKey = s ? 'right' : 'left';
+      let plan;
+      if (R() < 1 - b.L.noise * 0.45) plan = far > 330 ? 'short' : far < 220 ? (R() < 0.55 ? 'deep' : 'lob') : (R() < 0.5 ? 'deep' : 'short');
+      else plan = ['deep', 'short', 'none', 'none'][Math.floor(R() * 4)];
+      const key = plan === 'deep' ? fwdKey : plan === 'short' ? backKey : null;
+      if (plan === 'lob') {
+        if (tc <= 0.08 + gauss() * 0.02 * b.L.noise) { w.add('b'); b.mem.aim = { key: null, until: b.t + 0.26 }; }
+      } else {
+        // fuerza: los buenos caen casi siempre en la franja justa; los fáciles se quedan cortos o se pasan
+        const spread = 0.08 + 0.32 * b.L.noise;
+        const power = clamp(0.74 + (R() * 2 - 1) * spread, 0.15, 1.25);
+        const hold = power * 0.8;
+        if (tc <= hold + 0.08 + gauss() * 0.04 * b.L.noise) { b.mem.ch = { power, key, at: b.t }; w.add('a'); }
       }
     }
     // pelota alta que le va a pasar por arriba: salta (los buenos casi siempre)

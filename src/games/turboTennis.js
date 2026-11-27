@@ -10,14 +10,17 @@ const SERVE_LIMIT = 5; // segundos máximos para sacar
 const GROUND = 612, NET_X = W / 2, NET_TOP = 528, COURT_L = 110, COURT_R = W - 110, BR = 11;
 const REACH = 74;
 const SWING = 0.22; // duración del swing; el punto justo es un poco después de empezar
+// FUERZA: mantener ACCIÓN 1 carga el golpe y soltarlo pega. 1 = carga completa en CHARGE_T segundos.
+// La franja buena es POWER_OK; pasarse de carga hace que la pelota se vaya larga (afuera).
+const CHARGE_T = 0.8, CHARGE_MAX = 1.3, POWER_OK = [0.6, 0.9];
 
 export default class TurboTennis extends BaseGame {
   static meta = {
     id: 'tennis', num: 14, name: 'TURBO TENNIS', short: 'TENNIS', category: 'Deportes', color: '#C6F04A', isNew: true,
     tagline: 'Tenis arcade a toda velocidad: cada rally es más rápido.',
-    description: 'Movete con IZQUIERDA/DERECHA y saltá con ARRIBA. Pulsá ACCIÓN 1 cuando la pelota esté cerca para pegarle: mantené ADELANTE para un tiro profundo o ATRÁS para uno corto. ACCIÓN 2 es un globo alto (o un remate si la pelota viene alta). La pelota puede picar una sola vez en tu lado. Pegale en el momento justo: un golpe al aire te deja un ratito sin poder pegar.',
+    description: 'Movete con IZQUIERDA/DERECHA y saltá con ARRIBA. Mantené ACCIÓN 1 para cargar fuerza y soltalo cuando la pelota esté cerca para pegarle (en la franja verde sale fuerte y justa; si te pasás, se te va afuera): mantené ADELANTE para un tiro profundo o ATRÁS para uno corto. ACCIÓN 2 es un globo alto (o un remate si la pelota viene alta). La pelota puede picar una sola vez en tu lado. Pegale en el momento justo: un golpe al aire te deja un ratito sin poder pegar.',
     goal: 'Llegá primero a la cantidad de puntos (con 2 de diferencia).',
-    controls: [{ actions: ['left', 'right'], label: 'Moverse' }, { actions: ['up'], label: 'Saltar' }, { actions: ['a'], label: 'Golpe' }, { actions: ['b'], label: 'Globo / remate' }],
+    controls: [{ actions: ['left', 'right'], label: 'Moverse' }, { actions: ['up'], label: 'Saltar' }, { actions: ['a'], label: 'Golpe (mantener = más fuerza)' }, { actions: ['b'], label: 'Globo / remate' }],
     events: ['speed', 'lowgrav', 'mirror', 'invert'],
     options: [{ key: 'target', label: 'Puntos', choices: [[5, '5'], [7, '7'], [11, '11']], def: 7 }],
     record: { label: 'Golpes en una partida', better: 'higher', format: (v) => `${v} golpes` },
@@ -127,9 +130,19 @@ export default class TurboTennis extends BaseGame {
     pl.swingCd = Math.max(0, pl.swingCd - dt);
     // golpe al aire: tarda más en poder volver a pegar (apretar sin parar no sirve)
     if (wasSwing && pl.swing <= 0 && !pl.hitNow) { pl.swingCd = Math.max(pl.swingCd, 0.32); pl.whiffs = (pl.whiffs || 0) + 1; }
-    if ((inp.pressed('a') || inp.pressed('b')) && pl.swingCd <= 0) {
-      pl.swing = SWING; pl.swingCd = 0.4; pl.lob = inp.pressed('b'); pl.hitNow = false;
-      this.sfx('whoosh', { pitch: 1.4 });
+    // ACCIÓN 1: mantener para cargar fuerza y soltar para pegar. ACCIÓN 2 (globo): al instante.
+    const swingNow = (lob, power) => {
+      pl.swing = SWING; pl.swingCd = 0.4; pl.lob = lob; pl.hitNow = false; pl.power = power; pl.charging = false; pl.charge = 0;
+      this.sfx('whoosh', { pitch: 1.2 + Math.min(1, power) * 0.4 });
+    };
+    if (pl.charging) {
+      if (inp.held('a')) {
+        pl.charge = Math.min(CHARGE_MAX, pl.charge + dt / CHARGE_T);
+        if (pl.charge >= CHARGE_MAX) swingNow(false, CHARGE_MAX); // no se puede cargar para siempre
+      } else swingNow(false, Math.max(0.12, pl.charge));
+    } else if (pl.swingCd <= 0) {
+      if (inp.pressed('b')) swingNow(true, 0.5);
+      else if (inp.pressed('a')) { pl.charging = true; pl.charge = 0; if (!inp.held('a')) swingNow(false, 0.12); }
     }
     pl.anim = pl.swing > 0 ? 'attack' : pl.y < GROUND - 1 ? 'jump' : Math.abs(pl.vx) > 40 ? 'run' : 'idle';
   }
@@ -156,10 +169,17 @@ export default class TurboTennis extends BaseGame {
     const lob = pl.lob && !smash;
     if (serve) depth = 0.5 + fwd * 0.2;
     // error según timing: un golpe pobre puede irse afuera o a la red
-    const err = (1 - q) * (1 - q) * rand(-0.55, 0.55);
+    // fuerza: suave = más lenta y corta; en la franja buena = fuerte y profunda; pasada = se va larga
+    const pw = pl.power ?? 0.5;
+    const over = Math.max(0, pw - 0.95);
+    if (!lob && !smash && !drop) depth += (Math.min(pw, 1) - 0.5) * 0.3;
+    const err = (1 - q) * (1 - q) * rand(-0.55, 0.55) + (lob || smash ? 0 : over * 2.2 * rand(0.6, 1));
     const near = opp ? NET_X + 40 : NET_X - 40, far = opp ? COURT_R - 20 : COURT_L + 20;
     let tx = near + (far - near) * clamp(depth + err, -0.25, 1.25);
-    const speed = (serve ? 500 + q * 80 : lob ? 360 : smash ? 1040 : drop ? 380 + q * 60 : (fwd > 0.3 ? 640 : 560) + q * 200) * this.turbo * (1 + this.diff * 0.12);
+    const powMul = lob || smash ? 1 : 0.72 + 0.45 * Math.min(pw, 1);
+    const speed = (serve ? 500 + q * 80 : lob ? 360 : smash ? 1040 : drop ? 380 + q * 60 : (fwd > 0.3 ? 640 : 560) + q * 200) * powMul * this.turbo * (1 + this.diff * 0.12);
+    if (!lob && !smash && over > 0.15 && !serve) this.fx.float(hx, hy - 80, '¡DEMASIADO FUERTE!', '#FF3B5C', 20);
+    else if (!lob && !smash && pw >= POWER_OK[0] && pw <= POWER_OK[1] && q > 0.6 && !serve) this.fx.float(hx, hy - 80, '¡FUERZA JUSTA!', '#3DDC97', 18);
     let vx = dir * speed;
     let T = Math.abs(tx - b.x) / speed;
     let vy;
@@ -212,6 +232,7 @@ export default class TurboTennis extends BaseGame {
     b.y = pl.y - 62;
     pl.swing = 0.22;
     pl.lob = false;
+    pl.power = 0.5;
     this.tryHit(pl, true);
     this.fx.float(pl.x, pl.y - 120, 'SAQUE AUTOMÁTICO', this.color(pl.p), 18);
   }
@@ -380,6 +401,19 @@ export default class TurboTennis extends BaseGame {
       g.strokeStyle = '#0D0B14'; g.lineWidth = 8; g.stroke();
       g.strokeStyle = this.color(pl.p); g.lineWidth = 4.5; g.stroke();
       g.restore();
+      // medidor de fuerza mientras carga: franja verde = fuerza justa; si se pasa, rojo y titila
+      if (pl.charging) {
+        const mw = 84, mh = 14, mx = pl.x - mw / 2, my = pl.y - 150, k = Math.min(1, pl.charge / CHARGE_MAX);
+        g.fillStyle = '#0D0B14'; g.fillRect(mx - 3, my - 3, mw + 6, mh + 6);
+        g.fillStyle = '#2A2440'; g.fillRect(mx, my, mw, mh);
+        g.fillStyle = 'rgba(61,220,151,0.45)'; g.fillRect(mx + mw * (POWER_OK[0] / CHARGE_MAX), my, mw * ((POWER_OK[1] - POWER_OK[0]) / CHARGE_MAX), mh);
+        const over = pl.charge > 0.95;
+        g.fillStyle = over ? (Math.floor(t * 16) % 2 ? '#FF3B5C' : '#FF8E3C') : pl.charge >= POWER_OK[0] ? '#3DDC97' : '#FFD23F';
+        g.fillRect(mx, my, mw * k, mh);
+        g.fillStyle = '#FFF4E0'; g.fillRect(mx + mw * (POWER_OK[1] / CHARGE_MAX) - 1, my - 3, 2, mh + 6); g.fillRect(mx + mw * (POWER_OK[0] / CHARGE_MAX) - 1, my - 3, 2, mh + 6);
+        g.lineWidth = 2; g.strokeStyle = '#0D0B14'; g.strokeRect(mx, my, mw, mh);
+        text(g, over ? '¡SOLTÁ!' : 'FUERZA', pl.x, my - 12, { size: 14, color: over ? '#FF8FA3' : '#FFF4E0' });
+      }
     }
     // pelota
     const b = this.ball;

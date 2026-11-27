@@ -4,6 +4,23 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-27-v6-9',
+    date: '2026-11-27',
+    version: '6.9',
+    title: 'Turbo Tennis con fuerza',
+    tag: 'v6.9',
+    color: '#C6F04A',
+    intro: 'Cuanto más mantenés el golpe, más fuerte sale. Pero si te pasás, se te va afuera.',
+    blocks: [
+      { kind: 'nuevo', items: [
+        'Turbo Tennis: mantené ACCIÓN 1 para cargar la fuerza y soltalo para pegar. Un toque es un tiro suave y colocado; en la franja verde del medidor sale fuerte y profundo; si te pasás, la pelota se va larga (afuera).',
+        'El medidor de fuerza aparece arriba de tu jugador mientras cargás (y avisa "¡SOLTÁ!" cuando te pasaste).',
+        'El saque también se carga: un saque pasado de fuerza sale afuera.',
+        'Los bots también cargan: el Experto cae casi siempre en la franja justa; el Fácil se queda corto o se pasa.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-27-v6-8',
     date: '2026-11-27',
     version: '6.8',
