@@ -9,12 +9,14 @@ import { W, H, TAU, clamp, choice, text, panel, rgba, roundRect, glowCircle, qua
 
 const LANES = ['left', 'down', 'up', 'right'];
 const HIT_Y = 610, TOP = 108, LANE_W = 72;
-const WIN = { perfect: 0.045, great: 0.09, good: 0.135 };
+const WIN = { perfect: 0.045, great: 0.09, good: 0.135, early: 0.25 };
 const JUDGE = {
   perfect: { label: 'PERFECT', color: '#FFE45C', pts: 300 },
   great: { label: 'GREAT', color: '#48D597', pts: 200 },
   good: { label: 'GOOD', color: '#25CFE6', pts: 100 },
   miss: { label: 'MISS', color: '#FF654F', pts: 0 },
+  // pulsar un carril sin ninguna nota cerca: corta el combo y resta (así no sirve apretar todo sin parar)
+  ghost: { label: 'ERROR', color: '#FF3B5C', pts: -50 },
 };
 const SONG_IDS = ['beat1', 'beat2', 'beat3'];
 
@@ -70,7 +72,7 @@ export default class BeatBattle extends BaseGame {
   static meta = {
     id: 'beat', num: 10, name: 'BEAT BATTLE', short: 'BEAT', category: 'Ritmo', color: '#FF5FA2',
     tagline: 'Misma canción, mismo ritmo, un solo ganador.',
-    description: 'Las notas bajan por cuatro carriles. Pulsá la dirección correcta justo cuando cada nota toca la línea. PERFECT, GREAT y GOOD suman puntos; los aciertos seguidos suben el multiplicador hasta x4. Si se te escapa una nota, el combo vuelve a cero.',
+    description: 'Las notas bajan por cuatro carriles. Pulsá la dirección correcta justo cuando cada nota toca la línea. PERFECT, GREAT y GOOD suman puntos; los aciertos seguidos suben el multiplicador hasta x4. Si se te escapa una nota, el combo vuelve a cero. Ojo: apretar sin que haya nota es ERROR (corta el combo y resta puntos).',
     goal: 'Hacé más puntos que tu rival en la misma canción.',
     controls: [{ actions: ['left', 'down', 'up', 'right'], label: 'Carriles ← ↓ ↑ →' }],
     events: ['double', 'speed'],
@@ -112,7 +114,7 @@ export default class BeatBattle extends BaseGame {
     this.score = [0, 0];
     this.combo = [0, 0];
     this.maxCombo = [0, 0];
-    this.counts = [0, 1].map(() => ({ perfect: 0, great: 0, good: 0, miss: 0 }));
+    this.counts = [0, 1].map(() => ({ perfect: 0, great: 0, good: 0, miss: 0, ghost: 0 }));
     this.judge = [null, null];
     this.laneFlash = [[0, 0, 0, 0], [0, 0, 0, 0]];
     this.duration = this.song.duration;
@@ -191,11 +193,11 @@ export default class BeatBattle extends BaseGame {
         this.laneFlash[p][lane] = 1;
         const ts = inp.pressTime(LANES[lane]);
         const t = ts != null ? ts / 1000 - this.perfStart - this.offset() : this.songTime;
-        // la nota sin acertar más cercana en ese carril dentro de la ventana
+        // la nota sin acertar más cercana en ese carril (mirando un poco más adelante para detectar los apurados)
         let best = null, bd = Infinity;
         for (let i = this.next[p]; i < notes.length; i++) {
           const n = notes[i];
-          if (n.t - t > WIN.good) break;
+          if (n.t - t > WIN.early) break;
           if (n.lane !== lane || n.hit) continue;
           const d = Math.abs(n.t - t);
           if (d < bd) { bd = d; best = n; }
@@ -204,6 +206,13 @@ export default class BeatBattle extends BaseGame {
           const j = bd <= WIN.perfect ? 'perfect' : bd <= WIN.great ? 'great' : 'good';
           best.hit = j;
           this.registerJudge(p, j, lane);
+        } else if (best && best.t > t) {
+          // demasiado temprano: esa nota se pierde (no se puede "atajar" apretando antes)
+          best.hit = 'miss';
+          this.registerJudge(p, 'miss', lane);
+        } else {
+          // ninguna nota cerca: error (corta el combo y resta puntos)
+          this.registerJudge(p, 'ghost', lane);
         }
       }
       while (this.next[p] < notes.length && notes[this.next[p]].hit) this.next[p]++;
@@ -213,9 +222,10 @@ export default class BeatBattle extends BaseGame {
 
   registerJudge(p, j, lane) {
     this.counts[p][j]++;
-    if (j === 'miss') {
-      if (this.combo[p] >= 10) this.sfx('miss');
+    if (j === 'miss' || j === 'ghost') {
+      if (this.combo[p] >= 10 || j === 'ghost') this.sfx('miss', { gap: 60 });
       this.combo[p] = 0;
+      if (j === 'ghost') this.score[p] = Math.max(0, this.score[p] + JUDGE.ghost.pts);
     } else {
       this.combo[p]++;
       this.maxCombo[p] = Math.max(this.maxCombo[p], this.combo[p]);
@@ -238,7 +248,7 @@ export default class BeatBattle extends BaseGame {
     this.player = null;
     const [a, b] = this.score;
     const acc = this.counts.map((c) => {
-      const total = c.perfect + c.great + c.good + c.miss;
+      const total = c.perfect + c.great + c.good + c.miss + c.ghost;
       return total ? Math.round(((c.perfect + c.great * 0.75 + c.good * 0.4) / total) * 100) : 0;
     });
     const C = this.counts;
@@ -252,6 +262,7 @@ export default class BeatBattle extends BaseGame {
         { label: 'GREAT', values: C.map((c) => String(c.great)) },
         { label: 'GOOD', values: C.map((c) => String(c.good)) },
         { label: 'MISS', values: C.map((c) => String(c.miss)), raw: C.map((c) => c.miss), better: 'low' },
+        { label: 'Errores (sin nota)', values: C.map((c) => String(c.ghost)), raw: C.map((c) => c.ghost), better: 'low' },
         { label: 'Combo máximo', values: this.maxCombo.map(String), raw: this.maxCombo, better: 'high' },
         { label: 'Precisión', values: acc.map((v) => v + '%'), raw: acc, better: 'high' },
       ],
@@ -290,7 +301,7 @@ export default class BeatBattle extends BaseGame {
     glowCircle(g, W / 2, 380, 280 + pulse * 40, '#FF5FA2', 0.25 + pulse * 0.3);
     // personajes bailando en el centro
     for (const p of [0, 1]) {
-      const anim = this.combo[p] >= 20 ? 'celebrate' : this.judge[p]?.j === 'miss' && this.judge[p].t > 0 ? 'hurt' : 'idle';
+      const anim = this.combo[p] >= 20 ? 'celebrate' : (this.judge[p]?.j === 'miss' || this.judge[p]?.j === 'ghost') && this.judge[p].t > 0 ? 'hurt' : 'idle';
       const bob = -pulse * 10;
       drawCharacter(g, { id: this.players[p].char, x: W / 2 + (p ? 52 : -52), y: 560 + bob, s: 0.95, color: this.color(p), anim, t: anim === 'idle' ? beat * 0.8 + p : t + p, facing: p ? -1 : 1, acc: this.players[p].acc });
     }
@@ -389,7 +400,7 @@ export default class BeatBattle extends BaseGame {
   renderHUD(g) {
     this.hudTop(g, {
       scores: this.score.map((v) => v.toLocaleString('es')), scoreSize: 28,
-      sub: this.counts.map((c) => `${c.perfect} perfect · ${c.miss} miss`),
+      sub: this.counts.map((c) => `${c.perfect} perfect · ${c.miss} miss${c.ghost ? ` · ${c.ghost} error` : ''}`),
       center: SONGS[this.songId].title.toUpperCase(), centerSub: `${this.song.bpm} BPM`, centerSize: 16,
     });
     const k = clamp(this.songTime / this.song.duration, 0, 1);

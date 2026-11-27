@@ -4,6 +4,22 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-27-v6-5',
+    date: '2026-11-27',
+    version: '6.5',
+    title: 'Beat Battle sin trampa',
+    tag: 'v6.5',
+    color: '#FF5FA2',
+    intro: 'Apretar todas las flechas sin parar ya no suma puntos.',
+    blocks: [
+      { kind: 'arreglo', items: [
+        'Beat Battle: apretar un carril sin ninguna nota cerca es ERROR: corta el combo y resta 50 puntos.',
+        'Beat Battle: si apretás demasiado temprano, esa nota cuenta como MISS (ya no se puede atajar apretando antes).',
+        'Los resultados muestran cuántos errores hizo cada uno y la precisión los tiene en cuenta.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-19-v6-4',
     date: '2026-11-19',
     version: '6.4',
