@@ -4,6 +4,24 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-27-v6-7',
+    date: '2026-11-27',
+    version: '6.7',
+    title: 'Turbo Tennis de verdad',
+    tag: 'v6.7',
+    color: '#C6F04A',
+    intro: 'Ya no se gana quedándose quieto: hay que moverse, elegir el tiro y pegarle a tiempo.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'Turbo Tennis: ADELANTE tira profundo y fuerte, ATRÁS deja la pelota corta pegada a la red y sin dirección cae a una profundidad distinta cada vez.',
+        'Turbo Tennis: el golpe sale mejor si le pegás en el momento justo; un golpe al aire te deja un ratito sin poder pegar.',
+        'Turbo Tennis: el pique frena la pelota y el saque es más suave, así hay peloteos (antes casi todo se definía con el saque).',
+        'Turbo Tennis: los bots juegan con táctica: si te quedás atrás te la dejan corta y si subís a la red te tiran un globo o un tiro profundo.',
+        'LOGROS muestra cuántos desbloqueaste desde la última vez que entraste.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-27-v6-6',
     date: '2026-11-27',
     version: '6.6',

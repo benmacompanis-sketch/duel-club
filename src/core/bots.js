@@ -491,14 +491,14 @@ const BRAINS = {
   tennis(g, p, b, w) {
     const P = g.pl[p];
     const ball = g.ball;
-    const GROUND = 612, NET_X = 640, REACH = 86;
+    const GROUND = 612, NET_X = 640, REACH = 74;
     // s = lado de la cancha (en dobles J3 juega del lado de J1 y J4 del lado de J2)
     const s = p % 2;
     const home = g.team ? [260, 1020, NET_X - 170, NET_X + 170][p] : s ? 1020 : 260;
     const hx = P.x + (s ? -22 : 22), hy = P.y - 62;
     if (!ball) { b.steerX(w, P.x, home, 10); return; }
     if (ball.toss) {
-      if (g.server !== p) { b.steerX(w, P.x, g.team ? home : s ? 1000 : 280, 10); return; }
+      if (g.server !== p) { b.steerX(w, P.x, g.team ? home : s ? 1060 : 220, 10); return; }
       // saque: pegarle cuando baja a la altura del golpe (después de un momento de reacción)
       const d = Math.hypot(ball.x - hx, ball.y - hy);
       if (ball.vy > 0 && d < REACH * 0.6 && b.after('srv', true, b.L.react)) { w.add(R() < 0.15 ? 'b' : 'a'); b.after('srv', false); }
@@ -527,11 +527,29 @@ const BRAINS = {
       }
     }
     b.steerX(w, P.x, tx, 10);
-    const d = Math.hypot(ball.x - hx, ball.y - hy);
-    if (mySide && d < REACH * (0.55 + 0.25 * (1 - b.L.noise)) && P.swingCd <= 0 && !(g.lastHit === s && g.bounces === 0)) {
-      if (b.chance(1 - b.L.slip)) w.add(b.chance(0.18) ? 'b' : 'a');
+    // mientras dura el golpe, sostiene la dirección elegida (eso decide si la tira profunda o corta)
+    if (b.mem.aim && b.t < b.mem.aim.until) { w.delete('left'); w.delete('right'); if (b.mem.aim.key) w.add(b.mem.aim.key); }
+    // pegar en el momento justo: mira dónde va a estar la pelota cuando el swing llegue a su punto dulce
+    const lead = 0.077 + gauss() * 0.03 * b.L.noise;
+    const fx = ball.x + ball.vx * lead, fy = ball.y + ball.vy * lead + 0.5 * g.g * lead * lead;
+    const d = Math.hypot(fx - hx, fy - hy);
+    if (mySide && d < REACH * (0.5 + 0.3 * (1 - b.L.noise)) && P.swingCd <= 0 && !(g.lastHit === s && g.bounces === 0)) {
+      if (b.chance(1 - b.L.slip)) {
+        // táctica: si el rival quedó atrás, la deja corta; si subió a la red, la tira profunda o por arriba
+        let O = null;
+        for (const Q of g.pl) if (Q.s !== s && (!O || Math.abs(Q.x - ball.x) < Math.abs(O.x - ball.x))) O = Q;
+        const far = O ? Math.abs(O.x - NET_X) : 300;
+        const fwdKey = s ? 'left' : 'right', backKey = s ? 'right' : 'left';
+        let plan;
+        if (R() < 1 - b.L.noise * 0.45) plan = far > 330 ? 'short' : far < 220 ? (R() < 0.55 ? 'deep' : 'lob') : (R() < 0.5 ? 'deep' : 'short');
+        else plan = ['deep', 'short', 'none', 'none'][Math.floor(R() * 4)];
+        b.mem.aim = { key: plan === 'deep' ? fwdKey : plan === 'short' ? backKey : null, until: b.t + 0.26 };
+        w.delete('left'); w.delete('right'); if (b.mem.aim.key) w.add(b.mem.aim.key);
+        w.add(plan === 'lob' ? 'b' : 'a');
+      }
     }
-    if (mySide && ball.y < hy - 70 && Math.abs(ball.x - P.x) < 90 && P.y >= GROUND - 0.5 && b.chance(0.08)) w.add('up');
+    // pelota alta que le va a pasar por arriba: salta (los buenos casi siempre)
+    if (mySide && ball.y < hy - 60 && Math.abs(ball.x - P.x) < 110 && P.y >= GROUND - 0.5 && b.chance(0.04 + 0.3 * (1 - b.L.noise))) w.add('up');
   },
 
   // ---------------------------------------------------------------- TOWER CLIMB

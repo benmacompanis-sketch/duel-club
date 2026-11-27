@@ -152,11 +152,27 @@ export function hubScreen(ui, params = {}) {
   // mensajes privados sin leer (en Amigos): al abrir el menú y cada 60 s
   let dmUnread = 0;
   // Pase: recompensas del pase + desafíos listos para reclamar. Amigos: solicitudes + mensajes sin leer.
+  // Logros: los desbloqueados desde la última vez que abriste la sección (se guarda en esta compu, por cuenta)
+  function achTimes(me) { return Object.values(me?.achievements || {}).map((t) => Date.parse(t) || 0); }
+  function markAchSeen() {
+    const me = svc.slotAccount(ctx.viewer);
+    if (!me) return;
+    const seen = (app.save.achSeen ||= {});
+    seen[me.username] = Math.max(0, ...achTimes(me));
+    app.persist();
+    setCount('achievements', 0);
+  }
   function accountCounts() {
     if (scr.disposed) return;
     const me = svc.slotAccount(ctx.viewer);
     setCount('pass', me ? (me.pass?.ready || 0) + (me.challenges_ready || 0) : 0);
     setCount('club', me ? (me.requests || 0) + dmUnread : 0);
+    if (!me) { setCount('achievements', 0); return; }
+    const seen = (app.save.achSeen ||= {});
+    // la primera vez no se cuentan los logros viejos: solo los que se desbloqueen de acá en adelante
+    if (seen[me.username] == null) { seen[me.username] = Math.max(0, ...achTimes(me)); app.persist(); }
+    if (section === 'achievements') { markAchSeen(); return; }
+    setCount('achievements', achTimes(me).filter((t) => t > seen[me.username]).length);
   }
   async function dmBadge() {
     if (!svc.slotAccount(ctx.viewer) || scr.disposed) return;
@@ -178,6 +194,7 @@ export function hubScreen(ui, params = {}) {
     }
     if (!silent) app.audio.play('click');
     section = id;
+    if (id === 'achievements') markAchSeen();
     ctx.params = p;
     app.save.lastSection = id;
     nav.querySelectorAll('.sn-btn').forEach((b) => b.classList.toggle('on', b.dataset.id === id));

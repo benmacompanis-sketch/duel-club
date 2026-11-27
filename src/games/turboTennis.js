@@ -1,20 +1,21 @@
 // JUEGO 14 — TURBO TENNIS (deportes)
 // Tenis arcade de costado: red, piques, saque y volea. El golpe se apunta con la dirección
 // (adelante = profundo, atrás = corto) y el timing: un golpe perfecto sale más rápido; uno tardío
-// puede irse afuera o a la red. Cada 4 golpes del rally la pelota acelera (TURBO).
+// puede irse afuera o a la red. Cada 3 golpes del rally la pelota acelera (TURBO).
 import { BaseGame } from './baseGame.js';
 import { drawCharacter } from '../core/characters.js';
 import { W, H, TAU, rand, clamp, text, panel, rgba, roundRect, glowCircle, quality, shade, halftone, comicPanel } from '../core/utils.js';
 
 const SERVE_LIMIT = 5; // segundos máximos para sacar
 const GROUND = 612, NET_X = W / 2, NET_TOP = 528, COURT_L = 110, COURT_R = W - 110, BR = 11;
-const REACH = 86;
+const REACH = 74;
+const SWING = 0.22; // duración del swing; el punto justo es un poco después de empezar
 
 export default class TurboTennis extends BaseGame {
   static meta = {
     id: 'tennis', num: 14, name: 'TURBO TENNIS', short: 'TENNIS', category: 'Deportes', color: '#C6F04A', isNew: true,
     tagline: 'Tenis arcade a toda velocidad: cada rally es más rápido.',
-    description: 'Movete con IZQUIERDA/DERECHA y saltá con ARRIBA. Pulsá ACCIÓN 1 cuando la pelota esté cerca para pegarle: mantené ADELANTE para un tiro profundo o ATRÁS para uno corto. ACCIÓN 2 es un globo alto (o un remate si la pelota viene alta). La pelota puede picar una sola vez en tu lado.',
+    description: 'Movete con IZQUIERDA/DERECHA y saltá con ARRIBA. Pulsá ACCIÓN 1 cuando la pelota esté cerca para pegarle: mantené ADELANTE para un tiro profundo o ATRÁS para uno corto. ACCIÓN 2 es un globo alto (o un remate si la pelota viene alta). La pelota puede picar una sola vez en tu lado. Pegale en el momento justo: un golpe al aire te deja un ratito sin poder pegar.',
     goal: 'Llegá primero a la cantidad de puntos (con 2 de diferencia).',
     controls: [{ actions: ['left', 'right'], label: 'Moverse' }, { actions: ['up'], label: 'Saltar' }, { actions: ['a'], label: 'Golpe' }, { actions: ['b'], label: 'Globo / remate' }],
     events: ['speed', 'lowgrav', 'mirror', 'invert'],
@@ -121,10 +122,13 @@ export default class TurboTennis extends BaseGame {
     pl.vy += this.g * dt;
     pl.y = Math.min(GROUND, pl.y + pl.vy * dt);
     if (pl.y >= GROUND) pl.vy = 0;
+    const wasSwing = pl.swing > 0;
     pl.swing = Math.max(0, pl.swing - dt);
     pl.swingCd = Math.max(0, pl.swingCd - dt);
+    // golpe al aire: tarda más en poder volver a pegar (apretar sin parar no sirve)
+    if (wasSwing && pl.swing <= 0 && !pl.hitNow) { pl.swingCd = Math.max(pl.swingCd, 0.32); pl.whiffs = (pl.whiffs || 0) + 1; }
     if ((inp.pressed('a') || inp.pressed('b')) && pl.swingCd <= 0) {
-      pl.swing = 0.22; pl.swingCd = 0.38; pl.lob = inp.pressed('b');
+      pl.swing = SWING; pl.swingCd = 0.4; pl.lob = inp.pressed('b'); pl.hitNow = false;
       this.sfx('whoosh', { pitch: 1.4 });
     }
     pl.anim = pl.swing > 0 ? 'attack' : pl.y < GROUND - 1 ? 'jump' : Math.abs(pl.vx) > 40 ? 'run' : 'idle';
@@ -137,21 +141,25 @@ export default class TurboTennis extends BaseGame {
     const hx = pl.x + (pl.s ? -22 : 22), hy = pl.y - 62;
     const d = Math.hypot(b.x - hx, b.y - hy);
     if (d > REACH) return;
-    // calidad del golpe: más cerca del punto dulce = mejor
-    const q = clamp(1 - d / REACH, 0, 1);
+    // calidad del golpe: cerca del punto dulce Y en el momento justo del swing (un poco después de arrancar)
+    const phase = serve ? 0.35 : (SWING - pl.swing) / SWING;
+    const timing = clamp(1 - Math.abs(phase - 0.35) * 1.7, 0, 1);
+    const q = clamp((1 - d / REACH) * 0.55 + timing * 0.45, 0, 1);
     const inp = this.inputs[pl.p];
     const fwd = inp.axisX() * (pl.s ? -1 : 1); // 1 = adelante (hacia la red)
     const dir = pl.s ? -1 : 1;
     const opp = 1 - pl.s;
-    let depth = 0.55 + fwd * 0.3; // 0 = cerca de la red, 1 = fondo
+    // adelante = profundo y fuerte; atrás = corto, pegado a la red; sin dirección = profundidad variable
+    let depth = fwd > 0.3 ? 0.9 : fwd < -0.3 ? 0.14 : rand(0.35, 0.75); // 0 = cerca de la red, 1 = fondo
+    const drop = fwd < -0.3;
     const smash = pl.lob && b.y < pl.y - 130 && !serve;
     const lob = pl.lob && !smash;
-    if (serve) depth = 0.55 + fwd * 0.2;
+    if (serve) depth = 0.5 + fwd * 0.2;
     // error según timing: un golpe pobre puede irse afuera o a la red
     const err = (1 - q) * (1 - q) * rand(-0.55, 0.55);
     const near = opp ? NET_X + 40 : NET_X - 40, far = opp ? COURT_R - 20 : COURT_L + 20;
     let tx = near + (far - near) * clamp(depth + err, -0.25, 1.25);
-    const speed = (lob ? 360 : smash ? 1040 : 560 + q * 180) * this.turbo * (1 + this.diff * 0.12);
+    const speed = (serve ? 500 + q * 80 : lob ? 360 : smash ? 1040 : drop ? 380 + q * 60 : (fwd > 0.3 ? 640 : 560) + q * 200) * this.turbo * (1 + this.diff * 0.12);
     let vx = dir * speed;
     let T = Math.abs(tx - b.x) / speed;
     let vy;
@@ -178,13 +186,14 @@ export default class TurboTennis extends BaseGame {
     this.lastHit = pl.s;
     this.bounces = 0;
     pl.swing = 0;
+    pl.hitNow = true;
     pl.hits++;
     if (!serve) {
       this.rally++;
       this.returned = this.returned || pl.s !== this.server;
       this.bestRally = Math.max(this.bestRally, this.rally);
-      if (this.rally % 4 === 0) {
-        this.turbo = Math.min(1.6, this.turbo * 1.08);
+      if (this.rally % 3 === 0) {
+        this.turbo = Math.min(1.8, this.turbo * 1.08);
         this.fx.float(b.x, b.y - 40, 'TURBO', '#C6F04A', 26);
         this.sfx('boost');
       }
@@ -225,8 +234,9 @@ export default class TurboTennis extends BaseGame {
     }
     if (b.y >= GROUND - BR) {
       b.y = GROUND - BR;
-      b.vy *= -0.68;
-      b.vx *= 0.92;
+      // el pique frena la pelota (como polvo de ladrillo): se puede devolver sin salir corriendo de la cancha
+      b.vy *= -0.6;
+      b.vx *= 0.74;
       this.sfx('land');
       this.fx.ring(b.x, GROUND, '#ffffff', 26, 0.3, 2);
       if (this.ballDead) return;
