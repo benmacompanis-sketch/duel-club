@@ -4,6 +4,22 @@
 // Si un arreglo viene de un reporte de los jugadores, se puede citar su número: "(reporte #12)".
 export const NEWS = [
   {
+    id: '2026-11-27-v6-6',
+    date: '2026-11-27',
+    version: '6.6',
+    title: 'Numeritos en el menú',
+    tag: 'v6.6',
+    color: '#FF3B5C',
+    intro: 'El menú te avisa cuando tenés algo esperándote.',
+    blocks: [
+      { kind: 'mejora', items: [
+        'PASE muestra cuántas recompensas del pase y desafíos tenés para reclamar.',
+        'AMIGOS muestra las solicitudes de amistad y los mensajes sin leer.',
+        'Los números se actualizan solos: al reclamar, al terminar una partida o al cambiar entre J1 y J2.',
+      ] },
+    ],
+  },
+  {
     id: '2026-11-27-v6-5',
     date: '2026-11-27',
     version: '6.5',

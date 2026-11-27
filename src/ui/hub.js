@@ -71,6 +71,7 @@ export function hubScreen(ui, params = {}) {
       app.persist();
       renderTop();
       open(section, ctx.params, true);
+      dmUnread = 0; accountCounts(); chestBadge(); dmBadge();
     },
     goto: (id, p = {}) => open(id, p),
     login: (p) => openAccount(p),
@@ -149,15 +150,23 @@ export function hubScreen(ui, params = {}) {
   const onChests = (e) => { if (scr.disposed) window.removeEventListener('dc:chests', onChests); else setCount('chests', e.detail); };
   window.addEventListener('dc:chests', onChests);
   // mensajes privados sin leer (en Amigos): al abrir el menú y cada 60 s
+  let dmUnread = 0;
+  // Pase: recompensas del pase + desafíos listos para reclamar. Amigos: solicitudes + mensajes sin leer.
+  function accountCounts() {
+    if (scr.disposed) return;
+    const me = svc.slotAccount(ctx.viewer);
+    setCount('pass', me ? (me.pass?.ready || 0) + (me.challenges_ready || 0) : 0);
+    setCount('club', me ? (me.requests || 0) + dmUnread : 0);
+  }
   async function dmBadge() {
-    const b = nav.querySelector('.sn-btn[data-id="club"]');
-    if (!b || !svc.slotAccount(ctx.viewer) || scr.disposed) return;
+    if (!svc.slotAccount(ctx.viewer) || scr.disposed) return;
     try {
       const d = await svc.dmInbox(ctx.viewer);
-      setCount('club', d.unread);
+      dmUnread = d.unread || 0;
+      accountCounts();
     } catch {}
   }
-  setTimeout(() => { if (!scr.disposed) { chestBadge(); dmBadge(); } }, 1500);
+  setTimeout(() => { if (!scr.disposed) { accountCounts(); chestBadge(); dmBadge(); } }, 300);
   const dmTimer = setInterval(() => { if (scr.disposed) clearInterval(dmTimer); else if (!document.hidden) dmBadge(); }, 60000);
   const content = h('div.hub-content');
 
@@ -202,7 +211,7 @@ export function hubScreen(ui, params = {}) {
   // cartel de novedades (una vez por actualización)
   setTimeout(() => { if (!scr.disposed) maybeShowNews(ui, (tab) => open('news', { tab })); }, 900);
   svc.startPresence();
-  const unsub = svc.on(() => { if (!scr.disposed) renderTop(); });
+  const unsub = svc.on(() => { if (!scr.disposed) { renderTop(); accountCounts(); } });
   scr.destroy = () => {
     unsub();
     try { current?.destroy?.(); } catch {}
